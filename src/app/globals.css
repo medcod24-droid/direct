@@ -1,0 +1,233 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==========================================================================
+   Daftar — couche de design.
+   Outil professionnel dense : neutres légèrement teintés vers l'accent,
+   jamais de gris pur. Les couleurs sémantiques (rouge / ambre / vert) sont
+   réservées aux statuts de conformité, jamais décoratives.
+   Chaque couleur est définie sur :root, puis redéfinie pour le thème sombre.
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", "Noto Sans Arabic", "Noto Kufi Arabic", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+
+  /* Fonds et texte */
+  --bg: #f1f5f4;
+  --surface: #ffffff;
+  --surface-2: #e8efed;
+  --ink: #0c1a17;
+  --ink-2: #37504b;
+  --muted: #5d7873;
+  --line: #d4e0dd;
+
+  /* Accent : vert-sarcelle profond */
+  --accent: #0e6a59;
+  --accent-ink: #ffffff;
+  --accent-soft: #d8ece7;
+  --accent-strong: #0a5045;
+
+  /* Conformité */
+  --red: #b3261e;
+  --red-soft: #fbe4e2;
+  --red-ink: #ffffff;
+  --red-strong: #8f1c16;
+  --amber: #8a5a00;
+  --amber-soft: #fbeed2;
+  --green: #1a6b45;
+  --green-soft: #dcefe4;
+
+  /* Divers */
+  --focus: var(--accent);
+  --shadow-1: 0 1px 2px rgb(12 26 23 / 6%), 0 1px 1px rgb(12 26 23 / 4%);
+  --shadow-2: 0 10px 30px rgb(12 26 23 / 12%), 0 2px 8px rgb(12 26 23 / 8%);
+  --overlay: rgb(12 26 23 / 45%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --bg: #08120f;
+    --surface: #0f1c19;
+    --surface-2: #172724;
+    --ink: #e7efec;
+    --ink-2: #b2c7c2;
+    --muted: #85a09a;
+    --line: #233733;
+
+    --accent: #35a58c;
+    --accent-ink: #04211b;
+    --accent-soft: #10352d;
+    --accent-strong: #46b79c;
+
+    --red: #f2867c;
+    --red-soft: #3a1a17;
+    --red-ink: #2a0d0a;
+    --red-strong: #f79c93;
+    --amber: #e0a83a;
+    --amber-soft: #362710;
+    --green: #59bd8b;
+    --green-soft: #123024;
+
+    --shadow-1: 0 1px 2px rgb(0 0 0 / 40%);
+    --shadow-2: 0 12px 34px rgb(0 0 0 / 55%), 0 2px 8px rgb(0 0 0 / 40%);
+    --overlay: rgb(4 9 8 / 65%);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #08120f;
+  --surface: #0f1c19;
+  --surface-2: #172724;
+  --ink: #e7efec;
+  --ink-2: #b2c7c2;
+  --muted: #85a09a;
+  --line: #233733;
+
+  --accent: #35a58c;
+  --accent-ink: #04211b;
+  --accent-soft: #10352d;
+  --accent-strong: #46b79c;
+
+  --red: #f2867c;
+  --red-soft: #3a1a17;
+  --red-ink: #2a0d0a;
+  --red-strong: #f79c93;
+  --amber: #e0a83a;
+  --amber-soft: #362710;
+  --green: #59bd8b;
+  --green-soft: #123024;
+
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 40%);
+  --shadow-2: 0 12px 34px rgb(0 0 0 / 55%), 0 2px 8px rgb(0 0 0 / 40%);
+  --overlay: rgb(4 9 8 / 65%);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Anneau de focus visible sur tout élément interactif, spécificité 0
+     pour rester surchargeable au cas par cas. */
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  ::placeholder {
+    color: var(--muted);
+    opacity: 1;
+  }
+
+  ::selection {
+    background-color: var(--accent-soft);
+    color: var(--ink);
+  }
+
+  /* Un tableau dense ne doit jamais faire déborder la page. */
+  table {
+    border-collapse: collapse;
+  }
+
+  hr {
+    border-color: var(--line);
+  }
+
+  [hidden] {
+    display: none !important;
+  }
+}
+
+@layer utilities {
+  /* Tous les chiffres (montants, dates, compteurs) sont alignés en colonne. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+
+  /* Conteneur de tableau : il défile seul, la page reste fixe. */
+  .scroll-x {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+
+  .focus-ring:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  .shadow-card {
+    box-shadow: var(--shadow-1);
+  }
+
+  .shadow-panel {
+    box-shadow: var(--shadow-2);
+  }
+
+  /* Coupe le texte sur une ligne dans les cellules denses. */
+  .truncate-cell {
+    max-width: 22rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* ==========================================================================
+   RTL (arabe)
+   ========================================================================== */
+
+[dir="rtl"] {
+  text-align: right;
+}
+
+/* Les montants et les dates restent lus de gauche à droite, isolés du
+   contexte arabe pour que « 1 200,00 MAD » ne se réordonne pas. */
+[dir="rtl"] .tabular {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+[dir="rtl"] .tabular-start {
+  text-align: right;
+}
+
+/* Icônes directionnelles (chevrons de pagination, flèches de retour). */
+[dir="rtl"] .flip-rtl {
+  transform: scaleX(-1);
+}
+
+/* ==========================================================================
+   Mouvement réduit
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

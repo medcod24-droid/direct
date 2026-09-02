@@ -1,0 +1,640 @@
+// Daftar — schéma de données
+//
+// Provider: sqlite en dev/test, postgresql en production (voir README « Base de données »).
+// Aucun enum Prisma n'est utilisé : SQLite ne les supporte pas. Les valeurs sont des String
+// contraintes côté application par des unions TypeScript + Zod (src/lib/domain/enums.ts).
+//
+// Règle d'or de multi-tenancy : tout modèle appartenant à un cabinet porte `cabinetId`
+// et est indexé dessus. L'accès passe obligatoirement par le client Prisma étendu
+// (src/lib/db/tenant.ts) qui injecte le filtre. Voir SECURITY.md.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Plateforme (non multi-tenant) : plans, cabinets, utilisateurs, sessions
+// ---------------------------------------------------------------------------
+
+model Plan {
+  id        String  @id @default(cuid())
+  code      String  @unique // starter | professional | business | enterprise
+  name      String
+  priceMad  Int // prix mensuel HT en centimes de dirham
+  interval  String  @default("month") // month | year
+  isPublic  Boolean @default(true)
+  sortOrder Int     @default(0)
+
+  // Entitlements (null = illimité). Jamais lus depuis le client : voir lib/billing.
+  maxClients        Int?
+  maxUsers          Int?
+  maxStorageMb      Int?
+  maxMonthlyUploads Int?
+  features          String @default("[]") // JSON: string[] de codes de fonctionnalités
+
+  subscriptions Subscription[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Cabinet {
+  id       String  @id @default(cuid())
+  name     String
+  slug     String  @unique
+  // Identité légale du cabinet lui-même
+  ice      String?
+  if       String?
+  rc       String?
+  // Numéro d'inscription à l'ordre (OPCA / OEC) — exigé à l'onboarding, cf. loi 127-12
+  ordre    String? // OPCA | OEC
+  ordreNum String?
+  city     String?
+  phone    String?
+  email    String?
+  locale   String  @default("fr") // fr | ar | en
+  timezone String  @default("Africa/Casablanca")
+
+  // Mode de conformité CNDP : "declaration" (sans n° CIN) ou "authorization" (n° CIN autorisé)
+  cndpMode    String  @default("declaration")
+  cndpRef     String?
+  storageUsed Int     @default(0) // octets
+
+  subscription Subscription?
+  memberships  Membership[]
+  clients      Client[]
+  contacts     Contact[]
+  documents    Document[]
+  requests     DocumentRequest[]
+  tasks        Task[]
+  deadlines    Deadline[]
+  rules        DeadlineRule[]
+  invoices     ClientInvoice[]
+  messages     Message[]
+  notifications Notification[]
+  auditLogs    AuditLog[]
+  activities   Activity[]
+  invitations  Invitation[]
+  categories   DocumentCategory[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Subscription {
+  id        String @id @default(cuid())
+  cabinetId String @unique
+  planId    String
+
+  status           String    @default("trialing") // trialing | active | past_due | canceled
+  trialEndsAt      DateTime?
+  currentPeriodEnd DateTime?
+  canceledAt       DateTime?
+  externalRef      String? // référence chez le prestataire de paiement (Stripe, CMI…)
+
+  cabinet   Cabinet  @relation(fields: [cabinetId], references: [id], onDelete: Cascade)
+  plan      Plan     @relation(fields: [planId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([planId])
+}
+
+model User {
+  id           String  @id @default(cuid())
+  email        String  @unique
+  passwordHash String
+  name         String
+  phone        String?
+  locale       String  @default("fr")
+  isActive     Boolean @default(true)
+
+  // 2FA : architecture posée, activation dans une version ultérieure
+  twoFactorSecret     String?
+  twoFactorEnabled    Boolean   @default(false)
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+  lastLoginAt         DateTime?
+
+  memberships   Membership[]
+  sessions      Session[]
+  assignments   ClientAssignment[]
+  uploads       Document[]         @relation("DocumentUploader")
+  reviewed      DocumentRequest[]  @relation("RequestReviewer")
+  requested     DocumentRequest[]  @relation("RequestCreator")
+  tasksAssigned Task[]             @relation("TaskAssignee")
+  tasksCreated  Task[]             @relation("TaskCreator")
+  deadlines     Deadline[]         @relation("DeadlineAssignee")
+  notifications Notification[]
+  messages      Message[]
+  comments      TaskComment[]
+  auditLogs     AuditLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Lien utilisateur <-> cabinet. Porte le rôle et la portée d'accès.
+model Membership {
+  id        String @id @default(cuid())
+  userId    String
+  cabinetId String
+
+  role   String  @default("accountant") // owner | admin | accountant | assistant | client
+  status String  @default("active") // active | suspended
+  /// true = l'utilisateur ne voit que les clients qui lui sont assignés
+  restrictedToAssigned Boolean @default(false)
+  /// Pour le rôle « client » : le dossier client auquel ce compte est rattaché
+  clientId String?
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cabinet Cabinet @relation(fields: [cabinetId], references: [id], onDelete: Cascade)
+  client  Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, cabinetId])
+  @@index([cabinetId, role])
+  @@index([clientId])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique // SHA-256 du jeton ; le jeton en clair n'est jamais stocké
+  userId    String
+  cabinetId String? // cabinet actif de la session
+  expiresAt DateTime
+  ip        String?
+  userAgent String?
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Invitation {
+  id        String    @id @default(cuid())
+  cabinetId String
+  email     String
+  role      String    @default("accountant")
+  tokenHash String    @unique
+  expiresAt DateTime
+  acceptedAt DateTime?
+  invitedBy String?
+
+  cabinet   Cabinet  @relation(fields: [cabinetId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([cabinetId, email])
+}
+
+// ---------------------------------------------------------------------------
+// CRM : clients, contacts, assignations
+// ---------------------------------------------------------------------------
+
+model Client {
+  id        String @id @default(cuid())
+  cabinetId String
+
+  /// company | individual
+  kind    String @default("company")
+  /// sarl | sarl_au | sa | sas | snc | succursale | gie | association | cooperative |
+  /// syndic | auto_entrepreneur | cpu | rnr | rns | particulier
+  subtype String
+
+  legalName String
+  tradeName String?
+  ice       String?
+  if        String?
+  rc        String?
+  rcCourt   String?
+  taxProfNo String?
+  cnssNo    String?
+  /// Stocké uniquement si cabinet.cndpMode = "authorization" (loi 09-08, art. 12-1-e)
+  managerCin      String?
+  managerCinValid DateTime?
+  managerName     String?
+
+  address  String?
+  city     String?
+  phone    String?
+  email    String?
+  website  String?
+  activity String?
+
+  /// Régime et attributs qui pilotent le moteur d'échéances
+  fiscalYearEndMonth Int     @default(12)
+  fiscalYearEndDay   Int     @default(31)
+  vatRegime          String  @default("quarterly") // monthly | quarterly | exempt
+  taxRegime          String  @default("is") // is | rnr | rns | cpu | auto_entrepreneur | none
+  isEmployer         Boolean @default(false)
+  referenceRevenue   Int? // CA N-1 en centimes de dirham
+  referenceRevenueSource String? // import_balance | manual | declaration
+
+  /// Aucune obligation n'est générée avant cette date (évite un historique rouge au jour 1)
+  takeoverDate DateTime
+  startedAt    DateTime?
+
+  status       String  @default("active") // prospect | onboarding | active | suspended | terminated | archived
+  activityState String @default("running") // running | dormant | liquidation | struck_off
+  priority     String  @default("normal") // low | normal | high
+  tags         String  @default("[]") // JSON: string[]
+  notes        String?
+  acquisition  String?
+
+  /// Honoraires récurrents (suivi de facturation du cabinet, pas la compta du client)
+  feeAmount    Int? // centimes de dirham HT
+  feeFrequency String? // monthly | quarterly | yearly | none
+
+  cabinet     Cabinet            @relation(fields: [cabinetId], references: [id], onDelete: Cascade)
+  contacts    Contact[]
+  assignments ClientAssignment[]
+  documents   Document[]
+  requests    DocumentRequest[]
+  tasks       Task[]
+  deadlines   Deadline[]
+  invoices    ClientInvoice[]
+  messages    Message[]
+  activities  Activity[]
+  portalUsers Membership[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([cabinetId, status])
+  @@index([cabinetId, legalName])
+  @@index([cabinetId, ice])
+  @@index([cabinetId, if])
+}
+
+model Contact {
+  id        String  @id @default(cuid())
+  cabinetId String
+  clientId  String
+  name      String
+  position  String?
+  phone     String?
+  email     String?
+  isPrimary Boolean @default(false)
+  notes     String?
+
+  cabinet Cabinet @relation(fields: [cabinetId], references: [id], onDelete: Cascade)
+  client  Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([cabinetId, clientId])
+}
+
+/// Assignation d'un collaborateur à un dossier (portée d'accès au niveau ressource)
+model ClientAssignment {
+  id        String @id @default(cuid())
+  cabinetId String
+  clientId  String
+  userId    String
+  role      String @default("responsible") // responsible | reviewer | contributor
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([clientId, userId])
+  @@index([cabinetId, userId])
+}
+
+// ---------------------------------------------------------------------------
+// Documents
+// ---------------------------------------------------------------------------
+
+model DocumentCategory {
+  id        String  @id @default(cuid())
+  /// null = catégorie système, visible par tous les cabinets
+  cabinetId String?
+  code      String
+  name      String
+  kind      String  @default("recurring") // permanent | recurring | fiscal | social | legal | fees
+  sortOrder Int     @default(0)
+
+  cabinet   Cabinet?   @relation(fields: [cabinetId], references: [id], onDelete: Cascade)
+  documents Document[]
+
+  @@unique([cabinetId, code])
+}
+
+model Document {
+  id         String  @id @default(cuid())
+  cabinetId  String
+  clientId   String?
+  categoryId String?
+
+  /// Nom d'origine, affiché ; jamais utilisé pour écrire sur le disque
+  filename   String
+  /// Clé de stockage opaque (uuid), relative à la racine de stockage privée
+  storageKey String  @unique
+  mimeType   String
+  size       Int
+  /// SHA-256 du contenu : intégrité (loi 53-05) et détection de doublons
+  checksum   String
+  version    Int     @default(1)
+  replacesId String?
+
+  documentDate DateTime?
+  expiresAt    DateTime?
+  status       String    @default("received") // received | approved | rejected | archived
+  tags         String    @default("[]")
+  notes        String?
+
+  uploadedById String?
+  uploadedVia  String @default("cabinet") // cabinet | portal | import
+
+  cabinet    Cabinet           @relation(fields: [cabinetId], references: [id], onDelete: Cascade)
+  client     Client?           @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  category   DocumentCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  uploadedBy User?             @relation("DocumentUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
+  request    DocumentRequest?  @relation("RequestFulfillment")
+  proofFor   Deadline[]        @relation("DeadlineProof")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([cabinetId, clientId])
+  @@index([cabinetId, status])
+  @@index([cabinetId, expiresAt])
+}
+
+model DocumentRequest {
+  id          String    @id @default(cuid())
+  cabinetId   String
+  clientId    String
+  title       String
+  description String?
+  periodLabel String? // ex. « janvier 2027 »
+  dueDate     DateTime?
+
+  status String @default("pending") // pending | submitted | approved | rejected | cancelled
+
+  requestedById   String?
+  documentId      String?   @unique
+  submittedAt     DateTime?
+  reviewedById    String?
+  reviewedAt      DateTime?
+  rejectionReason String?
+
+  cabinet     Cabinet   @relation(fields: [cabinetId], references: [id], onDelete: Cascade)
+  client      Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  requestedBy User?     @relation("RequestCreator", fields: [requestedById], references: [id], onDelete: SetNull)
+  reviewedBy  User?     @relation("RequestReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  document    Document? @relation("RequestFulfillment", fields: [documentId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([cabinetId, status])
+  @@index([cabinetId, clientId])
+}
+
+// ---------------------------------------------------------------------------
+// Travail : tâches, échéances
+// ---------------------------------------------------------------------------
+
+model Task {
+  id          String    @id @default(cuid())
+  cabinetId   String
+  clientId    String?
+  title       String
+  description String?
+  priority    String    @default("normal") // low | normal | high | urgent
+  status      String    @default("todo") // todo | in_progress | waiting_client | done | cancelled
+  dueDate     DateTime?
+  completedAt DateTime?
+
+  assigneeId  String?
+  createdById String?
+
+  cabinet   Cabinet       @relation(fields: [cabinetId], references: [id], onDelete: Cascade)
+  client    Client?       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  assignee  User?         @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  createdBy User?         @relation("TaskCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  comments  TaskComment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([cabinetId, status, dueDate])
+  @@index([cabinetId, assigneeId])
+  @@index([cabinetId, clientId])
+}
+
+model TaskComment {
+  id        String @id @default(cuid())
+  cabinetId String
+  taskId    String
+  authorId  String?
+  body      String
+
+  task   Task  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author User? @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([cabinetId, taskId])
+}
+
+/// Règle d'échéance paramétrable. Aucune date légale n'est codée en dur ailleurs.
+/// cabinetId null = règle système fournie par la plateforme ; un cabinet peut la surcharger.
+model DeadlineRule {
+  id        String  @id @default(cuid())
+  cabinetId String?
+  code      String
+  label     String
+  labelAr   String?
+
+  /// Conditions d'application (JSON) évaluées par lib/deadlines/engine.ts
+  /// ex. {"taxRegime":["is"],"isEmployer":true,"vatRegime":["monthly"]}
+  appliesTo String @default("{}")
+
+  frequency String // monthly | quarterly | yearly | event
+  /// Formule de date (JSON) : {"type":"day_of_month","month":3,"day":31,"beforeDay":true}
+  /// {"type":"months_after_fy_end","months":3} | {"type":"end_of_next_month"} …
+  dateFormula String
+  portal      String? // simpl | damancom | greffe | rn_ae | commune
+  proofLabel  String?
+  /// Formule de pénalité (JSON), sert à estimer le coût du retard
+  penaltyFormula String?
+  legalRef       String? // ex. « CGI art. 110 »
+  lawVersion     String  @default("2026")
+  /// verified = confronté au texte ; to_confirm = source secondaire (affiché à l'admin)
+  verificationStatus String @default("to_confirm")
+  isActive           Boolean @default(true)
+
+  cabinet   Cabinet?   @relation(fields: [cabinetId], references: [id], onDelete: Cascade)
+  deadlines Deadline[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([cabinetId, code, lawVersion])
+}
+
+model Deadline {
+  id        String  @id @default(cuid())
+  cabinetId String
+  clientId  String
+  ruleId    String?
+
+  label       String
+  periodLabel String // ex. « TVA 03/2027 » — sert à l'unicité
+  dueDate     DateTime
+  status      String @default("upcoming") // upcoming | in_progress | declared | paid | overdue | not_applicable
+  /// cabinet | client | third_party — ce qui n'est pas géré par le cabinet ne compte pas en rouge
+  managedBy   String @default("cabinet")
+  priority    String @default("normal")
+
+  declaredAt      DateTime?
+  paidAt          DateTime?
+  proofDocumentId String?
+  assigneeId      String?
+  notes           String?
+  /// Journal du « mode panne » (JSON) : tentatives horodatées, messages d'erreur
+  outageLog       String?
+  penaltyEstimate Int? // centimes de dirham
+
+  cabinet Cabinet       @relation(fields: [cabinetId], references: [id], onDelete: Cascade)
+  client  Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  rule    DeadlineRule? @relation(fields: [ruleId], references: [id], onDelete: SetNull)
+  proof   Document?     @relation("DeadlineProof", fields: [proofDocumentId], references: [id], onDelete: SetNull)
+  assignee User?        @relation("DeadlineAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([clientId, periodLabel])
+  @@index([cabinetId, status, dueDate])
+  @@index([cabinetId, clientId])
+  @@index([cabinetId, dueDate])
+}
+
+// ---------------------------------------------------------------------------
+// Communication, notifications, facturation client, journal
+// ---------------------------------------------------------------------------
+
+model Message {
+  id        String  @id @default(cuid())
+  cabinetId String
+  clientId  String
+  authorId  String?
+  body      String
+  /// true = note interne, jamais visible du client
+  isInternal Boolean @default(false)
+  readAt     DateTime?
+
+  cabinet Cabinet @relation(fields: [cabinetId], references: [id], onDelete: Cascade)
+  client  Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  author  User?   @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([cabinetId, clientId, createdAt])
+}
+
+model Notification {
+  id        String  @id @default(cuid())
+  cabinetId String
+  userId    String
+  type      String
+  title     String
+  body      String?
+  link      String?
+  readAt    DateTime?
+
+  cabinet Cabinet @relation(fields: [cabinetId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, readAt])
+  @@index([cabinetId, createdAt])
+}
+
+/// Facturation des honoraires du cabinet à ses clients (pas la comptabilité du client)
+model ClientInvoice {
+  id        String @id @default(cuid())
+  cabinetId String
+  clientId  String
+
+  reference   String
+  label       String?
+  amount      Int // centimes de dirham HT
+  vatRate     Int     @default(20) // pourcentage
+  paidAmount  Int     @default(0)
+  currency    String  @default("MAD")
+  issuedAt    DateTime
+  dueDate     DateTime
+  paidAt      DateTime?
+  status      String  @default("pending") // pending | partial | paid | overdue | cancelled
+  paymentMode String? // cash | cheque | transfer | card
+  notes       String?
+
+  cabinet Cabinet @relation(fields: [cabinetId], references: [id], onDelete: Cascade)
+  client  Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([cabinetId, reference])
+  @@index([cabinetId, status, dueDate])
+  @@index([cabinetId, clientId])
+}
+
+/// Journal d'audit — append-only. Aucune mutation exposée dans l'application.
+model AuditLog {
+  id           String  @id @default(cuid())
+  cabinetId    String?
+  userId       String?
+  action       String // ex. document.download
+  resourceType String?
+  resourceId   String?
+  /// JSON, jamais de contenu de document ni de secret
+  metadata     String?
+  ip           String?
+  userAgent    String?
+  outcome      String  @default("success") // success | denied | error
+
+  cabinet Cabinet? @relation(fields: [cabinetId], references: [id], onDelete: SetNull)
+  user    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([cabinetId, createdAt])
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+}
+
+/// Timeline visible dans la fiche client (sous-ensemble lisible du journal)
+model Activity {
+  id        String  @id @default(cuid())
+  cabinetId String
+  clientId  String?
+  actorId   String?
+  type      String // document.uploaded | request.created | task.created | deadline.declared …
+  summary   String
+  metadata  String?
+  /// true = visible dans le portail client
+  visibleToClient Boolean @default(false)
+
+  cabinet Cabinet @relation(fields: [cabinetId], references: [id], onDelete: Cascade)
+  client  Client? @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([cabinetId, clientId, createdAt])
+}

@@ -1,0 +1,1283 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plan de lancement Daftar</title>
+</head>
+<body>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#F5F7F6; --surface:#FFFFFF; --surface-2:#EDF1EF; --ink:#152220; --ink-2:#3B4946; --muted:#6A7775; --line:#D8DFDC; --line-2:#E7ECEA;
+  --accent:#0E6E66; --accent-ink:#0B5750; --accent-soft:#E2F0ED; --accent-line:#B9DAD4;
+  --red:#B42318; --red-soft:#FBEAE7; --red-line:#F0B8B1;
+  --amber:#96570A; --amber-soft:#FBF0DC; --amber-line:#EBCF9A;
+  --green:#137A4E; --green-soft:#E1F3E9; --green-line:#A9DCC0;
+  --shadow:0 1px 2px rgba(21,34,32,.06), 0 8px 24px -16px rgba(21,34,32,.25);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1514; --surface:#171F1E; --surface-2:#1E2826; --ink:#E6ECEA; --ink-2:#C3CDCA; --muted:#8F9C99; --line:#2B3735; --line-2:#222D2B;
+    --accent:#3FC0AE; --accent-ink:#8AE0D3; --accent-soft:#12312E; --accent-line:#245C55;
+    --red:#F4948A; --red-soft:#3A1714; --red-line:#6E2A24;
+    --amber:#F0B45B; --amber-soft:#382810; --amber-line:#6B4E1C;
+    --green:#66D8A2; --green-soft:#10332A; --green-line:#1F5A46;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1514; --surface:#171F1E; --surface-2:#1E2826; --ink:#E6ECEA; --ink-2:#C3CDCA; --muted:#8F9C99; --line:#2B3735; --line-2:#222D2B;
+  --accent:#3FC0AE; --accent-ink:#8AE0D3; --accent-soft:#12312E; --accent-line:#245C55;
+  --red:#F4948A; --red-soft:#3A1714; --red-line:#6E2A24;
+  --amber:#F0B45B; --amber-soft:#382810; --amber-line:#6B4E1C;
+  --green:#66D8A2; --green-soft:#10332A; --green-line:#1F5A46;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} }
+body{background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;font-size:16px;line-height:1.6;margin:0}
+.page{max-width:1160px;margin:0 auto;padding:32px 24px 96px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr);gap:40px}
+@media (min-width:1040px){ .layout{grid-template-columns:232px minmax(0,1fr);gap:56px} }
+h1,h2,h3,h4{font-family:"Bricolage Grotesque","IBM Plex Sans",system-ui,sans-serif;font-weight:600;letter-spacing:-.01em;line-height:1.15;text-wrap:balance;margin:0}
+h1{font-size:clamp(34px,4.6vw,52px);font-weight:700;letter-spacing:-.025em}
+h2{font-size:clamp(24px,2.6vw,30px);margin-top:8px}
+h3{font-size:19px;margin-top:32px;margin-bottom:8px}
+h4{font-size:16px;margin-top:20px;margin-bottom:6px}
+p{margin:0 0 14px}
+.prose{max-width:72ch}
+.prose ul,.prose ol{padding-left:22px;margin:0 0 14px}
+.prose li{margin:4px 0}
+.prose li::marker{color:var(--accent)}
+strong{font-weight:600}
+a{color:var(--accent-ink);text-decoration:underline;text-decoration-color:var(--accent-line);text-underline-offset:3px}
+a:hover{text-decoration-color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+code,.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em}
+code{background:var(--surface-2);padding:1px 6px;border-radius:4px}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink);margin-bottom:12px}
+.lede{font-size:19px;line-height:1.5;color:var(--ink-2);max-width:64ch;margin:18px 0 0}
+.meta{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:22px;color:var(--muted);font-size:14px}
+.meta span b{color:var(--ink);font-weight:500}
+/* nav */
+.toc{position:sticky;top:24px;align-self:start;display:none}
+@media (min-width:1040px){ .toc{display:block} }
+.toc .t{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.toc ol{list-style:none;margin:0;padding:0;border-left:1px solid var(--line)}
+.toc li a{display:block;padding:5px 0 5px 14px;font-size:13.5px;color:var(--ink-2);text-decoration:none;border-left:2px solid transparent;margin-left:-1px;line-height:1.35}
+.toc li a:hover{color:var(--accent-ink);border-left-color:var(--accent-line)}
+.toc li a .n{font-family:"IBM Plex Mono",monospace;color:var(--muted);font-size:11.5px;margin-right:6px}
+.toc-inline{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:6px 18px;margin:28px 0 0;padding:0;list-style:none}
+@media (min-width:1040px){ .toc-inline{display:none} }
+.toc-inline a{font-size:14px;text-decoration:none;color:var(--ink-2)}
+.toc-inline a .n{font-family:"IBM Plex Mono",monospace;color:var(--muted);font-size:12px;margin-right:6px}
+/* sections */
+section.sec{padding-top:56px;margin-top:24px;border-top:1px solid var(--line)}
+section.sec:first-of-type{border-top:0;margin-top:0;padding-top:0}
+.sec-head{display:flex;align-items:baseline;gap:16px;margin-bottom:18px}
+.sec-head .num{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--accent-ink);background:var(--accent-soft);border:1px solid var(--accent-line);border-radius:6px;padding:3px 8px;flex:none}
+.sec-sub{color:var(--muted);font-size:15px;margin:-8px 0 22px;max-width:72ch}
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:28px 0 0}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow)}
+.stat b{display:block;font-family:"IBM Plex Mono",monospace;font-weight:500;font-size:26px;letter-spacing:-.02em;color:var(--ink);font-variant-numeric:tabular-nums}
+.stat span{display:block;font-size:13px;color:var(--muted);margin-top:4px;line-height:1.35}
+.stat .src{font-size:11.5px;margin-top:6px}
+/* pills */
+.pill{display:inline-flex;align-items:center;gap:6px;font-family:"IBM Plex Mono",monospace;font-size:11.5px;font-weight:500;letter-spacing:.02em;padding:2px 9px;border-radius:999px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink-2);white-space:nowrap;vertical-align:middle}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.9}
+.pill.red{color:var(--red);background:var(--red-soft);border-color:var(--red-line)}
+.pill.amber{color:var(--amber);background:var(--amber-soft);border-color:var(--amber-line)}
+.pill.green{color:var(--green);background:var(--green-soft);border-color:var(--green-line)}
+.pill.accent{color:var(--accent-ink);background:var(--accent-soft);border-color:var(--accent-line)}
+.pill.plain::before{display:none}
+/* tables */
+.table-wrap{overflow-x:auto;margin:14px 0 22px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px;line-height:1.45;font-variant-numeric:tabular-nums}
+th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--line-2)}
+th{font-weight:600;font-size:12.5px;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);background:var(--surface-2);white-space:nowrap}
+tbody tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right;font-family:"IBM Plex Mono",monospace;font-size:13px}
+th.num{white-space:nowrap}
+td.num{white-space:normal;min-width:90px}
+td .mono{white-space:nowrap}
+.table-wrap.compact th,.table-wrap.compact td{padding:7px 10px;font-size:13.5px}
+caption{caption-side:bottom;text-align:left;font-size:12.5px;color:var(--muted);padding:8px 12px 10px}
+/* callouts */
+.callout{border:1px solid var(--line);border-left:4px solid var(--accent);background:var(--surface);border-radius:8px;padding:14px 18px;margin:18px 0;box-shadow:var(--shadow)}
+.callout .ttl{font-family:"Bricolage Grotesque",sans-serif;font-weight:600;font-size:15px;margin-bottom:6px;color:var(--ink)}
+.callout p:last-child{margin-bottom:0}
+.callout.warn{border-left-color:var(--amber)}
+.callout.warn .ttl{color:var(--amber)}
+.callout.risk{border-left-color:var(--red)}
+.callout.risk .ttl{color:var(--red)}
+.callout.ok{border-left-color:var(--green)}
+.callout.ok .ttl{color:var(--green)}
+.src{font-size:12.5px;color:var(--muted)}
+.src a{color:var(--muted)}
+/* cards grid */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin:16px 0 22px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow)}
+.card h4{margin-top:0}
+.card p{font-size:14.5px;color:var(--ink-2)}
+.card p:last-child{margin-bottom:0}
+.card .k{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px}
+/* fiche mock */
+.fiche{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;margin:18px 0 26px}
+.fiche .top{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line-2);background:var(--surface-2)}
+.fiche .search{flex:1 1 260px;display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-family:"IBM Plex Mono",monospace;font-size:14px;color:var(--ink)}
+.fiche .search .cur{display:inline-block;width:1px;height:16px;background:var(--accent);animation:blink 1.1s steps(2) infinite}
+@keyframes blink{to{opacity:0}}
+@media (prefers-reduced-motion: reduce){ .fiche .search .cur{animation:none} }
+.fiche .body{display:grid;grid-template-columns:1fr;gap:0}
+@media (min-width:760px){ .fiche .body{grid-template-columns:1.1fr 1fr} }
+.fiche .col{padding:18px 20px}
+.fiche .col + .col{border-top:1px solid var(--line-2)}
+@media (min-width:760px){ .fiche .col + .col{border-top:0;border-left:1px solid var(--line-2)} }
+.fiche .name{font-family:"Bricolage Grotesque",sans-serif;font-size:20px;font-weight:600;margin:0 0 4px}
+.fiche dl{display:grid;grid-template-columns:max-content 1fr;gap:5px 14px;margin:12px 0 0;font-size:13.5px}
+.fiche dt{color:var(--muted)}
+.fiche dd{margin:0;font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--ink)}
+.fiche .lbl{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+.fiche ul.obl{list-style:none;margin:0;padding:0;display:grid;gap:7px}
+.fiche ul.obl li{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13.5px;padding:8px 10px;border:1px solid var(--line-2);border-radius:8px;background:var(--bg)}
+.fiche ul.obl li > span:first-child{flex:1 1 auto;min-width:0}
+.fiche ul.obl li .pill{flex:none}
+.fiche ul.obl li .d{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--muted);white-space:nowrap}
+.fiche .docs{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.fiche .docs span{font-size:12.5px;border:1px solid var(--line);background:var(--surface-2);border-radius:6px;padding:3px 8px;color:var(--ink-2)}
+.fiche .docs span.miss{border-style:dashed;color:var(--red);background:var(--red-soft);border-color:var(--red-line)}
+/* kpi row */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0 22px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.kpi .v{font-family:"IBM Plex Mono",monospace;font-size:22px;font-weight:500;letter-spacing:-.02em}
+.kpi .l{font-size:12.5px;color:var(--muted);margin-top:2px;line-height:1.3}
+.kpi .v.red{color:var(--red)} .kpi .v.green{color:var(--green)} .kpi .v.amber{color:var(--amber)}
+/* pricing */
+.pricing{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:16px 0 22px}
+.plan{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;box-shadow:var(--shadow);position:relative}
+.plan.hi{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft), var(--shadow)}
+.plan .nm{font-family:"Bricolage Grotesque",sans-serif;font-weight:600;font-size:17px}
+.plan .pr{font-family:"IBM Plex Mono",monospace;font-size:26px;font-weight:500;margin:8px 0 2px;letter-spacing:-.02em}
+.plan .pr small{font-size:12px;color:var(--muted);font-weight:400;letter-spacing:0}
+.plan .for{font-size:13px;color:var(--muted);margin-bottom:10px}
+.plan ul{margin:0;padding-left:18px;font-size:13.5px;color:var(--ink-2)}
+.plan li{margin:3px 0}
+.plan .tag{position:absolute;top:-10px;right:14px}
+/* timeline */
+.timeline{list-style:none;margin:16px 0 22px;padding:0;display:grid;gap:10px}
+.timeline li{display:grid;grid-template-columns:110px 1fr;gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+@media (max-width:560px){ .timeline li{grid-template-columns:1fr} }
+.timeline .when{font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--accent-ink);padding-top:2px}
+.timeline .what b{display:block;font-weight:600;margin-bottom:3px}
+.timeline .what{font-size:14.5px;color:var(--ink-2)}
+/* two col */
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px 28px}
+/* steps */
+ol.steps{counter-reset:s;list-style:none;padding:0;margin:14px 0 22px;display:grid;gap:8px}
+ol.steps li{counter-increment:s;display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:start;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:14.5px}
+ol.steps li::before{content:counter(s);font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--accent-ink);background:var(--accent-soft);border:1px solid var(--accent-line);border-radius:8px;width:30px;height:30px;display:grid;place-items:center}
+ol.steps li b{display:block;margin-bottom:2px}
+/* footer */
+footer{margin-top:64px;padding-top:20px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+.legend{display:flex;flex-wrap:wrap;gap:8px 14px;margin:8px 0 18px;font-size:13px;color:var(--ink-2);align-items:center}
+details{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 16px;margin:12px 0}
+summary{cursor:pointer;font-weight:600;font-family:"Bricolage Grotesque",sans-serif}
+details[open] summary{margin-bottom:8px}
+.darija{font-style:italic;color:var(--ink-2)}
+.hero{padding-bottom:8px}
+</style>
+
+<div class="page">
+<header class="hero">
+  <div class="eyebrow">Plan de lancement · Maroc · septembre 2026 · document de travail</div>
+  <h1>Daftar<span style="color:var(--muted);font-weight:500"> — la fiche client qui remplace le dossier papier des cabinets comptables</span></h1>
+  <p class="lede">Une plateforme pour les comptables agréés, les experts-comptables et leurs cabinets au Maroc : on tape le nom du client, sa fiche apparaît avec ses identifiants, ses documents scannés et l'état de chacune de ses obligations. Ce qui est en retard est en rouge. Ce plan rassemble la recherche de marché, les règles métier à coder, le produit, le modèle économique et le plan d'acquisition pour viser la première place au Maroc.</p>
+  <div class="meta">
+    <span>Nom de code : <b>Daftar</b> (دفتر, « le registre ») — provisoire, à vérifier à l'OMPIC et en .ma</span>
+    <span>Cible : <b>cabinets inscrits (OPCA, OEC) de 1 à 15 personnes</b></span>
+    <span>Base : <b>7 volets de recherche web + vérification des règles fiscales</b></span>
+  </div>
+  <div class="stats">
+    <div class="stat"><b>887 + ~4 000</b><span>experts-comptables inscrits à l'OEC (avril 2026) et comptables agréés déclarés par l'OPCA (2025) ; 1 232 comptables agréés vérifiés sur la liste électorale de 2023</span><span class="src">OEC, OPCA, liste électorale OPCA 2023</span></div>
+    <div class="stat"><b>380 230</b><span>sociétés (personnes morales) actives, dont 86,6 % de micro-entreprises</span><span class="src">OMTPME, édition 2025</span></div>
+    <div class="stat"><b>109 656</b><span>entreprises créées en 2025 (+14,6 %), chacune un nouveau dossier pour un cabinet</span><span class="src">OMPIC, bilan 2025</span></div>
+    <div class="stat"><b>463 000</b><span>auto-entrepreneurs inscrits fin 2025, moins de 10 % déclarent régulièrement</span><span class="src">DGI, rapport 2025</span></div>
+  </div>
+  <ol class="toc-inline">
+    <li><a href="#s1"><span class="n">01</span>Résumé exécutif</a></li>
+    <li><a href="#s2"><span class="n">02</span>Le métier de cabinet comptable au Maroc</a></li>
+    <li><a href="#s3"><span class="n">03</span>Les clients et leur dossier</a></li>
+    <li><a href="#s4"><span class="n">04</span>Le calendrier des obligations</a></li>
+    <li><a href="#s5"><span class="n">05</span>Concurrence et espace libre</a></li>
+    <li><a href="#s6"><span class="n">06</span>Cadre légal et technique</a></li>
+    <li><a href="#s7"><span class="n">07</span>Le produit</a></li>
+    <li><a href="#s8"><span class="n">08</span>Architecture et sécurité</a></li>
+    <li><a href="#s9"><span class="n">09</span>Modèle économique et prix</a></li>
+    <li><a href="#s10"><span class="n">10</span>Aller au marché</a></li>
+    <li><a href="#s11"><span class="n">11</span>Équipe, coûts et prévisions</a></li>
+    <li><a href="#s12"><span class="n">12</span>Feuille de route</a></li>
+    <li><a href="#s13"><span class="n">13</span>Risques et parades</a></li>
+    <li><a href="#s14"><span class="n">14</span>À valider sur le terrain</a></li>
+  </ol>
+</header>
+
+<div class="layout">
+<nav class="toc" aria-label="Sommaire">
+  <div class="t">Sommaire</div>
+  <ol>
+    <li><a href="#s1"><span class="n">01</span>Résumé exécutif</a></li>
+    <li><a href="#s2"><span class="n">02</span>Le métier au Maroc</a></li>
+    <li><a href="#s3"><span class="n">03</span>Clients et dossier</a></li>
+    <li><a href="#s4"><span class="n">04</span>Calendrier des obligations</a></li>
+    <li><a href="#s5"><span class="n">05</span>Concurrence</a></li>
+    <li><a href="#s6"><span class="n">06</span>Cadre légal et technique</a></li>
+    <li><a href="#s7"><span class="n">07</span>Le produit</a></li>
+    <li><a href="#s8"><span class="n">08</span>Architecture et sécurité</a></li>
+    <li><a href="#s9"><span class="n">09</span>Modèle économique</a></li>
+    <li><a href="#s10"><span class="n">10</span>Aller au marché</a></li>
+    <li><a href="#s11"><span class="n">11</span>Équipe et prévisions</a></li>
+    <li><a href="#s12"><span class="n">12</span>Feuille de route</a></li>
+    <li><a href="#s13"><span class="n">13</span>Risques</a></li>
+    <li><a href="#s14"><span class="n">14</span>À valider</a></li>
+  </ol>
+</nav>
+<main>
+<section class="sec" id="s1">
+  <div class="sec-head"><span class="num">01</span><h2>Résumé exécutif</h2></div>
+  <div class="prose">
+  <p><strong>Le constat.</strong> Le Maroc compte 887 experts-comptables et entre 1 232 et 4 000 comptables agréés selon la source, qui tiennent les comptes de 380 230 sociétés actives, de 463 000 auto-entrepreneurs et de dizaines de milliers d'associations et de coopératives. Presque tous ont un logiciel comptable ; presque aucun n'a d'outil pour gérer le cabinet lui-même : les dossiers vivent dans un fichier Excel par client, des classeurs et des conversations WhatsApp. Le segment « gestion de cabinet » est quasi vide : un seul acteur marocain affiche un prix, et il n'a ni documents, ni suivi des obligations.</p>
+  <p><strong>Le produit.</strong> Daftar est une fiche client unique pour chaque dossier du cabinet : on tape un nom, la fiche apparaît avec son type (personne physique ou morale, SARL, association, auto-entrepreneur, CPU, particulier), ses identifiants, ses documents scannés, et surtout l'état de chacune de ses obligations, calculé par un moteur de règles fondé sur le Code général des impôts 2026, la CNSS et les lois de sociétés, et vérifié article par article. Ce qui est déclaré et payé est vert ; ce qui est dépassé sans preuve est rouge, avec le coût estimé de la pénalité. Autour de ce cœur : les honoraires et les impayés, la clôture annuelle, les tâches de chaque collaborateur, les identifiants de portails sans mot de passe, et un tableau de bord qui montre les nouveaux clients, les retards, le revenu et la marge estimée par dossier. Daftar ne remplace pas Sage ou KHABIR ; il se pose au-dessus.</p>
+  <p><strong>Pourquoi maintenant.</strong> La DGI a réalisé 82 017 contrôles sur pièces en 2025, un tiers de plus qu'en 2024, et croise les données. Les pannes de SIMPL et de DAMANCOM en 2025 ont produit des pénalités automatiques. La loi 53-19 a fermé, le 21 août 2025, la période transitoire des comptables sans titre : toute entreprise sans comptable salarié doit désormais passer par un expert-comptable ou un comptable agréé, et des milliers de comptables agréés récemment régularisés n'ont ni process ni outil. Chaque cabinet a besoin d'une preuve qu'il a fait ce qu'il fallait, à la date où il le fallait.</p>
+  <p><strong>La cible et le prix.</strong> Les comptables agréés et les experts-comptables inscrits, cabinets de 1 à 5 personnes, à Casablanca puis à Rabat, Tanger, Marrakech, Fès et Agadir, où exercent plus de la moitié des comptables agréés. Pas les fiduciaires sans titre, dont l'exercice est devenu illégal. Trois plans publics en dirhams, par palier de dossiers : 199, 449 et 899 MAD HT par mois, annuel pour le prix de dix mois, sous le seuil des 1 000 DH que les cabinets pratiquent eux-mêmes. Un mois d'abonnement coûte moins qu'une seule majoration de TVA évitée.</p>
+  <p><strong>Le plan.</strong> Septembre à novembre 2026 : entretiens en cabinet, dix précommandes payantes à 990 DH pour six mois avant d'écrire une ligne de code, SARL, formalités CNDP, associé technique et référent comptable au capital, dossiers Innov Invest et Startup VB déposés. Novembre à janvier : construction du socle (huit modules, douze règles). Février à avril 2027 : version pilote entre les mains des dix cabinets pendant la saison des bilans, avec un objectif de zéro échéance fausse. Mai 2027 : v1 payante et témoignages de cabinets qui ont passé un 31 mars avec l'outil. Septembre 2027 : première campagne publicitaire complète, une fois 40 cabinets payants atteints. Objectifs : 100 à 130 cabinets un an après la v1, 300 à 400 cabinets et la première place à deux ans, avec un budget de 500 000 à 600 000 MAD jusqu'à 100 cabinets, financé par un apport, les prêts d'honneur publics et les abonnements encaissés d'avance.</p>
+  <p><strong>Ce qui peut faire échouer le projet.</strong> Une règle d'échéance fausse ; un fichier client avec des numéros de CIN qui impose une autorisation CNDP de deux mois à chaque cabinet ; un cabinet qui refuse de confier les pièces de ses clients à un tiers ; un fondateur qui dépend d'un développeur payé au mois. D'où cinq décisions non négociables : héberger les données au Maroc et se déclarer à la CNDP dès le premier jour, avec une fiche client sans numéro de CIN par défaut ; faire signer chaque règle par un comptable agréé ou un expert-comptable référent et garder les règles dans une table versionnée ; n'accepter que des cabinets inscrits ; prendre un associé technique au capital ; ne jamais se présenter comme un prestataire comptable.</p>
+  <p><strong>Ce qui reste à confirmer</strong> (section 14) : l'échéance exacte de DAMANCOM, le décompte réel des comptables agréés, l'éligibilité d'un abonnement à la subvention Maroc PME, ce qu'un tiers déclarant peut vraiment faire sur SIMPL et DAMANCOM, et surtout, par quinze à vingt entretiens, le taux d'impayés et la volonté de payer des cabinets de province.</p>
+  </div>
+</section>
+
+<section class="sec" id="s2">
+  <div class="sec-head"><span class="num">02</span><h2>Le métier de cabinet comptable au Maroc</h2></div>
+  <p class="sec-sub">Qui sont les cabinets, ce qu'ils vendent, comment ils s'organisent et ce qui leur fait mal. C'est la base de tout le produit.</p>
+
+  <div class="prose">
+  <h3>Trois étages de professionnels</h3>
+  <p>Le marché n'est pas un bloc. Il y a trois catégories, avec des droits, des effectifs et des besoins différents. Les deux premières sont réglementées ; la troisième tenait une grande partie des petites entreprises jusqu'à l'été 2025, mais la loi ne lui laisse plus de place : depuis le 21 août 2025, fin de la période transitoire de la loi 53-19, tenir des comptes ou établir des déclarations pour des tiers sans inscription est un exercice illégal.</p>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Catégorie</th><th>Cadre</th><th>Effectifs</th><th>Ce qu'ils peuvent faire</th><th>Ce que ça veut dire pour nous</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Expert-comptable</strong> (OEC)</td><td>Loi 15-89 ; Ordre avec conseil national à Casablanca et 6 conseils régionaux</td><td>807 (2024)<br>~887 (avr. 2026)</td><td>Monopole du commissariat aux comptes et de la certification ; tenue, fiscal, conseil. 88 % à Casablanca et Rabat, cabinets de 5 à 20 personnes déjà équipés (Sage Expert).</td><td>Cible secondaire, prescripteurs et image ; le congrès annuel de l'OEC est la vitrine du secteur.</td></tr>
+        <tr><td><strong>Comptable agréé</strong> (OPCA)</td><td>Loi 127-12 (2015) modifiée par la loi 53-19 ; régularisation close le 20 août 2025 ; assurance RC obligatoire (art. 14), publicité personnelle interdite (art. 17)</td><td>1 232 personnes physiques (liste électorale 2023, vérifiée)<br>« 4 000 » déclarés par l'OPCA (2025)<br>3 934 selon une étude citant les listes MEF 2024</td><td>Tenir, arrêter et redresser les comptabilités, déclarations, conseil juridique et fiscal, représentation devant la DGI ; pas de certification ni de commissariat aux comptes. Aucun seuil de chiffre d'affaires ne limite leurs clients. Plus de la moitié exercent hors de Casablanca et Rabat (Tanger 170, Marrakech 167, Fès 157, Agadir 131 sur la liste de 2023).</td><td><strong>Cible principale</strong> : récemment régularisés, souvent 1 à 5 personnes, sans outil de gestion, en province. La loi leur donne un marché : toute entreprise sans comptable salarié doit recourir à un expert-comptable ou à un comptable agréé (art. 1<sup>er</sup>).</td></tr>
+        <tr><td><strong>Fiduciaires non inscrites</strong></td><td>Depuis le 21 août 2025 : exercice illégal pour la tenue de comptes et les déclarations de tiers (art. 98 de la loi 127-12, peines de l'art. 381 du code pénal, fermeture des locaux possible sur plainte du conseil régional, art. 100) ; l'appellation « fiduciaire comptable » leur est interdite (art. 3)</td><td>nombre réel inconnu<br>(~1 200 patentés recalés ; « &gt; 4 000 fiduciaires » selon un éditeur, chiffre non officiel)</td><td>Reste licite : domiciliation (loi 89-17), salariat chez un cabinet inscrit ou dans une entreprise ; zone grise pour les formalités de création. Prix bas (« moins de 1 000 DH/mois »), frais cachés en fin d'exercice.</td><td><strong>Pas une cible commerciale</strong> : vendre sciemment à des non-inscrits exposerait Daftar à une plainte de l'OPCA. À servir en mode « collaborateur d'un cabinet inscrit ». Les conditions générales exigeront le numéro d'inscription OPCA ou OEC.</td></tr>
+      </tbody>
+      <caption>Sources : loi 15-89 (SGG), loi 127-12 (traduction officielle, BO 6632) et loi 53-19 (BO 6966) lues intégralement, liste électorale OPCA du 25 octobre 2023, page d'accueil opca.ma (2025), rapport OEC 2024 cité par la Revue ISG, le360 (août 2022). Le tableau national OPCA du 19 septembre 2025 était inaccessible pendant la recherche.</caption>
+    </table>
+  </div>
+
+  <div class="prose">
+  <h3>Ce qu'un cabinet vend, et à quel prix</h3>
+  <p>Le socle est le même partout : tenue de la comptabilité (saisie, classement, archivage des pièces), déclarations TVA, IS et IR, paie et CNSS via DAMANCOM, juridique courant (PV, assemblées, modifications statutaires), création de société et domiciliation, bilan et liasse fiscale, un peu de conseil. Le commissariat aux comptes est réservé aux experts-comptables et devient obligatoire pour une SARL au-delà de 50 millions de dirhams de chiffre d'affaires.</p>
+  <p>Il n'existe <strong>aucun barème officiel d'honoraires</strong> : le Conseil de la concurrence a sanctionné l'OEC en 2022 pour son tarif horaire minimum et l'Ordre l'a retiré en novembre 2023. Chaque cabinet fixe ses prix. Les fourchettes observées sur les sites de cabinets et de plateformes en 2026 :</p>
+  </div>
+  <div class="table-wrap compact">
+    <table>
+      <thead><tr><th>Type de client</th><th class="num">Forfait mensuel HT observé (MAD)</th><th>Remarque</th></tr></thead>
+      <tbody>
+        <tr><td>Auto-entrepreneur</td><td class="num">0 – 200 (jusqu'à 300 – 1 000 à Marrakech)</td><td>Beaucoup ne prennent pas de comptable ; segment à faible marge</td></tr>
+        <tr><td>SARL, CA &lt; 500 000</td><td class="num">500 – 900</td><td>Le cœur des fiduciaires</td></tr>
+        <tr><td>SARL, CA 0,5 – 2 M</td><td class="num">900 – 1 800</td><td></td></tr>
+        <tr><td>SARL, CA 2 – 10 M</td><td class="num">1 800 – 4 500</td><td>3 000 – 8 000 chez un expert-comptable</td></tr>
+        <tr><td>SARL / SA, CA 10 – 50 M</td><td class="num">4 500 – 10 000</td><td>Jusqu'à 15 000 pour les PME suivies par un cabinet OEC</td></tr>
+        <tr><td>Paie externalisée</td><td class="num">100 – 300 par bulletin</td><td></td></tr>
+        <tr><td>Création de SARL (pack)</td><td class="num">2 450 – 4 350 (une fois)</td><td>Domiciliation 80 – 150 / mois</td></tr>
+      </tbody>
+      <caption>Sources : jobsquare.ma (2026), amde-marrakech.ma, guide-casa.ma, Upsilon Consulting, maison-entrepreneur.com, fidutraco.com. TVA de 20 % en sus. Aucun tarif public trouvé pour les associations et les particuliers.</caption>
+    </table>
+  </div>
+  <div class="prose">
+  <p>Les fiduciaires facturent surtout en <strong>abonnement mensuel</strong> ; les experts-comptables préfèrent le forfait annuel, le forfait par mission (bilan, création) et le taux horaire pour le conseil, avec une lettre de mission. Un cabinet de 30 dossiers encaisse donc entre 20 000 et 50 000 MAD par mois : un outil à 1 à 3 % de ce montant est absorbable.</p>
+  <div class="callout warn"><div class="ttl">Impayés : pas de chiffre public</div><p>Aucune source marocaine ne chiffre les honoraires impayés ni les modes d'encaissement (espèces, chèque, virement). C'est pourtant la base du module « honoraires en rouge ». À mesurer dans les 20 entretiens de terrain (section 14).</p></div>
+
+  <h3>Comment un cabinet s'organise</h3>
+  <p>Un cabinet type de province compte 1 à 5 personnes ; les cabinets « intermédiaires » de Casablanca (Racine, Gauthier, Maârif) 5 à 20. Les rôles sont stables et deviendront nos rôles applicatifs :</p>
+  <ul>
+    <li><strong>Gérant signataire</strong> (expert-comptable ou comptable agréé) : relation client, signature, encaissement.</li>
+    <li><strong>Chef de mission</strong> : encadre, revoit TVA, acomptes IS, liasses.</li>
+    <li><strong>Comptable confirmé</strong> : portefeuille autonome de dossiers (5 ans d'expérience demandés dans les annonces).</li>
+    <li><strong>Aide-comptable / assistant</strong> : saisie, classement, pointage (3 000 à 6 000 MAD/mois).</li>
+    <li><strong>Stagiaire</strong> : classement, déclarations simples ; stage de 2 ans pour devenir comptable agréé, 3 ans pour expert-comptable.</li>
+  </ul>
+  <p>Les salaires en cabinet sont plus bas qu'en entreprise (comptable confirmé 6 000 à 10 000 MAD) et beaucoup partent après 4 à 7 ans : <strong>le savoir sur chaque dossier part avec eux</strong>. Un journal d'activité par dossier est donc une vraie valeur, pas un gadget.</p>
+
+  <h3>Où sont les dossiers aujourd'hui</h3>
+  <p>« Un fichier Excel par client », des classeurs papier, des pièces qui arrivent par WhatsApp, e-mail et clé USB. Un éditeur marocain estime que les cabinets passent jusqu'à 20 % de leur temps à chercher des documents et que moins de 35 % ont amorcé une vraie transition numérique en 2025 (chiffres d'éditeur, non vérifiés). Le logiciel comptable, lui, existe presque toujours : Sage 100 ou Sage Expert (12 000 à 25 000 MAD/an), KHABIR (5 000 à 12 000), EBP, AGL, Odoo. <strong>Il sert à produire les écritures, pas à gérer le cabinet.</strong> C'est exactement la couche qui manque.</p>
+
+  <h3>Le calendrier dicte la charge de travail</h3>
+  <p>Le rythme d'un cabinet est imposé par l'administration : le 10 de chaque mois pour la CNSS, la fin de chaque mois pour la TVA mensuelle, le 31 janvier pour la déclaration des éléments de la taxe professionnelle et la TVA du 4<sup>e</sup> trimestre, le 31 mars pour les liasses et le reliquat d'IS (le pic absolu), le 30 avril pour l'IR des professionnels, le 30 juin pour les assemblées d'approbation des comptes. Janvier à mars concentre les recrutements et les nuits blanches. La section 04 détaille chaque échéance.</p>
+
+  <h3>Ce qui fait mal, par ordre d'importance</h3>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Douleur</th><th>Preuves trouvées</th><th>Réponse produit</th></tr></thead>
+      <tbody>
+        <tr><td class="num">1</td><td><strong>Stress des échéances et pannes des portails</strong></td><td>SIMPL « difficilement accessible, voire totalement indisponible » dans les dernières heures de la TVA du 30 avril 2025 ; DAMANCOM basculé de force vers Mon e-ID en juillet 2025, échéance de juin repoussée au 17 puis au 21 juillet ; pénalités automatiques (5 %, 15 %, 20 % ; CNSS 3 % puis 0,5 %/mois).</td><td>Moteur d'obligations avec vue « ce qui n'est pas déposé à J-1 », journal des tentatives horodatées en cas de panne pour la demande de remise gracieuse.</td></tr>
+        <tr><td class="num">2</td><td><strong>Collecte et relance des pièces</strong></td><td>Pièces reçues par photo WhatsApp, e-mail, USB ; jusqu'à 20 % du temps passé à chercher des documents.</td><td>Collecte guidée par période, relances automatiques WhatsApp/SMS, scan mobile classé directement dans le bon dossier.</td></tr>
+        <tr><td class="num">3</td><td><strong>Contrôle fiscal massifié par la donnée</strong></td><td>DGI 2025 : 82 017 contrôles sur pièces (+35 %), 7 133 sur place, 20,9 milliards de DH recouvrés ; recoupements automatiques et registre des entreprises inactives.</td><td>Le « rouge » devient compréhensible pour un gérant ; plus tard un radar de cohérence (CA TVA vs CA IS, masse salariale DNS vs état 9421).</td></tr>
+        <tr><td class="num">4</td><td><strong>Le dirigeant ne voit rien</strong></td><td>Signaux d'une mauvaise fiduciaire cités par les guides clients : retards, erreurs, interlocuteur injoignable, factures gonflées en fin d'exercice, pas de lettre de mission.</td><td>Portail client mobile en arabe et français : statut des obligations, pièces attendues, factures d'honoraires.</td></tr>
+        <tr><td class="num">5</td><td><strong>Outils fragmentés, archives papier</strong></td><td>Excel + logiciel comptable isolé + chèques manuscrits ; conservation obligatoire 10 ans.</td><td>Coffre documentaire par client, recherche plein texte, hash et horodatage, export complet en un clic.</td></tr>
+        <tr><td class="num">6</td><td><strong>Accès mandataire aux portails</strong></td><td>DAMANCOM exige la CNIE biométrique et Mon e-ID ; création d'un utilisateur mandataire par formulaire papier déposé à l'agence CNSS (48 h) ; non-résidents exclus.</td><td>Registre chiffré des accès et mandats par client (qui a l'e-ID, date d'activation, formulaires ADC920/930/940 archivés), sans jamais stocker de mot de passe en clair.</td></tr>
+        <tr><td class="num">7</td><td><strong>Turnover et perte de savoir</strong></td><td>Départs fréquents après 4-7 ans ; pics de recrutement en octobre-novembre et février-mars.</td><td>Journal d'activité et notes par dossier, checklist de reprise de dossier.</td></tr>
+        <tr><td class="num">8</td><td><strong>Nouvelles obligations 2026-2027</strong></td><td>Facturation électronique (art. 145-IX CGI, décret non publié au 1<sup>er</sup> juin 2026), déclaration des délais de paiement (loi 69-21), fichier des écritures comptables.</td><td>Étiquette « vague e-facturation » sur chaque fiche selon le CA ; changelog réglementaire visible.</td></tr>
+        <tr><td class="num">9</td><td><strong>Attestations et dépôts</strong></td><td>Attestation de régularité fiscale valable moins de 6 mois, sinon retenue de TVA à 100 % chez les clients ; dépôt des états de synthèse sous 30 jours après l'assemblée, amende 10 000 à 50 000 DH.</td><td>Suivi des attestations avec alerte 30 jours avant expiration ; compte à rebours assemblée → greffe.</td></tr>
+        <tr><td class="num">10</td><td><strong>Honoraires flous ou impayés</strong></td><td>Pas de donnée chiffrée ; indices : offres floues, notes d'honoraires sans TVA.</td><td>Lettre de mission, facturation récurrente, balance des impayés en rouge, relances, blocage des livrables tant que la facture n'est pas réglée.</td></tr>
+      </tbody>
+      <caption>Sources : lodj.ma (30/04/2025), le360 et Challenge (juillet 2025), rapport d'activité DGI 2025 (finances.gov.ma), experio.ma, mylegal.ma, alaouiadvisory.com, jobsquare.ma, chy.ma.</caption>
+    </table>
+  </div>
+  <div class="prose">
+  <div class="callout"><div class="ttl">Ce que la DGI fait déjà, et que nous devons dépasser</div><p>La DGI envoie des e-mails de rappel quelques jours avant chaque échéance et relance les défaillants dans les 7 jours qui suivent. Elle publie chaque mois ses « obligations déclaratives ». Notre valeur n'est pas de rappeler une date : c'est de la rappeler <em>par client, par régime, avec la pièce à produire, la personne responsable et la preuve de dépôt</em>, et de montrer en rouge ce qui manque.</p></div>
+  </div>
+</section>
+<section class="sec" id="s3">
+  <div class="sec-head"><span class="num">03</span><h2>Les clients du cabinet et leur dossier</h2></div>
+  <p class="sec-sub">La « fiche client » est le cœur du produit. Elle doit savoir qui est le client, sous quel régime il est imposé, quels identifiants et documents il doit avoir, et quels événements rythment sa vie.</p>
+
+  <div class="fiche" aria-label="Maquette de fiche client">
+    <div class="top">
+      <div class="search"><span style="color:var(--muted)">⌕</span><span>Benali Trading SARL AU<span class="cur"></span></span></div>
+      <span class="pill accent plain">Personne morale · SARL AU</span>
+      <span class="pill green">Responsable : Salma</span>
+    </div>
+    <div class="body">
+      <div class="col">
+        <p class="name">Benali Trading SARL AU</p>
+        <p class="src">Commerce de gros · exercice au 31/12 · TVA trimestrielle · employeur (3 salariés)</p>
+        <dl>
+          <dt>ICE</dt><dd>002 345 678 000 041</dd>
+          <dt>IF</dt><dd>51 234 567</dd>
+          <dt>RC</dt><dd>Casablanca 512 344</dd>
+          <dt>Taxe pro.</dt><dd>34 567 890 · exonérée jusqu'en 2028</dd>
+          <dt>CNSS</dt><dd>affilié 9 876 543 · DAMANCOM délégué</dd>
+          <dt>Gérant</dt><dd>Youssef Benali · CIN BK 123 456</dd>
+          <dt>Honoraires</dt><dd>1 200 MAD HT / mois · <span class="pill red">2 factures impayées</span></dd>
+        </dl>
+        <p class="lbl" style="margin-top:16px">Dossier permanent</p>
+        <div class="docs"><span>Statuts</span><span>PV nomination gérant</span><span>Modèle J (03/2026)</span><span>Attestation TP</span><span>Contrat de bail</span><span>CIN gérant</span><span>Attestation CNSS</span><span class="miss">Attestation de régularité fiscale — expirée</span><span class="miss">Lettre de mission — non signée</span></div>
+      </div>
+      <div class="col">
+        <p class="lbl">Obligations 2026</p>
+        <ul class="obl">
+          <li><span>TVA T2 2026 (avril-juin)</span><span class="d">31/07</span><span class="pill red">déclarée · non payée</span></li>
+          <li><span>CNSS · salaires d'août</span><span class="d">10/09</span><span class="pill amber">J-8 · pièces manquantes</span></li>
+          <li><span>2<sup>e</sup> acompte IS</span><span class="d">30/06</span><span class="pill green">payé · reçu SIMPL</span></li>
+          <li><span>Dépôt des comptes 2025 au greffe</span><span class="d">30 j après AGO</span><span class="pill red">AGO non tenue</span></li>
+          <li><span>3<sup>e</sup> acompte IS</span><span class="d">30/09</span><span class="pill">à venir</span></li>
+        </ul>
+        <p class="src" style="margin-top:12px">Pénalités estimées si rien n'est fait : TVA 20 % + 5 % + 0,5 %/mois ; comptes non déposés 10 000 à 50 000 DH.</p>
+      </div>
+    </div>
+  </div>
+  <p class="src" style="margin-top:-14px">Maquette illustrative. Les identifiants sont fictifs ; les règles de calcul des statuts sont détaillées en section 04.</p>
+
+  <div class="prose">
+  <h3>Typologie : personne physique ou personne morale, puis le sous-type</h3>
+  <p>Le champ « type » a deux niveaux. Le sous-type pilote tout le reste : identifiants obligatoires, documents attendus, obligations générées, portails utilisés. Les régimes ci-dessous sont ceux de 2026 (loi de finances n° 50-25, CGI 2026).</p>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Sous-type</th><th>Régime fiscal 2026</th><th>Seuils et taux clés</th><th>Rythme principal</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Personne morale</strong> : SARL, SARL AU, SA, SAS, SNC, succursale, GIE</td><td>IS 20 % (bénéfice &lt; 100 M MAD), 35 % au-delà, 40 % banques et assurances ; cotisation minimale 0,25 % du CA (min. 3 000 MAD), exonérée 36 mois après le début d'activité</td><td>4 acomptes de 25 % ; liasse dans les 3 mois de la clôture ; contribution sociale de solidarité de 1,5 à 5 % au-delà de 1 M MAD de bénéfice (2026-2028)</td><td>TVA mensuelle si CA ≥ 1 M MAD, trimestrielle sinon ; CNSS chaque mois si employeur</td></tr>
+        <tr><td><strong>Personne physique professionnelle</strong> : RNR ou RNS (commerçant, artisan, profession libérale)</td><td>IR au barème (0 à 37 %) ; RNS sur option si CA ≤ 2 M MAD (commerce, industrie, artisanat) ou ≤ 500 000 MAD (services) ; cotisation minimale 1 500 MAD (taux de 4 % pour les professions libérales)</td><td>Passage automatique au RNR après 2 exercices de dépassement</td><td>Déclaration annuelle du revenu global avant le 1<sup>er</sup> mai ; TVA et CNSS selon le cas</td></tr>
+        <tr><td><strong>CPU</strong> (contribution professionnelle unique)</td><td>10 % sur CA × coefficient du secteur, plus un droit complémentaire AMO de 1 200 à 14 400 MAD/an</td><td>CA ≤ 2 M MAD (commerce, industrie, artisanat) ou ≤ 500 000 MAD (services) ; professions réglementées exclues (décret 2-08-124)</td><td>Déclaration annuelle avant le 1<sup>er</sup> avril sur SIMPL-CPU ; paiement annuel ou en 4 versements</td></tr>
+        <tr><td><strong>Auto-entrepreneur</strong> (loi 114-13)</td><td>0,5 % du CA (commerce, industrie, artisanat) ou 1 % (services), libératoire ; hors champ TVA ; taxe professionnelle exonérée 5 ans</td><td>Plafonds 500 000 / 200 000 MAD ; retenue de 30 % par le client sur la part du CA annuel &gt; 80 000 MAD avec un même client ; radiation après 2 ans de dépassement</td><td>Déclaration mensuelle ou trimestrielle du CA avant la fin du mois suivant, même à zéro (rn.ae.gov.ma, Barid Al Maghrib)</td></tr>
+        <tr><td><strong>Association</strong> (dahir 1958, loi 75-00)</td><td>Exonérée d'IS pour ses activités non lucratives à gestion désintéressée ; activités commerciales imposables avec comptabilité séparée</td><td>Récépissé provisoire puis définitif (60 jours) ; comptes à fournir si subventions publiques &gt; 10 000 MAD ; rapport certifié par un expert-comptable si utilité publique</td><td>AG annuelle ; tout changement de bureau ou de statuts déclaré dans le mois</td></tr>
+        <tr><td><strong>Coopérative</strong> (loi 112-12)</td><td>Exonérée d'IS si CA &lt; 10 M MAD HT ou activité limitée aux matières des membres ; TVA exonérée sans droit à déduction (agricole)</td><td>5 membres minimum, capital 1 000 MAD, immatriculation au registre des coopératives (greffe du tribunal, registre central à l'ODCO)</td><td>Déclarations annuelles obligatoires même si exonérée</td></tr>
+        <tr><td><strong>Syndic de copropriété</strong> (loi 18-00)</td><td>Comptabilité obligatoire à partir de l'exercice 2026 (décret 2.23.700, BO du 31 mars 2025) ; catégories petit / moyen / grand</td><td>Trois catégories (seuils 200 000 et 500 000 MAD, de recettes ou de charges appelées selon les sources, à trancher sur le BO) ; rapport d'un professionnel habilité au commissariat aux comptes au-delà de 1 M MAD de recettes ; conservation 5 ans</td><td>AG annuelle et budget prévisionnel</td></tr>
+        <tr><td><strong>Particulier</strong> (salarié, propriétaire, investisseur)</td><td>IR au barème ; revenus fonciers exonérés ≤ 40 000 MAD, retenue 10 / 15 % ou option libératoire 20 % ; profits immobiliers 20 % (minimum 3 % du prix) ; titres 15 / 20 %</td><td>Charges de famille 600 MAD/personne (max. 3 600) depuis 2026 ; retenue 5 % sur loyers versés par les grandes entreprises dès juillet 2026</td><td>Revenu global avant le 1<sup>er</sup> mars ; profit immobilier déclaré dans les 30 jours</td></tr>
+      </tbody>
+      <caption>Sources : CGI 2026 (articles reproduits sur fiscamaroc.com), Deloitte et Baker Tilly (synthèses LF 2026), indicac.ma, comptable-tanger.com (CPU), Upsilon Consulting (associations, coopératives), chy.ma (syndics). Les points « à confirmer » sont listés en section 14.</caption>
+    </table>
+  </div>
+
+  <div class="prose">
+  <h3>Les identifiants à stocker, avec contrôle de format</h3>
+  <p>Un identifiant manquant sur une facture fait perdre la déductibilité de la charge et de la TVA. La fiche doit donc afficher en rouge tout identifiant obligatoire absent pour le sous-type.</p>
+  </div>
+  <div class="table-wrap compact">
+    <table>
+      <thead><tr><th>Identifiant</th><th>Format et source</th><th>Qui</th></tr></thead>
+      <tbody>
+        <tr><td><strong>ICE</strong></td><td>15 chiffres : 9 (entité) + 4 (établissement) + 2 (clé modulo 97) ; obligatoire sur toute facture</td><td>Toute personne morale, tout professionnel, auto-entrepreneur</td></tr>
+        <tr><td><strong>IF</strong> (identifiant fiscal)</td><td>Attribué par la DGI, à côté de l'ICE sur les factures</td><td>Tous</td></tr>
+        <tr><td><strong>RC</strong> + tribunal</td><td>Registre de commerce (extrait modèle J, valable 3 mois en pratique)</td><td>Sociétés, commerçants</td></tr>
+        <tr><td><strong>N° taxe professionnelle</strong></td><td>8 chiffres ; inscription dans les 30 jours du début d'activité</td><td>Tous les professionnels (intégré dans la CPU)</td></tr>
+        <tr><td><strong>N° affiliation CNSS</strong> + n° d'immatriculation par salarié</td><td>Affiliation dans le mois du début de l'exploitation (décret 2-60-313) ; immatriculation de chaque salarié dans le mois de l'embauche</td><td>Employeurs</td></tr>
+        <tr><td><strong>CIN / titre de séjour</strong></td><td>Gérant, associés, membres du bureau, liquidateur. Le numéro de CIN fait basculer le fichier du cabinet en autorisation préalable CNDP : par défaut, Daftar stocke « CIN vérifiée + date d'expiration » et n'enregistre le numéro qu'en « mode autorisation » (section 06)</td><td>Tous</td></tr>
+        <tr><td><strong>N° et carte auto-entrepreneur</strong></td><td>inscription sur rn.ae.gov.ma, dossier déposé au guichet d'une banque partenaire (Al Barid Bank, Attijariwafa, BMCE, Banque Populaire, CIH, Crédit Agricole, SGMB) ; l'AE reçoit aussi ICE, IF et n° CNSS</td><td>Auto-entrepreneurs</td></tr>
+        <tr><td><strong>Récépissé de déclaration</strong> (n° et date)</td><td>Autorité locale</td><td>Associations</td></tr>
+        <tr><td><strong>N° registre des coopératives / ODCO</strong></td><td>ODCO</td><td>Coopératives</td></tr>
+        <tr><td><strong>Accès portails et mandats</strong></td><td>SIMPL (adhésion ADC920F, utilisateurs ADC930F, prélèvement ADC940F, procuration légalisée), DAMANCOM (Mon e-ID du délégué, délégation de services), directinfo / OMPIC, depotbilan.justice.gov.ma, rn.ae.gov.ma, Rokhas</td><td>Tous, stocké chiffré, accès journalisé</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="prose">
+  <h3>Le dossier permanent : ce que chaque type doit contenir</h3>
+  </div>
+  <div class="cards">
+    <div class="card"><div class="k">SARL / SA / SAS</div><p>Certificat négatif OMPIC, statuts enregistrés, PV de nomination du gérant, attestation de blocage (SARL seulement si capital &gt; 100 000 MAD, SA toujours), contrat de bail ou de domiciliation enregistré, CIN des associés et du gérant, extrait modèle J, attestation de taxe professionnelle, annonces (journal d'annonces légales et BO), attestation d'affiliation CNSS, spécimen de signature, RIB, lettre de mission.</p></div>
+    <div class="card"><div class="k">Auto-entrepreneur</div><p>CIN (ou carte de séjour), photo d'identité 35 × 45 mm, carte d'auto-entrepreneur, attestation d'inscription au registre national, relevés des déclarations de chiffre d'affaires ; RIB et justificatif d'adresse selon la pratique bancaire.</p></div>
+    <div class="card"><div class="k">Association</div><p>Lettre de déclaration, statuts, PV de l'assemblée constitutive, liste des membres du bureau (nom, nationalité, date de naissance, profession, domicile) avec copies des CIN, récépissés provisoire et définitif ; en pratique le contrat de bail du siège ; conventions de subvention et déclaration au SGG des aides étrangères.</p></div>
+    <div class="card"><div class="k">Coopérative / syndic</div><p>Coopérative : statuts, PV constitutif, liste des membres, immatriculation ODCO. Syndic : règlement de copropriété, PV de nomination, budget voté, RIB du compte dédié.</p></div>
+    <div class="card"><div class="k">Personne physique et particulier</div><p>CIN, attestation de taxe professionnelle, adhésion SIMPL, contrats de bail (propriétaire), attestations de salaire, actes de propriété et compromis (profits immobiliers), relevés de titres.</p></div>
+    <div class="card"><div class="k">Pièces à date de validité</div><p>Certificat négatif, modèle J, attestation de régularité fiscale (moins de 6 mois), attestation CNSS, CIN, contrat de domiciliation (renouvelable par tacite reconduction) : chacune porte une date d'expiration qui déclenche une alerte de renouvellement.</p></div>
+  </div>
+
+  <div class="prose">
+  <h3>Les pièces récurrentes que le client doit envoyer</h3>
+  <ul>
+    <li><strong>Chaque mois</strong> : factures d'achat et de vente (avec ICE), relevés bancaires, bulletins ou état de paie, bordereau CNSS, justificatifs de caisse (au-delà de 5 000 MAD par jour et par fournisseur payés en espèces, dans la limite de 50 000 MAD par mois, la charge et la TVA ne sont plus déductibles).</li>
+    <li><strong>Chaque trimestre</strong> : déclaration de l'auto-entrepreneur, acomptes IS, TVA trimestrielle.</li>
+    <li><strong>Chaque année</strong> : inventaire des stocks, contrats (bail, travail, emprunt), avis de taxe professionnelle et de services communaux, quittances de loyer, PV d'assemblée, rapport du commissaire aux comptes le cas échéant, attestations.</li>
+  </ul>
+  <p>C'est cette liste, par sous-type et par période, que le module de collecte enverra au client (WhatsApp, portail) et qu'il relancera jusqu'à réception.</p>
+
+  <h3>Les événements de vie d'un dossier</h3>
+  <p>Un dossier n'est pas seulement un calendrier récurrent. Chaque événement déclenche des formalités à délai, qui doivent devenir des tâches datées :</p>
+  </div>
+  <div class="table-wrap compact">
+    <table>
+      <thead><tr><th>Événement</th><th>Formalités et délais</th></tr></thead>
+      <tbody>
+        <tr><td>Création</td><td>Certificat négatif (230 MAD, 24-48 h), statuts, immatriculation au RC dans les 3 mois, publications dans le mois, inscription à la taxe professionnelle dans les 30 jours, affiliation CNSS dans le mois du début d'exploitation, adhésion SIMPL, déclaration des bénéficiaires effectifs dans le mois de l'immatriculation.</td></tr>
+        <tr><td>Cession de parts, augmentation de capital, changement de gérant, transfert de siège</td><td>PV, acte, enregistrement dans les 30 jours (parts : 4 % ; sociétés à prépondérance immobilière : 5 % depuis 2026), dépôt au greffe, publication, inscription modificative au RC dans le mois, mise à jour du modèle J et des bénéficiaires effectifs. Plus-value du cédant personne physique à déclarer dans les 30 jours.</td></tr>
+        <tr><td>Clôture annuelle</td><td>Liasse dans les 3 mois, AGO dans les 6 mois (documents aux associés 15 jours avant), dépôt des états de synthèse au greffe dans les 30 jours de l'approbation pour une SARL, 2 mois pour une SA (50 MAD, depotbilan.justice.gov.ma).</td></tr>
+        <tr><td>Contrôle fiscal</td><td>Avis reçu au moins 15 jours avant avec la charte du contribuable ; 3 mois (CA ≤ 50 M MAD) ou 6 mois ; 30 jours pour produire les pièces, 30 jours pour répondre à la première notification, 60 jours à la seconde, recours dans les 30 jours ; prescription au 31 décembre de la 4<sup>e</sup> année (10 ans si non déclaré).</td></tr>
+        <tr><td>Changement de régime</td><td>CPU ou RNS → RNR après 2 ans de dépassement ; auto-entrepreneur radié après 2 ans de dépassement ; option CPU à exercer avant le 1<sup>er</sup> mai pour l'année suivante ; passage TVA mensuelle dès que le CA de l'année écoulée atteint 1 M MAD (option mensuelle avant le 31 janvier).</td></tr>
+        <tr><td>Fin d'exonération</td><td>Taxe professionnelle : 5 ans après le début d'activité ; cotisation minimale IS : 36 mois après le début d'exploitation (60 mois maximum après la constitution).</td></tr>
+        <tr><td>Dissolution, radiation</td><td>AGE, liquidateur, publications, clôture, radiation au RC, déclaration de cessation fiscale (délais à confirmer sur une source officielle).</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="prose">
+  <div class="callout"><div class="ttl">Règle produit : le chiffre d'affaires de référence pilote tout</div><p>Le CA de l'année précédente, saisi ou importé une fois par an, détermine automatiquement : le régime TVA (mensuel dès 1 M MAD), la sortie de la CPU ou du RNS (2 M / 500 000 MAD), la radiation de l'auto-entrepreneur (500 000 / 200 000 MAD), l'obligation de déclarer les délais de paiement (2 M MAD), la contribution sociale de solidarité (1 M MAD de bénéfice), la vague de facturation électronique. Le moteur compte les années consécutives de dépassement et prévient un an avant la bascule. Ce CA doit venir d'un import de balance (Sage, KHABIR) ou d'une saisie annuelle guidée, sinon les régimes seront faux.</p></div>
+  <div class="callout warn"><div class="ttl">Trois champs sans lesquels le tableau de bord sera rouge à tort</div><p><strong>Date de prise en charge</strong> : aucune obligation antérieure à l'entrée du client chez le cabinet n'est générée, sinon tout l'historique est rouge le premier jour. <strong>Obligation gérée par</strong> : cabinet, client lui-même ou autre prestataire (paie externalisée, commissaire aux comptes) ; un tiers des clients font eux-mêmes leur CNSS. <strong>Statut d'activité</strong> : actif, dormant (TVA néant, cotisation minimale), en liquidation, radié. Ces trois champs viennent d'un expert-comptable relecteur du plan : sans eux, les collaborateurs cessent de regarder le tableau de bord en deux semaines.</p></div>
+  </div>
+</section>
+<section class="sec" id="s4">
+  <div class="sec-head"><span class="num">04</span><h2>Le calendrier des obligations : le moteur d'alertes</h2></div>
+  <p class="sec-sub">C'est la fonction qui fait le « rouge ». Les règles ci-dessous ont été vérifiées contre le Code général des impôts 2026, la loi 47-06, la loi 5-96, le code de commerce et les communiqués DGI et CNSS de 2026. Elles doivent être relues par un professionnel avant d'être codées, puis mises à jour à chaque loi de finances.</p>
+
+  <div class="prose">
+  <h3>Un moteur de règles, pas un calendrier codé en dur</h3>
+  <p>Chaque obligation est décrite par une règle à quatre éléments : <strong>à qui elle s'applique</strong> (sous-type, régime, seuil de chiffre d'affaires, employeur ou non), <strong>comment sa date se calcule</strong> (date fixe, N mois après l'ouverture ou la clôture de l'exercice, N jours après un événement), <strong>quelle preuve la clôt</strong> (accusé SIMPL, reçu DAMANCOM, certificat du greffe) et <strong>ce que coûte le retard</strong>. Les règles sont stockées dans une table éditable par l'administrateur, versionnée par loi de finances, avec un journal des changements visible par les cabinets.</p>
+
+  <h3>Les quatre règles de calcul des dates</h3>
+  <ol>
+    <li><strong>Art. 163 du CGI</strong> : le jour de départ n'est pas compté ; le délai se termine à la fin du dernier jour ; si l'échéance tombe un jour férié ou chômé légal, elle est reportée au premier jour ouvrable suivant. En 2026, le 1<sup>er</sup> mars étant un dimanche, la DGI a fixé l'échéance au 2 mars. Le cas du samedi n'est pas tranché par le texte : à confirmer avec la DGI avant de le coder.</li>
+    <li><strong>« Avant le X » veut dire la veille</strong> : « avant le 1<sup>er</sup> mars » = 28 ou 29 février, « avant le 1<sup>er</sup> avril » = 31 mars, « avant le 1<sup>er</sup> mai » = 30 avril. « Avant l'expiration du mois » = dernier jour du mois. Ces deux formulations coexistent dans le CGI et sont la première source d'erreur.</li>
+    <li><strong>L'exercice n'est pas toujours l'année civile</strong> : les acomptes d'IS tombent « avant l'expiration des 3<sup>e</sup>, 6<sup>e</sup>, 9<sup>e</sup> et 12<sup>e</sup> mois suivant l'ouverture de l'exercice » ; la liasse « dans les 3 mois suivant la clôture ». Le moteur calcule à partir des dates d'exercice saisies sur la fiche.</li>
+    <li><strong>Le chiffre d'affaires de référence pilote le régime</strong> : TVA mensuelle dès que le CA taxable de l'année écoulée atteint 1 M MAD, sortie de la CPU ou du RNS après deux années de dépassement, loi 69-21 dès 2 M MAD. Voir la règle produit en fin de section 03.</li>
+  </ol>
+
+  <h3>Les statuts et leurs couleurs</h3>
+  </div>
+  <div class="legend">
+    <span class="pill">à venir</span><span>échéance à plus de 15 jours</span>
+    <span class="pill amber">J-15 · J-7 · J-1</span><span>échéance proche, ou pièces du client manquantes</span>
+    <span class="pill red">en retard</span><span>échéance dépassée sans preuve, ou déclarée mais non payée</span>
+    <span class="pill green">fait</span><span>déclaré et payé, preuve rattachée</span>
+    <span class="pill plain">n/a</span><span>non applicable à ce dossier (exonération, régime)</span>
+  </div>
+  <div class="prose">
+  <p>Deux statuts distincts, <strong>déclaré</strong> et <strong>payé</strong>, parce que déclarer sans télépayer déclenche quand même les majorations de l'art. 208. Une déclaration « néant » compte comme une déclaration : son oubli est sanctionné comme un défaut.</p>
+  <p>Chaque obligation porte aussi un drapeau <strong>gérée par</strong> (cabinet, client lui-même, autre prestataire) : ce qui n'est pas géré par le cabinet n'apparaît pas en rouge dans son tableau de bord, mais reste visible sur la fiche. Et aucune obligation n'est générée avant la <strong>date de prise en charge</strong> du client. Aux échéances, les accusés SIMPL et DAMANCOM (des PDF texte qui portent l'identifiant fiscal et la période) se déposent <strong>en vrac</strong> et se rattachent automatiquement à la bonne obligation, avec passage groupé au statut « déclaré » : un cabinet dépose quarante TVA le 30 du mois, il ne cliquera pas quarante fois.</p>
+
+  <h3>A. Obligations fiscales récurrentes</h3>
+  </div>
+  <div class="table-wrap compact">
+    <table>
+      <thead><tr><th>Obligation</th><th>Qui</th><th>Échéance (règle exacte)</th><th>Portail · preuve</th><th>Texte</th></tr></thead>
+      <tbody>
+        <tr><td><strong>TVA mensuelle</strong></td><td>CA taxable de l'année écoulée ≥ 1 M MAD</td><td>Avant l'expiration du mois suivant (télédéclaration obligatoire ; le « avant le 20 » ne vaut que pour le papier)</td><td>SIMPL-TVA · accusé</td><td>art. 108, 110</td></tr>
+        <tr><td><strong>TVA trimestrielle</strong></td><td>CA &lt; 1 M MAD, nouveaux assujettis (année civile en cours), saisonniers</td><td>Avant l'expiration du premier mois du trimestre suivant : 30 avril, 31 juillet, 31 octobre, 31 janvier ; option mensuelle avant le 31 janvier</td><td>SIMPL-TVA</td><td>art. 108, 111</td></tr>
+        <tr><td>Remboursement du crédit de TVA</td><td>Assujettis en crédit</td><td>Demande trimestrielle, dans l'année qui suit le trimestre ; liquidation sous 3 mois</td><td>SIMPL</td><td>art. 103</td></tr>
+        <tr><td>Relevé des retenues de TVA et des non-résidents</td><td>Clients ayant retenu 75 / 100 % ; clients de prestataires non-résidents (depuis 2026)</td><td>Avec la déclaration de TVA</td><td>SIMPL-TVA</td><td>art. 112, 117</td></tr>
+        <tr><td><strong>Acomptes IS</strong></td><td>Sociétés à l'IS</td><td>4 × 25 % de l'impôt de l'exercice précédent, avant l'expiration des 3<sup>e</sup>, 6<sup>e</sup>, 9<sup>e</sup>, 12<sup>e</sup> mois de l'exercice (31/03, 30/06, 30/09, 31/12 en année civile) ; dispense possible par déclaration 15 jours avant</td><td>SIMPL-IS · reçu</td><td>art. 170</td></tr>
+        <tr><td>Cotisation minimale IS</td><td>Sociétés à l'IS (0,25 % du CA, min. 3 000 MAD) hors 36 premiers mois</td><td>En un versement avant l'expiration du 3<sup>e</sup> mois</td><td>SIMPL-IS</td><td>art. 144, 170</td></tr>
+        <tr><td><strong>Liasse fiscale + reliquat d'IS</strong></td><td>Sociétés à l'IS</td><td>Dans les 3 mois suivant la clôture (31 mars) ; état explicatif obligatoire si résultat nul ou déficitaire</td><td>SIMPL-IS</td><td>art. 20, 170-IV, 198 bis</td></tr>
+        <tr><td>Contribution sociale de solidarité</td><td>Bénéfice net ≥ 1 M MAD (sociétés et personnes physiques RNR), 2026-2028</td><td>Dans les 3 mois suivant la clôture ; 1,5 % (1-5 M), 2,5 % (5-10 M), 3,5 % (10-40 M), 5 % (≥ 40 M)</td><td>SIMPL-IS</td><td>art. 267-273</td></tr>
+        <tr><td>Dividendes</td><td>Sociétés qui distribuent</td><td>Retenue versée dans le mois suivant la mise en paiement (11,25 % pour les montants distribués en 2026, 10 % à partir de 2027) ; déclaration annuelle des produits des actions avant le 1<sup>er</sup> avril</td><td>SIMPL</td><td>art. 152, 174, 247-XXXVII-C</td></tr>
+        <tr><td><strong>IR des professionnels RNR / RNS</strong></td><td>Personnes physiques professionnelles</td><td>Déclaration du revenu global avant le 1<sup>er</sup> mai (dernier jour : 30 avril), avec état explicatif si déficit, état des ventes par client (ICE) et déclaration des rémunérations versées à des tiers</td><td>SIMPL-IR</td><td>art. 82, 151, 198 bis</td></tr>
+        <tr><td>Cotisation minimale IR</td><td>RNR / RNS (min. 1 500 MAD ; 4 % pour les professions libérales) hors 3 premiers exercices</td><td>Avant le 1<sup>er</sup> février</td><td>SIMPL-IR</td><td>art. 144, 173</td></tr>
+        <tr><td>IR des autres revenus</td><td>Revenus fonciers, salariés à plusieurs employeurs, pensions étrangères</td><td>Avant le 1<sup>er</sup> mars (2 mars en 2026 par report)</td><td>SIMPL-IR</td><td>art. 82</td></tr>
+        <tr><td><strong>IR sur salaires</strong></td><td>Employeurs</td><td>Retenue versée dans le mois qui suit</td><td>SIMPL-IR</td><td>art. 174</td></tr>
+        <tr><td>Déclaration des traitements et salaires (état 9421)</td><td>Employeurs</td><td>Avant le 1<sup>er</sup> mars (dernier jour : 28 ou 29 février)</td><td>SIMPL-IR</td><td>art. 79</td></tr>
+        <tr><td>Retenues sur honoraires, loyers, produits de placement</td><td>Payeurs</td><td>Versées avant l'expiration du mois suivant la retenue</td><td>SIMPL</td><td>art. 174</td></tr>
+        <tr><td><strong>CPU : déclaration</strong></td><td>Personnes physiques sous CPU</td><td>Déclaration annuelle du CA avant le 1<sup>er</sup> avril</td><td>SIMPL-CPU</td><td>art. 82 quater</td></tr>
+        <tr><td>CPU : paiement</td><td>Idem</td><td>Annuel avec la déclaration, ou 4 versements de 25 % avant l'expiration des 3<sup>e</sup>, 6<sup>e</sup>, 9<sup>e</sup>, 12<sup>e</sup> mois, plus le droit complémentaire AMO (1 200 à 14 400 MAD par an selon l'impôt)</td><td>SIMPL-CPU</td><td>art. 73, 173</td></tr>
+        <tr><td><strong>Auto-entrepreneur</strong></td><td>Inscrits au registre national</td><td>Déclaration et paiement du CA encaissé, mensuel ou trimestriel selon l'option, avant la fin du mois suivant, même à zéro</td><td>rn.ae.gov.ma, banques partenaires</td><td>art. 82 bis</td></tr>
+        <tr><td>Retenue de 30 % sur l'auto-entrepreneur</td><td>Clients de l'AE, sur la part du CA annuel de services &gt; 80 000 MAD avec un même client</td><td>Versée au plus tard à la fin du mois suivant la retenue</td><td>SIMPL</td><td>art. 73-II-G-8°, 174</td></tr>
+        <tr><td>Délais de paiement (loi 69-21)</td><td>CA HT ≥ 2 M MAD</td><td>Déclaration trimestrielle avant la fin du mois suivant le trimestre, même sans retard ; le régime annuel transitoire a pris fin le 1<sup>er</sup> janvier 2026</td><td>SIMPL-Délais de paiement</td><td>loi 69-21</td></tr>
+        <tr><td>Profits immobiliers, titres non cotés</td><td>Particuliers</td><td>Déclaration et paiement dans les 30 jours de la cession</td><td>SIMPL</td><td>art. 83, LF 2026</td></tr>
+        <tr><td>Enregistrement des actes</td><td>Baux, cessions de parts, augmentations de capital, statuts</td><td>Dans les 30 jours de l'acte (3 mois pour successions et jugements)</td><td>SIMPL-Enregistrement</td><td>art. 128</td></tr>
+      </tbody>
+      <caption>Vérifié sur le texte du CGI 2026 (édition DGI) et les communiqués DGI de février, mars, avril et juin 2026. Les pages fiscamaroc.com ne sont pas à jour sur tous les articles (barème IR, art. 133) : utiliser le PDF du CGI 2026.</caption>
+    </table>
+  </div>
+
+  <div class="prose"><h3>B. Obligations sociales (CNSS)</h3></div>
+  <div class="table-wrap compact">
+    <table>
+      <thead><tr><th>Obligation</th><th>Échéance</th><th>Sanction</th><th>Statut de la source</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Déclaration mensuelle des salaires et paiement des cotisations</strong> (télédéclaration et télépaiement obligatoires)</td><td>Avant le 10 du mois suivant, déclaration « néant » comprise</td><td>3 % le premier mois puis 0,5 % par mois de retard (régime général, depuis le 1<sup>er</sup> avril 2025) ; 1 % par mois pour l'AMO</td><td>Le « 10 » n'est confirmé que par des sources secondaires ; le dahir renvoie au règlement de la CNSS. Majorations lues sur cnss.ma.</td></tr>
+        <tr><td>Affiliation de l'employeur</td><td>Dans le mois qui suit le début de l'exploitation</td><td>Astreinte de 100 % de la cotisation par salarié régularisé après contrôle</td><td>Décret 2-60-313, page cnss.ma</td></tr>
+        <tr><td>Immatriculation de chaque salarié</td><td>Dans le mois de l'embauche</td><td>Idem</td><td>cnss.ma</td></tr>
+        <tr><td>Modifications (forme, gérant, adresse, cessation)</td><td>Dans le mois</td><td></td><td>Décret 2-60-313, formulaire 322-3-25</td></tr>
+        <tr><td>Accès DAMANCOM du mandataire</td><td>Création d'utilisateur par formulaire déposé en agence, activation sous 48 h ; authentification Mon e-ID ou OTP depuis juillet 2025</td><td></td><td>Communiqués CNSS 2025</td></tr>
+      </tbody>
+      <caption>Taux 2026 : employeur 21,09 % (dont TFP 1,60 %), salarié 6,74 %, plafond de 6 000 MAD sur les prestations sociales (sources secondaires concordantes). Nouvelle assiette de cotisations depuis le 1<sup>er</sup> octobre 2025 (arrêté 1314-25).</caption>
+    </table>
+  </div>
+
+  <div class="prose"><h3>C. Taxes locales (loi 47-06)</h3></div>
+  <div class="table-wrap compact">
+    <table>
+      <thead><tr><th>Obligation</th><th>Échéance</th><th>Sanction</th><th>Article</th></tr></thead>
+      <tbody>
+        <tr><td>Inscription à la taxe professionnelle</td><td>Dans les 30 jours du début d'activité ; exonération de 5 ans pour toute activité nouvelle</td><td>15 %, min. 500 MAD</td><td>art. 6, 12, 140</td></tr>
+        <tr><td>Déclaration des éléments imposables et des modifications</td><td>Au plus tard le 31 janvier de l'année suivante</td><td>15 %, min. 500 MAD</td><td>art. 13, 134</td></tr>
+        <tr><td>Cession, cessation, transfert, transformation</td><td>Dans les 45 jours (3 mois en cas de décès)</td><td>15 %</td><td>art. 16, 135</td></tr>
+        <tr><td>Paiement TP, taxe d'habitation, taxe de services communaux</td><td>À l'expiration du 2<sup>e</sup> mois suivant la mise en recouvrement ; avis émis vers mars-avril par la DGI (qui gère TH et TSC depuis juin 2025), soit fin mai en pratique ; la date de mise en recouvrement est saisie sur la fiche</td><td>10 % + 5 % le premier mois + 0,5 % par mois</td><td>art. 132, 147</td></tr>
+        <tr><td>Déclaration d'achèvement de construction ou de changement d'affectation</td><td>« Avant le 31 janvier » dans la version arabe authentique : coder le 30 janvier</td><td>15 %</td><td>art. 30, 144</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="prose"><h3>D. Obligations juridiques et événements de vie</h3></div>
+  <div class="table-wrap compact">
+    <table>
+      <thead><tr><th>Obligation</th><th>Qui</th><th>Échéance</th><th>Sanction</th><th>Texte</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Assemblée d'approbation des comptes</strong></td><td>SARL, SA</td><td>Dans les 6 mois de la clôture (30 juin) ; documents aux associés 15 jours avant</td><td>Sanctions de la loi 5-96</td><td>loi 5-96 art. 70</td></tr>
+        <tr><td><strong>Dépôt des états de synthèse au greffe</strong></td><td>SARL / SA</td><td>Dans les 30 jours de l'approbation (SARL) ; 2 mois (SA) ; en ligne sur depotbilan.justice.gov.ma</td><td>SARL 10 000 à 50 000 MAD (source secondaire) ; SA art. 420</td><td>loi 5-96 art. 95 ; loi 17-95 art. 158</td></tr>
+        <tr><td>Inscriptions modificatives au registre de commerce</td><td>Sociétés</td><td>Dans le mois de l'acte ou du fait ; immatriculation dans les 3 mois de la création</td><td>1 000 à 5 000 MAD après mise en demeure</td><td>code de commerce art. 62, 75</td></tr>
+        <tr><td>Registre des bénéficiaires effectifs</td><td>Sociétés (détention ≥ 25 %)</td><td>Dans le mois de l'immatriculation et de tout changement</td><td>5 000 à 50 000 MAD ; 10 000 à 100 000 si fausses informations</td><td>décret 2-21-708</td></tr>
+        <tr><td>Domiciliation : liste des domiciliés</td><td>Fiduciaires domiciliataires</td><td>Avant le 31 janvier, à la DGI et à la TGR ; notification sous 15 jours des courriers non remis ; conservation 5 ans</td><td>10 000 à 20 000 MAD</td><td>loi 89-17, art. 544-4 et 544-11 CC</td></tr>
+        <tr><td>Commissaire aux comptes</td><td>SARL avec CA HT &gt; 50 M MAD ; syndics avec recettes &gt; 1 M MAD</td><td>Nomination et rapport annuel</td><td></td><td>loi 5-96 art. 80 ; décret 2.23.700</td></tr>
+        <tr><td>Association : modifications</td><td>Bureau, statuts, succursales</td><td>Dans le mois ; déclaration de non-modification à l'époque statutaire de renouvellement</td><td>Non opposable aux tiers, sanctions art. 8</td><td>dahir 1-58-376 art. 5</td></tr>
+        <tr><td>Association : comptes et aides</td><td>Subventions publiques &gt; 10 000 MAD ; aides étrangères</td><td>Comptes aux financeurs ; aides étrangères déclarées au SGG dans les 30 jours francs</td><td>Retrait, dissolution possible (art. 7)</td><td>art. 32, 32 bis, 32 ter</td></tr>
+        <tr><td>Contrôle fiscal</td><td>Tous</td><td>Avis 15 jours avant ; pièces sous 30 jours ; réponse à la 1<sup>re</sup> notification sous 30 jours, à la 2<sup>e</sup> sous 60 jours ; recours sous 30 jours ; prescription au 31 décembre de la 4<sup>e</sup> année, 10 ans pour les années non déclarées</td><td>Majorations 20 %, 30 %, 100 %</td><td>art. 186, 212, 220, 232</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="prose">
+  <h3>Ce que coûte un retard (formules à afficher sur la fiche)</h3>
+  <ul>
+    <li><strong>Déclaration en retard</strong> (art. 184) : 5 % si le dépôt intervient dans les 30 jours, 15 % au-delà, 20 % en cas d'imposition d'office ; minimum 500 MAD (100 MAD pour l'auto-entrepreneur) ; 500 MAD pour une déclaration incomplète sans incidence.</li>
+    <li><strong>Paiement en retard</strong> (art. 208) : pénalité de 10 %, ramenée à 5 % si le paiement intervient dans les 30 jours, portée à <strong>20 % pour la TVA et les retenues à la source</strong> ; plus 5 % le premier mois et 0,5 % par mois supplémentaire.</li>
+    <li><strong>Rectification après contrôle</strong> (art. 186) : 20 %, 30 % pour la TVA et les retenues, 100 % en cas de mauvaise foi.</li>
+    <li><strong>État explicatif manquant</strong> (art. 198 bis) : 2 000 MAD après une lettre et un délai de 15 jours.</li>
+    <li><strong>CNSS</strong> : 3 % puis 0,5 % par mois (AMO : 1 % par mois) ; 100 % de la cotisation par salarié régularisé après contrôle.</li>
+    <li><strong>Taxes locales</strong> : 15 % (min. 500 MAD) pour la déclaration ; 10 % + 5 % + 0,5 % par mois pour le paiement.</li>
+    <li><strong>Loi 69-21</strong> : 5 000 MAD (CA 2-10 M) à 250 000 MAD (&gt; 500 M) pour défaut de déclaration ; 5 000 MAD par facture manquante.</li>
+    <li><strong>Années non déclarées</strong> (art. 232) : exigibles même prescrites, dans la limite de 10 ans, ce qui justifie une alerte « déclarations manquantes » sur l'historique du dossier.</li>
+  </ul>
+
+  <h3>Les changements de 2026 à afficher dans le changelog</h3>
+  <ul>
+    <li>IS à 20 % / 35 % / 40 % (fin de la convergence) ; le taux de 20 % suppose un bénéfice inférieur à 100 M MAD pendant trois exercices consécutifs.</li>
+    <li>Retenue de 5 % sur les loyers et retenue de TVA de 75 / 100 % étendues aux banques, assurances et grandes entreprises (CA ≥ 500 M au 1<sup>er</sup> juillet 2026, ≥ 350 M en 2027, ≥ 200 M en 2028) : un client qui facture ces entreprises doit garder une attestation de régularité fiscale de moins de 6 mois.</li>
+    <li>Contribution sociale de solidarité prolongée jusqu'en 2028.</li>
+    <li>Dividendes : 11,25 % pour les montants distribués en 2026, 10 % à partir de 2027 (deux lectures du texte coexistent, par date de distribution ou par exercice d'origine : la note DGI sur la LF 2025 retient la date de distribution).</li>
+    <li>Cessions de parts de sociétés à prépondérance immobilière : 5 % au lieu de 6 % ; droit de 2 % sur les mutations de plus de 300 000 MAD payées en espèces à partir du 1<sup>er</sup> juillet 2026.</li>
+    <li>Adresse électronique obligatoire pour tout contribuable (formulaire ADC450), notifications SIMPL à valeur juridique, fichier des écritures comptables.</li>
+    <li>Loi 69-21 : fin du régime annuel, déclaration trimestrielle pour toutes les entreprises de plus de 2 M MAD.</li>
+    <li>Facturation électronique : décret toujours non publié ; alerte « veille » sans date butoir.</li>
+  </ul>
+
+  <div class="callout warn"><div class="ttl">Avant de coder</div><p>Faire relire cette section par un expert-comptable ou un comptable agréé du comité de pilotes, trancher les points marqués « à confirmer » (échéance CNSS du 10, règle du samedi, catégories des syndics, date exacte de l'état des rémunérations versées à des tiers pour les sociétés), et prévoir dès le départ une table de règles par année fiscale (2025, 2026, 2027) : les seuils et taux changent chaque 1<sup>er</sup> janvier.</p></div>
+  </div>
+</section>
+
+<section class="sec" id="s5">
+  <div class="sec-head"><span class="num">05</span><h2>Concurrence et espace libre</h2></div>
+  <p class="sec-sub">Les cabinets marocains sont bien équipés pour produire des écritures et mal équipés pour gérer leurs clients. Personne ne vend encore « la fiche client unique avec le statut des obligations en rouge ».</p>
+
+  <div class="prose">
+  <h3>Trois familles d'outils</h3>
+  <p><strong>Les moteurs comptables</strong> (Sage, KHABIR, EBP, AGL, Odoo) sont installés partout et ne partiront pas : ils produisent la liasse et les fichiers EDI pour SIMPL. <strong>Les outils de gestion de cabinet</strong>, notre segment, sont quasi vides au Maroc : un seul acteur affiche un prix (ExpertC, 60 à 80 MAD par utilisateur et par mois) et il n'a ni gestion documentaire, ni portail client, ni suivi des obligations. <strong>Les grands outils étrangers</strong> (TaxDome, Karbon, Pennylane, MyUnisoft, Kabineo) fixent la barre fonctionnelle mais ne servent pas le Maroc : pas d'ICE, pas de DGI ni de CNSS, prix en euros ou dollars 5 à 10 fois supérieurs.</p>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Outil</th><th>Origine</th><th>Cible</th><th>Ce qu'il fait</th><th class="num">Prix (MAD)</th><th>Faiblesses pour un cabinet marocain</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Sage 50 / 100, Sage Expert, Génération Experts</strong></td><td>France / UK</td><td>Cabinets, PME</td><td>Comptabilité PCGE, liasse, paie, multi-dossiers (Expert) ; gestion de cabinet via partenaires, sans prix public</td><td class="num">5 000 – 8 000/an (50) ; 10 000 – 67 500 + 15-20 %/an (100) ; 12 000 – 25 000/an (Expert)</td><td>Interface datée, modules séparés, prix opaques, support variable selon revendeur</td></tr>
+        <tr><td><strong>KHABIR</strong> (NSE)</td><td>Maroc</td><td>Fiduciaires</td><td>Multi-sociétés, liasse, EDI SIMPL-IS et TVA ; « le plus répandu dans les cabinets moyens »</td><td class="num">5 000 – 12 000 (licence) + maintenance</td><td>Pas de cloud, pas de portail, pas de gestion de cabinet</td></tr>
+        <tr><td><strong>EBP Maroc</strong></td><td>France</td><td>TPE, petits cabinets</td><td>Comptabilité, TVA ; prix publics</td><td class="num">3 388 / 5 084 / 14 741 TTC</td><td>Localisation DGI contestée entre sources</td></tr>
+        <tr><td><strong>Odoo</strong> + packs fiduciaire (Oasis, Karizma)</td><td>Belgique / Maroc</td><td>PME, cabinets équipés</td><td>ERP complet, localisation marocaine, CRM, GED, portail</td><td class="num">≈ 80 – 90/utilisateur/mois + intégration 15 000 – 250 000 ; packs 14 900 – 29 900</td><td>Dépend de l'intégrateur, paie faible, montées de version chères</td></tr>
+        <tr><td><strong>GénéraFi, AGL Telecompta, Crystal IT, Finza Mizan</strong></td><td>Maroc</td><td>Cabinets, PME</td><td>Comptabilité et paie ; Crystal IT annonce des alertes d'échéances ; Finza vend aux cabinets 3 800 – 22 000/an</td><td class="num">Souvent sur devis</td><td>Production comptable, pas de fiche client, pas de portail</td></tr>
+        <tr><td><strong>ExpertC</strong> (Dorea Dev)</td><td>Maroc</td><td>Cabinets</td><td>Facturation des honoraires, recouvrement, rendez-vous, tâches, feuilles de temps</td><td class="num">60 – 80/utilisateur/mois</td><td>Ni gestion documentaire, ni portail client, ni obligations</td></tr>
+        <tr><td><strong>Fiducio.ma, ComptaPlus.ma</strong></td><td>Maroc</td><td>Cabinets</td><td>« Compta, paie, clients » ; « suivi des déclarations DGI »</td><td class="num">Non lisible (900 – 1 700/mois selon un tiers)</td><td>Sites illisibles, aucune preuve de traction ; à tester en démo</td></tr>
+        <tr><td><strong>Experio</strong></td><td>Maroc (2021)</td><td>Cabinets, PME</td><td>Pré-comptabilité par OCR et IA, GED, télédépôt SIMPL ; 3 000+ utilisateurs, partenaire de l'OEC</td><td class="num">Sur démo</td><td>Pas de fiche client, pas d'obligations, pas d'honoraires : <strong>concurrent le plus sérieux</strong> sur la collecte de pièces</td></tr>
+        <tr><td><strong>Kabineo</strong></td><td>France</td><td>Cabinets</td><td>Exactement notre idée : fiche 360°, échéances générées, charge par collaborateur, CA par client</td><td class="num">≈ 11/dossier/mois (1 €)</td><td>Hébergé en France, aucune règle marocaine</td></tr>
+        <tr><td><strong>Hisab, Facturis, Manageo, Fingo</strong></td><td>Maroc</td><td>TPE, indépendants</td><td>Facturation et e-facturation UBL ; Hisab a un plan « Accountant » (10 entités, marque blanche) à 832/mois</td><td class="num">99 – 832/mois ; 2 400 – 9 000/an</td><td>Outils du client, pas du cabinet ; partenaires potentiels</td></tr>
+        <tr><td><strong>TaxDome, Karbon, Canopy, Financial Cents</strong></td><td>États-Unis</td><td>Cabinets anglo-saxons</td><td>CRM, portail, workflow, temps et honoraires, relances automatiques</td><td class="num">185 – 1 450/utilisateur/mois</td><td>Anglais, dollars, aucune localisation</td></tr>
+        <tr><td><strong>Pennylane, Tiime, MyUnisoft, Welyb, Dext</strong></td><td>France</td><td>Cabinets français</td><td>Production, GED, portail, synchronisation bancaire, OCR</td><td class="num">77 – 870/mois</td><td>France uniquement ; pas d'open banking au Maroc</td></tr>
+      </tbody>
+      <caption>Sources : sites éditeurs (odoo.com, ebp-maroc.com, expertc.ma, experio.ma, kabineo.com, hisab.ma, finza.ma, karbonhq.com, getcanopy.com, pennylane.com), comparatifs marocains 2026 (oasistechnocloud.com, rmgsolutions.ma, deadline.ma). Les prix Sage et KHABIR sont des fourchettes constatées, non des tarifs officiels.</caption>
+    </table>
+  </div>
+
+  <div class="prose">
+  <h3>Ce que l'État offre gratuitement, et ce qu'il n'offre pas</h3>
+  <ul>
+    <li><strong>SIMPL</strong> (DGI) : télédéclaration et télépaiement obligatoires depuis 2017 ; dépôt de fichiers EDI-XML ; <strong>aucune API publique</strong>. La DGI publie chaque mois ses obligations déclaratives et envoie des rappels par e-mail.</li>
+    <li><strong>DAMANCOM</strong> (CNSS) : gratuit, obligatoire, déclaration avant le 10 ; fichiers EDI ; pas d'API ; depuis 2025 authentification Mon e-ID et géo-blocage hors Maroc.</li>
+    <li><strong>OMPIC directinfo</strong> : fiches légales et bilans payants ; un accès « API personnalisée » existe au catalogue (prix non vérifiable).</li>
+    <li><strong>Facturation électronique</strong> : plateforme nationale confiée à xHub, portail gratuit annoncé pour les TPE ; spécification d'API et homologation des logiciels non publiées.</li>
+  </ul>
+  <p>Conséquence : pas de synchronisation automatique possible aujourd'hui. Nous concevons des « connecteurs humains » (checklists, dépôt de l'accusé, import de fichiers) et nous serons prêts le jour où une API sort.</p>
+
+  <h3>Les huit trous à exploiter</h3>
+  <ol>
+    <li><strong>Fiche client structurée + documents rattachés + statut automatique des obligations</strong> : aucun outil marocain ne combine les trois.</li>
+    <li><strong>Le rouge par obligation et par client</strong>, alors que la DGI publie ses échéances et que les contrôles sur pièces explosent.</li>
+    <li><strong>Un prix public et simple</strong> : Sage, Cegid, GénéraFi, Experio, Humantal sont « sur devis ».</li>
+    <li><strong>Un portail client mobile</strong> en arabe et français, vendu aux cabinets en marque blanche : il n'existe que chez les cabinets en ligne pour leurs propres clients.</li>
+    <li><strong>Hébergement au Maroc et conformité CNDP</strong> comme argument commercial.</li>
+    <li><strong>Pilotage économique du cabinet</strong> (honoraires, marge par dossier, charge par collaborateur), absent des outils marocains.</li>
+    <li><strong>Préparation à la facturation électronique</strong> des PME en 2027-2028 : le cabinet sera le prescripteur.</li>
+    <li><strong>Distribution par subvention</strong> : Maroc PME (Mowakaba, PACTE TPME) finance 80 à 90 % des projets de digitalisation des TPE ; les plafonds divergent selon les sources et l'éligibilité d'un abonnement SaaS reste à confirmer.</li>
+  </ol>
+  <div class="callout risk"><div class="ttl">Les deux réactions à anticiper</div><p><strong>Experio</strong> peut ajouter une fiche client et un calendrier à sa GED : il a l'OCR, les utilisateurs et l'OEC. <strong>Les intégrateurs Odoo</strong> (Oasis, Karizma) peuvent packager un « pack fiduciaire » avec échéances. Notre défense : être 10 fois plus simple à démarrer (import Excel en une heure), moins cher qu'un abonnement Odoo intégré, et devenir le point d'entrée du client (WhatsApp, portail) plutôt qu'un outil de plus pour le comptable.</p></div>
+  </div>
+</section>
+<section class="sec" id="s6">
+  <div class="sec-head"><span class="num">06</span><h2>Cadre légal et technique</h2></div>
+  <p class="sec-sub">Nous allons stocker des CIN, des relevés bancaires et des déclarations fiscales pour le compte de cabinets tenus au secret professionnel. La loi structure le produit avant même la première ligne de code.</p>
+
+  <div class="prose">
+  <h3>Loi 09-08 et CNDP : le texte qui décide de l'architecture</h3>
+  <p>La loi 09-08 reste en vigueur en 2026 ; aucune loi de remplacement n'a été adoptée, mais la CNDP a basculé en 2025 vers des contrôles sectoriels. Trois règles nous concernent directement :</p>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Règle</th><th>Conséquence pour Daftar</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Art. 12-1-e</strong> : tout traitement comportant le <strong>numéro de CIN</strong> exige une autorisation préalable de la CNDP (formulaire F112, instruite en 2 mois) ; les autres traitements relèvent d'une déclaration (F211, récépissé sous 24 h)</td><td>Vérifié sur les 76 délibérations publiées par la CNDP : <strong>aucune dispense</strong> n'existe pour la tenue de comptabilité. La déclaration type « gestion des clients » (délibération 32-2015, formulaire F214, récépissé sous 24 h) couvre comptabilité et facturation <em>sans numéro de CIN</em> ; dès qu'un numéro de CIN est stocké, il faut une autorisation F112 (2 mois, prorogeables, dossier incomplet rejeté). D'où <strong>deux modes</strong> : par défaut le « mode déclaration », sans numéro ni scan de CIN (on stocke « CIN vérifiée + date d'expiration »), qui préserve l'onboarding en une heure ; le « mode autorisation », qui déverrouille les champs CIN après saisie du numéro d'autorisation du cabinet. Daftar livre les deux kits pré-remplis, se déclare comme sous-traitant dans le dossier du cabinet, et dépose ses propres formalités (gestion de ses clients-cabinets, ressources humaines, site).</td></tr>
+        <tr><td><strong>Art. 23</strong> : le sous-traitant offre des garanties suffisantes, est lié par un <strong>contrat écrit</strong> et n'agit que sur instruction ; art. 24-g : traçabilité de qui a saisi quoi et quand</td><td>Un contrat de sous-traitance (DPA) dans les conditions générales, un journal d'audit immuable par utilisateur, chiffrement, double authentification, rôles.</td></tr>
+        <tr><td><strong>Art. 43-44</strong> : transfert à l'étranger seulement vers un pays reconnu (l'Union européenne en pratique) ou avec autorisation (F118) ; art. 60 : 3 mois à 1 an de prison et 20 000 à 200 000 DH, doublés pour les personnes morales</td><td><strong>Héberger hors du Maroc est un transfert</strong> (délibération 298-AU-2014, art. 10), et envoyer une CIN à un OCR américain aussi. Pays reconnus (délibérations 465-2013 et 236-2015, inchangées depuis) : Union européenne sauf Croatie, Royaume-Uni, Suisse, Norvège, Islande, Liechtenstein, Canada ; <strong>pas les États-Unis</strong>. Même vers un pays reconnu, chaque cabinet devrait notifier un transfert (F118, 2 mois). Les serveurs de WhatsApp sont hors du Maroc : un flux de pièces par l'API WhatsApp Business est un transfert à fonder sur le consentement exprès. Décision : hébergement au Maroc, OCR auto-hébergé ou dans la région Oracle de Casablanca, aucun sous-traitant étranger caché, API WhatsApp repoussée après consentement et formalité.</td></tr>
+        <tr><td><strong>Art. 3-e et 55</strong> : conservation limitée à la finalité</td><td>Rétention configurable : 10 ans pour les pièces comptables, purge automatique des prospects et journaux marketing.</td></tr>
+        <tr><td><strong>Art. 9-10 et 59</strong> : prospection électronique malgré opposition</td><td>Opt-in et registre d'opposition pour les relances WhatsApp, SMS et e-mail envoyées aux clients des cabinets.</td></tr>
+      </tbody>
+      <caption>Sources : texte de la loi 09-08, page « notifier un traitement », formulaires F112 (version du 10 septembre 2025) et F214, délibérations 30-S-2012, 32-2015, 298-AU-2014, 98-AU-2015, 236-2015, D-110-2021 et D-943-2025 (cndp.ma). Signal favorable : le 15 avril 2026, la CNDP et l'OEC ont signé une convention DATA-TIKA et la CNDP a créé un pôle dédié aux experts-comptables : c'est le canal pour proposer un modèle type « clientèle des cabinets comptables » qui ramènerait la F112 à une autorisation simplifiée.</caption>
+    </table>
+  </div>
+
+  <div class="prose">
+  <h3>Hébergement : le Maroc est devenu crédible</h3>
+  <p>La région <strong>Oracle Cloud de Casablanca</strong> a ouvert le 9 avril 2026 (hébergée chez N+ONE, 200 services dont l'IA générative, deuxième région prévue à Settat). <strong>inwi Business</strong> exploite trois datacenters Tier III (Rabat, Settat, Marrakech), <strong>Atlas Cloud Services</strong> deux à Benguerir (Tier III et IV, ISO 27001, SOC 2), et des hébergeurs locaux publient des prix : VPS à 539, 659 ou 879 MAD par mois chez vps.ma, cloud mutualisé de 1 499 à 4 999 MAD par an chez Nindohost. Le référentiel de qualification des prestataires cloud de la DGSSI (arrêté 3-17-25 du 1<sup>er</sup> août 2025) ne s'impose qu'aux administrations, banques et infrastructures vitales ; choisir un hébergeur qualifié reste un argument de vente.</p>
+  <p><strong>Décision</strong> : MVP sur un VPS marocain (moins de 1 000 MAD par mois), migration vers Oracle Casablanca ou inwi Business quand le volume le justifie. Si un hébergeur européen est un jour retenu pour le coût, il faut une notification de transfert et des clauses contractuelles types.</p>
+
+  <h3>Valeur juridique des scans et archivage de 10 ans</h3>
+  <ul>
+    <li><strong>Loi 53-05</strong> (art. 417-1 DOC) : l'écrit électronique vaut l'écrit papier si l'auteur est identifiable et si l'intégrité est garantie dès l'établissement et pendant la conservation. Un scan sans garantie d'intégrité n'est qu'un commencement de preuve. Nous calculons donc un empreinte SHA-256 et un horodatage à chaque dépôt, avec l'identité de l'auteur.</li>
+    <li><strong>Art. 211 CGI</strong> : conservation 10 ans des doubles de factures, pièces de dépenses, livres, inventaires, fiches clients et fournisseurs ; si la comptabilité est électronique, conservation sur support électronique ; perte à signaler par lettre recommandée sous 15 jours. Même durée à l'art. 22 de la loi 9-88. Stockage immuable, export complet en un clic.</li>
+    <li><strong>Loi 43-20</strong> (signature électronique) : trois niveaux ; la signature qualifiée avec horodatage qualifié vaut signature légalisée ; <strong>une signature manuscrite scannée n'a aucune valeur</strong> (FAQ DGSSI). Barid eSign délivre des certificats qualifiés (2 à 3 ans, remise en face-à-face, prix non publié, environ 1 200 DH/an selon un cabinet). Nous intégrons une signature avancée pour les lettres de mission et PV courants, la qualifiée via Barid eSign pour les actes à enjeu.</li>
+  </ul>
+
+  <h3>Facturation électronique : réforme réelle, calendrier non officiel</h3>
+  <p>Base légale : art. 145-IX du CGI. Modèle « clearance » (chaque facture validée par la plateforme de la DGI avant émission), formats UBL 2.1 ou CII, signature qualifiée, ICE de l'émetteur et du destinataire, archivage 10 ans. Le directeur général des impôts a confirmé en avril 2026 un lancement « courant 2026 », B2B, grandes entreprises d'abord (environ 1 655 sociétés de plus de 200 M MAD). <strong>Au 1<sup>er</sup> juin 2026, le décret d'application n'était pas publié</strong> : les calendriers « 1<sup>er</sup> janvier 2026 / 1<sup>er</sup> juillet 2026 / 1<sup>er</sup> janvier 2027 » et l'amende de 500 DH par facture qui circulent chez les éditeurs ne sont pas officiels. Nous affichons le statut officiel, nous étiquetons chaque client par seuil de CA, et nous préparons un connecteur UBL sans promettre de date.</p>
+
+  <h3>Encaisser un abonnement au Maroc</h3>
+  </div>
+  <div class="table-wrap compact">
+    <table>
+      <thead><tr><th>Solution</th><th>Coût</th><th>Remarque</th></tr></thead>
+      <tbody>
+        <tr><td>CMI (via la banque)</td><td>≈ 1,8 – 2,5 % + 1,5 DH ; 2 à 6 semaines d'affiliation</td><td>Paiements récurrents par carte enregistrée ; pas d'API d'abonnement : la relance et le « dunning » sont à gérer nous-mêmes</td></tr>
+        <tr><td>YouCan Pay</td><td>3,9 % + 2 MAD, aucun frais fixe</td><td>Démarrage rapide, cash via CashPlus</td></tr>
+        <tr><td>PayZone, Chari Pay</td><td>≈ 2,2 – 2,9 % + 1,5 DH</td><td>Agrégateurs ; Chari Pay annonce la gestion des retries</td></tr>
+        <tr><td>Virement, prélèvement bancaire</td><td>Gratuit à faible</td><td>Le mode naturel des cabinets pour un abonnement annuel</td></tr>
+        <tr><td>Stripe</td><td>Non disponible pour une entité marocaine</td><td>Seulement via une entité étrangère</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="prose">
+  <p>Un abonnement SaaS est soumis à la <strong>TVA de 20 %</strong> ; la facture doit porter l'ICE, l'IF et le RC. Le statut d'auto-entrepreneur est inadapté pour l'éditeur (plafond de 200 000 DH de services, retenue de 30 % au-delà de 80 000 DH par client, pas d'embauche) : il faut une <strong>SARL</strong> (capital 1 DH, 7 600 à 16 430 DH de frais, IS 20 %, taxe professionnelle exonérée 5 ans).</p>
+
+  <h3>WhatsApp, SMS, OCR</h3>
+  <ul>
+    <li><strong>WhatsApp Business Platform</strong> : facturation par message livré depuis juillet 2025 ; le Maroc est dans la zone « Rest of Africa » : message utilitaire ≈ 0,0046 $ (moins de 0,05 MAD), marketing ≈ 0,026 $ ; gratuit dans la fenêtre de service de 24 h. Fournisseurs : 360dialog (49 € par mois et par numéro), Wasel (Maroc, facturé en MAD). La vérification Meta demande RC, ICE, un site avec politique de confidentialité. <strong>Réserve CNDP</strong> : les messages transitent par les serveurs de Meta hors du Maroc ; un flux de pièces par l'API est un transfert à notifier et à fonder sur le consentement exprès du client. En vague 1, les relances partent donc du WhatsApp du cabinet (lien de discussion pré-rempli généré par Daftar) et les pièces passent par le portail hébergé au Maroc.</li>
+    <li><strong>SMS</strong> : AdaSMS (hébergé au Maroc) 0,49 à 0,30 DH HT par SMS, identifiant d'expéditeur 99 MAD HT par mois ; Texto.ma, Bulksms.ma en alternative.</li>
+    <li><strong>OCR</strong> pour documents français et arabes : Google Document AI et Azure lisent l'imprimé arabe mais leur analyseur de factures ne lit pas l'arabe ; AWS Textract ne supporte pas l'arabe ; Mindee lit factures, CIN et relevés (44 $ par mois, localisation des données sur le plan Pro) ; PaddleOCR et Tesseract sont gratuits, auto-hébergeables au Maroc, avec une précision limitée et un ordre droite-gauche à corriger. <strong>Décision</strong> : OCR auto-hébergé au Maroc (ou services d'IA de la région Oracle Casablanca) par défaut, fournisseur étranger uniquement après consentement et autorisation de transfert.</li>
+  </ul>
+
+  <h3>Financer le lancement</h3>
+  <ul>
+    <li><strong>Innov Invest</strong> (Tamwilcom) : prêt d'honneur Tech Start à 0 % jusqu'à 200 000 DH, Tech Boost jusqu'à 500 000 DH, via une structure labellisée (Technopark, CEED, Bidaya, LaFactory).</li>
+    <li><strong>Startup VB</strong> (Digital Morocco 2030) : bourse d'incubation jusqu'à 200 000 DH, prêt d'honneur jusqu'à 500 000 DH, prêt d'amorçage de 0,5 à 2 M DH.</li>
+    <li><strong>Technopark</strong> (Casablanca, Rabat, Tanger, Agadir) : 50 DH/m² HT pendant 18 mois pour une startup de moins de 2 ans.</li>
+    <li><strong>212Founders</strong> (CDG Invest), <strong>Maroc Numeric Fund</strong> : à partir du late seed, tickets de 100 000 $ à 13 M DH.</li>
+    <li>Il n'existe pas de « Startup Act » adopté au Maroc ; un label startup est en projet.</li>
+  </ul>
+  <div class="callout ok"><div class="ttl">Ce que nous pourrons dire, et ne pas dire, dans le marketing</div><p>Dire : « données hébergées au Maroc, traitement déclaré à la CNDP, contrat de sous-traitance, journal d'accès, archivage 10 ans, export de vos données à tout moment ». Ne pas dire : « certifié CNDP » ou « qualifié DGSSI » (ces certifications n'existent pas pour ce type de service), ni « conseil fiscal » ou « certification » (réservés aux professionnels inscrits). Daftar est un outil, jamais un prestataire comptable.</p></div>
+  </div>
+</section>
+<section class="sec" id="s7">
+  <div class="sec-head"><span class="num">07</span><h2>Le produit</h2></div>
+  <p class="sec-sub">Daftar est une couche de gestion de cabinet posée au-dessus du logiciel comptable que le cabinet possède déjà. Le périmètre ci-dessous a été coupé en deux par deux relecteurs, un expert-comptable et un investisseur : un socle qu'un cabinet utilisera vraiment, livrable en six à sept mois.</p>
+
+  <div class="prose">
+  <div class="callout"><div class="ttl">La chaîne que Daftar ferme</div><p>Pièce reçue → classée dans le bon dossier → obligation générée par le régime du client → passée au vert uniquement avec la preuve de dépôt → honoraires encaissés → retards et charge de travail visibles au tableau de bord. Excel, le papier, WhatsApp et Sage couvrent chacun un morceau ; aucun outil marocain ne relie les six.</p><p><em>Promesse en une ligne :</em> « Plus rien ne se perd, plus rien n'est en retard, et vous savez enfin ce que chaque client vous rapporte. » <span class="darija">En darija : « Kteb smiya, ytle3 lik l'dossier kamel. »</span></p></div>
+
+  <h3>Pour qui</h3>
+  </div>
+  <div class="cards">
+    <div class="card"><div class="k">Gérant de cabinet · cœur de cible</div><h4>Comptable agréé ou expert-comptable, cabinet de 1 à 5 personnes</h4><p>Un Excel par client, des classeurs, des pièces qui arrivent par WhatsApp. Il veut savoir en cinq secondes quels dossiers sont en retard, retrouver un accusé SIMPL en cinq secondes, ne plus perdre de pièces, encaisser ses honoraires et survivre au départ d'un collaborateur. Il n'utilisera pas un outil qui exige une double saisie ou qui affiche rouge tout l'historique le premier jour.</p></div>
+    <div class="card"><div class="k">Collaborateur · utilisateur quotidien</div><h4>Comptable, aide-comptable, chef de mission</h4><p>Un portefeuille de dossiers et trois pics par mois. Il veut voir « ma semaine », relancer un client sans y passer une heure, déposer quarante accusés d'un coup le 30 du mois, retrouver les identifiants d'un client sans appeler le gérant.</p></div>
+    <div class="card"><div class="k">Client du cabinet · vague 3</div><h4>Gérant de TPE, auto-entrepreneur, association, particulier</h4><p>Il veut envoyer ses factures en photo depuis son téléphone, savoir s'il est en règle et combien il doit, récupérer une attestation vite, et comprendre en darija.</p></div>
+  </div>
+
+  <div class="prose">
+  <h3>Rôles et permissions</h3>
+  <p>Les rôles reprennent l'organisation réelle des cabinets (section 02). Chaque dossier porte un responsable et un réviseur. Tout accès aux identifiants de portails et toute modification d'une fiche sont journalisés, comme l'exige l'art. 24-g de la loi 09-08. L'interface du cabinet existe en français et en arabe ; les messages aux clients en darija.</p>
+  </div>
+  <div class="table-wrap compact">
+    <table>
+      <thead><tr><th>Rôle</th><th>Fiches</th><th>Documents</th><th>Obligations</th><th>Honoraires</th><th>Identifiants portails</th><th>Administration</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Admin</strong> (gérant, signataire inscrit)</td><td>tout</td><td>tout</td><td>tout</td><td>tout</td><td>lecture et écriture</td><td>utilisateurs, règles, abonnement</td></tr>
+        <tr><td><strong>Chef de mission</strong></td><td>tout</td><td>tout</td><td>valide « déclaré » et « payé »</td><td>lecture</td><td>lecture journalisée</td><td>non</td></tr>
+        <tr><td><strong>Collaborateur</strong></td><td>son portefeuille</td><td>son portefeuille</td><td>marque « déclaré » avec preuve</td><td>lecture de ses dossiers</td><td>lecture journalisée sur ses dossiers</td><td>non</td></tr>
+        <tr><td><strong>Aide-comptable, stagiaire</strong></td><td>lecture</td><td>dépôt et classement</td><td>lecture</td><td>aucun</td><td>aucun</td><td>non</td></tr>
+        <tr><td><strong>Client</strong> (vague 3)</td><td>sa fiche</td><td>ses documents</td><td>statut de ses obligations</td><td>ses factures</td><td>aucun</td><td>non</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="prose">
+  <h3>Le socle : huit modules, pas plus</h3>
+  <ol>
+    <li><strong>Fiche client et recherche</strong> : une barre de recherche (raccourci clavier partout) par nom, ICE, IF, RC ou téléphone ; typologie à deux niveaux ; identifiants avec contrôle de longueur (la clé de contrôle de l'ICE n'a pas été confirmée : activée après vérification) ; attributs de régime qui pilotent le moteur ; <strong>date de prise en charge</strong>, <strong>statut d'activité</strong> (actif, dormant, en liquidation, radié), comptable salarié ou non ; statut du dossier (prospect, onboarding, actif, suspendu pour impayé, résilié, archivé) et canal d'acquisition. Mode déclaration par défaut, sans numéro de CIN (section 06).</li>
+    <li><strong>Dossier permanent et documents</strong> : dépôt web, scan mobile (photo, recadrage, PDF), <strong>dossier surveillé</strong> pour le scanner du cabinet avec nommage automatique, import par lot à l'onboarding ; rattachement obligatoire à un client, une catégorie, un exercice et un mois ; empreinte SHA-256, horodatage serveur et auteur à chaque dépôt (pas de gestion de versions au départ : un hash et un journal suffisent) ; checklist de pièces par sous-type avec dates d'expiration ; rétention 10 ans ; bouton « document perdu » qui génère la lettre recommandée à l'inspecteur ; export complet en un clic.</li>
+    <li><strong>Moteur d'obligations</strong> (section 04) limité d'abord aux <strong>douze obligations qui font l'essentiel des pénalités</strong> : TVA mensuelle et trimestrielle, acomptes IS, liasse et reliquat, cotisation minimale, CNSS, IR sur salaires, état des salaires, IR des professionnels et des autres revenus, CPU, auto-entrepreneur, taxe professionnelle, assemblée et dépôt des comptes ; plus une règle « attestation de régularité fiscale de moins de 6 mois ». Statuts déclaré et payé, preuve, drapeau « gérée par », coût du retard, alertes J-15, J-7, J-1. <strong>Dépôt en vrac des accusés</strong> auto-rattachés par identifiant fiscal et période, passage groupé au statut « déclaré ». Le <strong>mode panne</strong> : horodatage des tentatives, captures, réclamation de remise pré-rédigée. Les règles secondaires (loi 69-21, domiciliation, bénéficiaires effectifs, enregistrement d'actes, associations) arrivent en vague 2.</li>
+    <li><strong>Collecte des pièces</strong> : checklist mensuelle par client (achats, ventes, relevés, caisse, paie) ; statut « pièces reçues → saisies → déclarées » ; relances par e-mail et par <strong>lien WhatsApp pré-rempli</strong> en darija ou en français, envoyé depuis le téléphone du cabinet (aucune API, aucun transfert de données), avec opt-out enregistré.</li>
+    <li><strong>Clôture annuelle</strong> : un tableau de suivi de janvier à juin par client, cycle par cycle : pièces reçues → saisie à jour → révision → liasse déposée → assemblée tenue → comptes déposés au greffe ; c'est là que se joue la moitié du stress du cabinet.</li>
+    <li><strong>Honoraires en mode registre</strong> : abonnement par client, actes ponctuels, encaissé ou impayé, balance des retards, client en rouge dès une facture échue, relances en trois temps ; la <strong>facture conforme</strong> (ICE, IF, TVA, numérotation) est optionnelle pour démarrer et obligatoire pour les comptables agréés ; la lettre de mission est générée depuis un modèle. Pas de compteur de temps : un temps standard par type de dossier, saisi par l'admin, sert à estimer la marge.</li>
+    <li><strong>Tâches et « ma semaine »</strong> : une tâche par obligation, des tâches manuelles, la vue hebdomadaire par collaborateur, un journal d'activité par dossier. Un <strong>journal des notifications de la DGI</strong> reçues via SIMPL (mises en demeure, avis, relances), qui ont valeur juridique depuis la loi de finances 2026, avec compte à rebours des réponses.</li>
+    <li><strong>Identifiants de portails et fiche de passation</strong> : par client, l'identifiant SIMPL, les formulaires d'adhésion archivés, la personne qui porte le Mon e-ID DAMANCOM et la date de délégation, les comptes depotbilan et registre des auto-entrepreneurs. <strong>Aucun mot de passe n'est stocké</strong> : c'est la fonction la plus risquée juridiquement et la moins nécessaire, le Mon e-ID étant personnel. Désactiver un collaborateur génère sa fiche de passation (dossiers, accès, particularités, échéances à 30 jours).</li>
+  </ol>
+
+  <h3>Le tableau de bord et ses formules</h3>
+  </div>
+  <div class="kpis" aria-label="Maquette du tableau de bord">
+    <div class="kpi"><div class="v">+7</div><div class="l">nouveaux clients ce mois (4 SARL AU, 2 AE, 1 association)</div></div>
+    <div class="kpi"><div class="v red">11</div><div class="l">dossiers avec au moins une obligation en retard gérée par le cabinet</div></div>
+    <div class="kpi"><div class="v amber">23</div><div class="l">échéances dans les 7 jours, dont 9 sans pièces</div></div>
+    <div class="kpi"><div class="v green">94 %</div><div class="l">obligations déposées à temps sur 90 jours</div></div>
+    <div class="kpi"><div class="v">86 400</div><div class="l">MAD d'honoraires dus ce mois · 71 200 encaissés</div></div>
+    <div class="kpi"><div class="v red">38 900</div><div class="l">MAD d'impayés à plus de 30 jours (6 clients)</div></div>
+  </div>
+  <div class="table-wrap compact">
+    <table>
+      <thead><tr><th>Indicateur</th><th>Formule</th></tr></thead>
+      <tbody>
+        <tr><td>Nouveaux clients du mois, par sous-type et par canal</td><td>Nombre de dossiers dont la date d'entrée est dans le mois</td></tr>
+        <tr><td>Dossiers en retard / à jour</td><td>Dossiers ayant au moins une obligation rouge gérée par le cabinet, contre zéro</td></tr>
+        <tr><td>Obligations rouges et oranges de la semaine, par responsable</td><td>Somme par statut et par collaborateur</td></tr>
+        <tr><td>Taux de dépôt à temps (30 et 90 jours)</td><td>Obligations déclarées avant l'échéance ÷ obligations dues</td></tr>
+        <tr><td>Honoraires dus, encaissés, impayés à 30 / 60 / 90 jours</td><td>Sommes du registre d'honoraires et des encaissements</td></tr>
+        <tr><td>Revenu par client</td><td>Honoraires encaissés sur 12 mois glissants</td></tr>
+        <tr><td><strong>Marge estimée par client</strong></td><td>Honoraires encaissés − temps standard du type de dossier × coût horaire du responsable (salaire chargé ÷ heures productives) ; affichée comme estimation ; comparée aux fourchettes de marché pour signaler les dossiers à renégocier. Un compteur de temps réel n'arrivera qu'en vague 2, si les pilotes le demandent.</td></tr>
+        <tr><td>Charge de travail</td><td>Dossiers actifs et obligations ouvertes par collaborateur</td></tr>
+        <tr><td>Taux de collecte des pièces</td><td>Checklists mensuelles complètes ÷ attendues</td></tr>
+        <tr><td>Clients à risque de bascule</td><td>Seuils de CA de la section 03</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="prose">
+  <h3>Ce que Daftar ne construit pas</h3>
+  <ul>
+    <li><strong>Pas de moteur comptable</strong> (écritures, grand-livre, liasse) : Sage, KHABIR, AGL et Odoo le font, les cabinets y sont attachés, et cela déclencherait le cahier des charges du Conseil national de la comptabilité. On importe et on exporte.</li>
+    <li><strong>Pas de synchronisation bancaire</strong> : l'open banking n'est pas réglementé au Maroc. Import de relevés en fichier plus tard.</li>
+    <li><strong>Pas de télédéclaration automatique</strong> sur SIMPL ou DAMANCOM : aucune API publique, géo-blocage, Mon e-ID personnel. Des « connecteurs humains » : checklist, preuve, fichiers.</li>
+    <li><strong>Pas de stockage de mots de passe</strong>, pas de robot de connexion aux portails.</li>
+    <li><strong>Pas d'API WhatsApp</strong> tant que le transfert vers les serveurs de Meta n'est pas couvert par un consentement et une formalité CNDP.</li>
+    <li><strong>Pas de paie complète</strong> : Humantal, Mizan, OJRA existent. Au plus un export du bordereau CNSS.</li>
+    <li><strong>Pas de dates de facturation électronique codées en dur</strong> tant que le décret n'est pas au Bulletin officiel.</li>
+    <li><strong>Pas d'OCR étranger par défaut</strong>, pas de score de conformité envoyé automatiquement au client (une partie des rouges sont les retards du cabinet, pas du client : le gérant garde la main sur le message).</li>
+    <li><strong>Pas de conseil fiscal ni de « certification »</strong> dans le produit ou le marketing : Daftar est un outil, jamais un prestataire. Pas de module de publicité pour les cabinets : la loi 127-12 interdit la publicité personnelle aux comptables agréés.</li>
+    <li><strong>Pas de marketplace</strong> cabinets-clients avant 24 mois, pas de « baromètre » vendu aux Ordres : incompatible avec le secret professionnel et la promesse de confidentialité.</li>
+  </ul>
+
+  <h3>Les trois vagues</h3>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Vague</th><th>Contenu</th><th>Pourquoi dans cet ordre</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Socle</strong><br><span class="src">mois 1 à 7 · version pilote fin janvier 2027, v1 en mai 2027</span></td><td>Les huit modules ci-dessus, alertes e-mail et liens WhatsApp, import Excel des clients, sécurité (double authentification, journal), kits CNDP et contrat de sous-traitance, calendrier 2026 et 2027 testé.</td><td>C'est la chaîne complète pour le cabinet, coupée de tout ce qui n'a pas été demandé par un praticien.</td></tr>
+        <tr><td><strong>Vague 2</strong><br><span class="src">mois 8 à 12</span></td><td>Règles secondaires (loi 69-21, domiciliation, bénéficiaires effectifs, actes, associations, calendrier du commissariat aux comptes pour les cabinets d'expertise) ; OCR hébergé au Maroc après un test sur 200 documents réels et quand 50 cabinets téléversent vraiment ; générateurs de fichiers officiels (état 9421, relevé de déductions TVA, bordereau CNSS) et import des balances Sage et KHABIR (source du CA de référence) ; score de conformité interne, envoi manuel contrôlé par le gérant ; signature simple horodatée des lettres de mission ; SMS via passerelle marocaine ; compteur de temps si demandé.</td><td>Chaque brique dépend d'un usage réel constaté chez les pilotes ou d'un test technique.</td></tr>
+        <tr><td><strong>Vague 3</strong><br><span class="src">mois 13 à 24</span></td><td>Portail et application client en arabe, darija et français, hébergés au Maroc, facturés par dossier ; collecte WhatsApp par l'API après consentement exprès et formalité de transfert ; signature qualifiée via Barid eSign pour les actes à enjeu ; module contrôle fiscal (compte à rebours, export du dossier et du fichier des écritures) ; connecteur facturation électronique dès la publication de la spécification ; import de relevés bancaires ; assistant sur le CGI réservé au cabinet, avec citation d'article obligatoire ; multi-cabinet et API partenaires.</td><td>Ces briques dépendent de textes non publiés, de partenaires externes ou d'une base installée, et sont la seule voie pour dépasser le plafond du marché des cabinets.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="prose">
+  <h3>Trois moments « wow » pour une démo de dix minutes</h3>
+  <ol>
+    <li><strong>« Votre Excel devient un cabinet piloté. »</strong> Le prospect apporte son fichier de clients. Import : 80 dossiers créés et typés, deux identifiants incomplets en rouge. Trois secondes plus tard, le moteur a généré l'échéancier de chacun depuis sa date de prise en charge et l'écran dit : « 11 clients en rouge aujourd'hui, coût estimé des retards 14 300 DH ». La question qui vend : « vous saviez lesquels avant de venir ? »</li>
+    <li><strong>« Quarante accusés en un geste. »</strong> Le commercial glisse un dossier de quarante accusés SIMPL dans Daftar : chacun retrouve son client et sa période, quarante obligations passent au vert d'un coup. Puis « relancer les 6 clients en retard » : un message en darija s'ouvre dans WhatsApp avec la liste exacte des pièces manquantes. Enfin une facture payée en espèces au-dessus de 5 000 DH déclenche « TVA non déductible ».</li>
+    <li><strong>« Le jour où ça tourne mal. »</strong> SIMPL est en panne le 30 avril : mode panne, tentatives horodatées, réclamation pré-rédigée. Un contrôleur demande un dossier : on tape le nom, dix ans de pièces horodatées, export en un clic. Un collaborateur démissionne : fiche de passation générée. « Hébergé au Maroc, déclaré à la CNDP. »</li>
+  </ol>
+  </div>
+</section>
+<section class="sec" id="s8">
+  <div class="sec-head"><span class="num">08</span><h2>Architecture et sécurité</h2></div>
+  <p class="sec-sub">Un monolithe simple, hébergé au Maroc, avec un moteur de règles testé sur le calendrier réel et une sécurité à la hauteur du secret professionnel. Et un associé technique plutôt qu'un freelance.</p>
+
+  <div class="prose">
+  <h3>Choix techniques</h3>
+  </div>
+  <div class="table-wrap compact">
+    <table>
+      <thead><tr><th>Brique</th><th>Choix recommandé</th><th>Raison</th></tr></thead>
+      <tbody>
+        <tr><td>Application</td><td>Monolithe web : backend Python (Django) ou Node (NestJS) ; frontend React ou Vue en application web progressive installable sur mobile ; interface cabinet en français et en arabe</td><td>Une seule base de code pour une petite équipe ; le mobile sert à scanner et consulter, le bureau à travailler</td></tr>
+        <tr><td>Données</td><td>PostgreSQL ; stockage objet compatible S3 (MinIO) chez le même hébergeur pour les documents ; Redis pour les files (alertes, PDF, rattachement des accusés)</td><td>Standard, robuste, transférable d'un hébergeur marocain à un autre</td></tr>
+        <tr><td>Moteur de règles</td><td>Table de règles en base, versionnée par année fiscale, avec source et statut (vérifié / à confirmer) ; moteur de dates couvert par des tests automatiques sur le calendrier 2026 et 2027 (2 mars, 30 avril, 31 mars, jours fériés religieux)</td><td>Une règle fausse coûte une pénalité à un client ; la règle doit être lisible et corrigeable sans redéploiement</td></tr>
+        <tr><td>Rattachement des accusés</td><td>Extraction du texte des PDF SIMPL et DAMANCOM (identifiant fiscal, période, impôt) sans OCR, rattachement automatique à l'obligation, file de traitement pour les dépôts en vrac</td><td>Le traitement de masse aux échéances est la condition d'usage réel</td></tr>
+        <tr><td>Notifications</td><td>E-mail transactionnel depuis un fournisseur acceptant une entité marocaine ; liens WhatsApp pré-remplis (aucune API) ; SMS via une passerelle marocaine en vague 2 ; API WhatsApp en vague 3 après consentement et formalité de transfert</td><td>Sous-traitants marocains d'abord, listés dans le contrat de sous-traitance ; pas de transfert de données non notifié</td></tr>
+        <tr><td>OCR (vague 2)</td><td>Auto-hébergé (PaddleOCR ou Tesseract avec correction de l'ordre droite-gauche) ou services d'IA de la région Oracle Casablanca, après un test sur 200 documents réels ; fournisseur étranger seulement sur consentement et autorisation</td><td>Envoyer une CIN à une API américaine est un transfert au sens des art. 43-44 de la loi 09-08</td></tr>
+        <tr><td>Hébergement</td><td>Socle : VPS marocain (539 à 879 DH par mois chez vps.ma, ou équivalent) avec sauvegardes dans un second datacenter marocain ; croissance : inwi Business, N+ONE (Oracle Cloud Casablanca) ou Atlas Cloud Services. Prévoir le coût du stockage à l'échelle (documents sur 10 ans, sauvegardes hors site)</td><td>Rester au Maroc évite toute formalité de transfert par cabinet et devient un argument de vente</td></tr>
+        <tr><td>Paiement de l'abonnement</td><td>Virement pour l'annuel ; carte via YouCan Pay au démarrage puis CMI avec carte enregistrée ; relances et suspension en lecture seule gérées par Daftar</td><td>Aucune passerelle marocaine ne gère l'abonnement de bout en bout ; le churn involontaire se traite par la relance, pas par la coupure</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="prose">
+  <h3>Modèle de données</h3>
+  </div>
+  <div class="table-wrap compact">
+    <table>
+      <thead><tr><th>Entité</th><th>Contenu principal</th><th>Liée à</th></tr></thead>
+      <tbody>
+        <tr><td><span class="mono">Cabinet</span></td><td>Raison sociale, ICE, IF, RC, numéro et date d'inscription OPCA ou OEC, échéance de l'assurance RC, plan d'abonnement, numéros de formalités CNDP (F214, F112), paramètres (jours fériés, seuils d'alerte, temps standard et coût horaire par type de dossier)</td><td>Utilisateurs, Clients, Règles locales</td></tr>
+        <tr><td><span class="mono">Utilisateur</span></td><td>Rôle, double authentification, coût horaire, portefeuille</td><td>Cabinet, Tâches, Journal</td></tr>
+        <tr><td><span class="mono">Client</span></td><td>Type, sous-type, identifiants (CIN en mode autorisation seulement), attributs de régime, dates d'exercice, CA de référence et sa source, date de prise en charge, statut d'activité, comptable salarié ou non, responsable, réviseur, statut du dossier, canal</td><td>Documents, Obligations, Honoraires, Accès, Événements, Notifications DGI</td></tr>
+        <tr><td><span class="mono">Document</span></td><td>Fichier, catégorie, exercice, mois, empreinte SHA-256, horodatage, auteur, date d'expiration, texte extrait</td><td>Client, Obligation (preuve)</td></tr>
+        <tr><td><span class="mono">Règle</span></td><td>Conditions, fréquence, formule de date, portail, preuve attendue, formule de pénalité, source, version de loi de finances, statut de vérification</td><td>Obligations générées</td></tr>
+        <tr><td><span class="mono">Obligation</span></td><td>Client, règle, période, échéance calculée, statut (à venir, J-x, en retard, déclaré, payé, n/a), gérée par (cabinet, client, tiers), responsable, preuve, montant, pénalité estimée, journal du mode panne</td><td>Client, Règle, Document, Tâche</td></tr>
+        <tr><td><span class="mono">Honoraire</span> et <span class="mono">Encaissement</span></td><td>Abonnement ou acte, montant, TVA, facture optionnelle (numéro séquentiel), échéance, mode de paiement, date</td><td>Client, Lettre de mission</td></tr>
+        <tr><td><span class="mono">Accès portail</span></td><td>Portail, identifiant, porteur du Mon e-ID, formulaires archivés ; jamais de mot de passe</td><td>Client, Journal</td></tr>
+        <tr><td><span class="mono">Tâche</span>, <span class="mono">Clôture</span></td><td>Origine (obligation ou manuelle), assigné, échéance ; étapes de la clôture annuelle par client</td><td>Client, Utilisateur</td></tr>
+        <tr><td><span class="mono">Journal d'audit</span></td><td>Qui, quoi, quand, sur quelle entité ; immuable</td><td>Tout</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="prose">
+  <h3>Sécurité et conformité intégrées</h3>
+  <ul>
+    <li><strong>Authentification</strong> : double authentification obligatoire pour l'admin et le chef de mission, recommandée pour tous ; sessions courtes ; verrouillage après échecs.</li>
+    <li><strong>Chiffrement</strong> : TLS en transit, disque chiffré au repos, chiffrement applicatif des identifiants de portails ; aucun mot de passe de portail stocké.</li>
+    <li><strong>Journal d'audit immuable</strong> : consultation et modification de chaque fiche, chaque document, chaque identifiant ; exportable pour la CNDP et pour le cabinet.</li>
+    <li><strong>Sauvegardes</strong> : chiffrées, quotidiennes, dans un second datacenter marocain ; test de restauration mensuel ; rétention des pièces 10 ans, purge configurable du reste.</li>
+    <li><strong>Isolation</strong> : chaque cabinet est un espace étanche.</li>
+    <li><strong>Test d'intrusion</strong> avant le lancement payant et chaque année, budgété ; procédure d'incident écrite, notification aux cabinets touchés.</li>
+    <li><strong>Conformité</strong> : SARL éditrice ; formalités CNDP propres à Daftar avant le lancement (gestion de ses clients-cabinets, ressources humaines, site) ; deux kits pré-remplis pour les cabinets (déclaration type 32-2015 sans CIN, autorisation F112 avec CIN, Daftar déclaré comme sous-traitant) ; contrat de sous-traitance dans les conditions générales ; opt-in et opt-out pour toute relance ; clause rappelant que le cabinet reste responsable de ses déclarations ; <strong>procédure d'alerte</strong> à tous les cabinets quand une règle est corrigée après coup ; assurance responsabilité civile professionnelle de l'éditeur.</li>
+    <li><strong>Portabilité</strong> : export complet du cabinet en un clic, sans frais. La rétention doit venir de la confiance, pas du verrouillage.</li>
+  </ul>
+
+  <h3>Jalons de construction du socle</h3>
+  </div>
+  <ol class="steps">
+    <li><b>Mois 1 et 2 — modèle de données, fiche client, recherche, rôles, import Excel.</b> Dix précommandes signées, entretiens faits, table des douze règles rédigée et signée par l'expert-comptable référent.</li>
+    <li><b>Mois 3 et 4 — documents et moteur d'obligations.</b> Dépôt, scan mobile, dossier surveillé, empreintes ; calendrier généré et testé sur les cas limites ; statuts, preuves, dépôt en vrac des accusés ; mode panne.</li>
+    <li><b>Mois 5 — honoraires, tâches, clôture, tableau de bord.</b> Registre d'honoraires, balance des impayés, « ma semaine », suivi de clôture, indicateurs.</li>
+    <li><b>Mois 6 — sécurité, kits CNDP, version pilote.</b> Double authentification, journal, sauvegardes, test d'intrusion ; version pilote entre les mains des dix cabinets précommandés (fin janvier 2027), sur leurs vraies données.</li>
+    <li><b>Mois 7 — v1.</b> Corrections issues des pilotes après la TVA de fin janvier et l'état des salaires de fin février ; v1 publique en mai 2027 avec la grille tarifaire.</li>
+  </ol>
+  <div class="prose">
+  <div class="callout warn"><div class="ttl">Un associé technique, pas un freelance</div><p>Un fondateur qui n'est ni développeur ni comptable et qui dépend d'un développeur payé au mois porte le premier risque d'exécution du projet. Les deux relecteurs recommandent un associé technique avec une part du capital, et un comptable agréé ou expert-comptable en conseil avec 2 à 4 % du capital, qui ouvre la porte d'un conseil régional.</p></div>
+  </div>
+</section>
+<section class="sec" id="s9">
+  <div class="sec-head"><span class="num">09</span><h2>Modèle économique et prix</h2></div>
+  <p class="sec-sub">Des prix publics en dirhams, par palier de dossiers, sous le seuil psychologique des 1 000 DH par mois que les cabinets pratiquent eux-mêmes. Et une volonté de payer testée avant d'écrire la première ligne de code.</p>
+
+  <div class="prose">
+  <h3>Pourquoi ce modèle</h3>
+  <ul>
+    <li><strong>Par cabinet et par palier de dossiers</strong>, pas par utilisateur : un cabinet raisonne en dossiers, et facturer chaque login pousserait les gérants à partager un compte, ce qui ruine le journal d'audit.</li>
+    <li><strong>Prix publics</strong> : Sage, Cegid, GénéraFi, Experio et Humantal sont « sur devis » ; seul ExpertC affiche 60 à 80 DH par utilisateur. Un tarif clair en MAD est un avantage et un signal de confiance.</li>
+    <li><strong>Annuel = dix mois</strong>, payé par virement, réservé aux abonnements souscrits en janvier et février : c'est le mode de paiement naturel des cabinets et cela finance la trésorerie du lancement.</li>
+    <li><strong>Précommande plutôt qu'essai gratuit</strong> pour les dix premiers cabinets : 990 DH pour six mois, remboursables si le produit n'est pas livré. Si dix cabinets de Casablanca ne sortent pas 990 DH sur une démo et l'import de leur Excel, le prix ou la douleur sont faux. Ensuite, essai de 30 jours avec import guidé : un cycle complet d'échéances suffit pour voir le rouge devenir vert.</li>
+    <li><strong>Pas de plan gratuit en année 1</strong> : le support en darija coûte cher et un plan gratuit attirerait les structures les moins solvables ; à reconsidérer en année 2 pour les stagiaires et les écoles.</li>
+    <li><strong>Offre fondateurs</strong> : 30 % de remise pendant douze mois pour les 100 premiers cabinets, contre un témoignage vidéo et l'autorisation d'afficher leur logo.</li>
+  </ul>
+  </div>
+
+  <div class="pricing">
+    <div class="plan"><div class="nm">Solo</div><div class="pr">199 <small>MAD HT / mois · 1 990 / an</small></div><div class="for">Comptable agréé seul</div><ul><li>2 utilisateurs, <strong>jusqu'à 60 dossiers</strong> (un comptable agréé seul en gère 50 à 80), 5 Go</li><li>Fiche client, dossier permanent, moteur d'obligations, dépôt en vrac des accusés</li><li>Alertes e-mail, liens WhatsApp</li><li>Registre d'honoraires et impayés</li></ul></div>
+    <div class="plan hi"><span class="pill accent tag">le plus vendu (cible)</span><div class="nm">Cabinet</div><div class="pr">449 <small>MAD HT / mois · 4 490 / an</small></div><div class="for">Cabinet de 2 à 6 personnes</div><ul><li>5 utilisateurs, jusqu'à 120 dossiers, 50 Go ; + 3 MAD par dossier au-delà</li><li>Tout Solo + tableau de bord, charge par collaborateur, suivi de clôture</li><li>Identifiants de portails, fiche de passation, mode panne, journal des notifications DGI</li><li>Facture conforme, lettre de mission</li></ul></div>
+    <div class="plan"><div class="nm">Pro</div><div class="pr">899 <small>MAD HT / mois · 8 990 / an</small></div><div class="for">Cabinets d'expertise comptable, multi-bureaux</div><ul><li>15 utilisateurs, dossiers illimités</li><li>Tout Cabinet + portail client (vague 3), multi-sites, calendrier du commissariat aux comptes</li><li>Export et API, connecteurs Sage et KHABIR</li><li>Onboarding sur site inclus</li></ul></div>
+    <div class="plan"><div class="nm">Options</div><div class="pr"><small>à la carte</small></div><div class="for">Pour ne pas bloquer la croissance d'un cabinet</div><ul><li>+ 49 MAD par utilisateur supplémentaire</li><li>+ 3 MAD par dossier au-delà du palier</li><li>Onboarding sur site : 1 500 à 3 000 MAD (Solo, Cabinet)</li><li>Vague 3 : portail client 20 à 30 MAD par dossier et par mois, refacturable par le cabinet à son client</li></ul></div>
+  </div>
+  <p class="src">TVA de 20 % en sus. Grille issue de la convergence des trois propositions stratégiques et validée par les deux relecteurs (« au-delà de 900 DH par mois je reste sur Sage et Excel ; un prix par dossier supérieur à 4 ou 5 DH me ferait fuir »). L'étude de marché initiale proposait 249 / 599 / 1 190 : à tester en A/B pendant le pilote.</p>
+
+  <div class="prose">
+  <h3>Ce que cela représente pour le cabinet</h3>
+  </div>
+  <div class="table-wrap compact">
+    <table>
+      <thead><tr><th>Référence</th><th class="num">Coût observé</th><th>Lecture</th></tr></thead>
+      <tbody>
+        <tr><td>Sage Expert (production comptable)</td><td class="num">12 000 – 25 000 MAD / an + maintenance</td><td>Daftar Cabinet à 4 490 MAD / an est un complément, pas un remplacement</td></tr>
+        <tr><td>KHABIR</td><td class="num">5 000 – 12 000 MAD + 15-20 % / an</td><td>Idem</td></tr>
+        <tr><td>ExpertC (gestion de cabinet sans documents ni obligations)</td><td class="num">60 – 80 MAD / utilisateur / mois</td><td>5 utilisateurs = 300 à 400 MAD ; Daftar Cabinet à 449 inclut les documents et les obligations</td></tr>
+        <tr><td>Kabineo (France)</td><td class="num">≈ 11 MAD / dossier / mois</td><td>120 dossiers = 1 320 MAD ; Daftar ≈ 3,7 MAD par dossier</td></tr>
+        <tr><td>Honoraires d'un cabinet de 50 dossiers à 1 000 MAD</td><td class="num">≈ 50 000 MAD / mois</td><td>Daftar Cabinet = 0,9 % du chiffre d'affaires ; une seule majoration de TVA évitée (20 % du montant dû, minimum 500 MAD) paie plusieurs mois</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="prose">
+  <h3>Économie unitaire (hypothèses prudentes, à mesurer sur la première cohorte)</h3>
+  </div>
+  <div class="table-wrap compact">
+    <table>
+      <thead><tr><th>Indicateur</th><th class="num">Hypothèse</th><th>Base</th></tr></thead>
+      <tbody>
+        <tr><td>Revenu moyen par cabinet (ARPA)</td><td class="num">320 – 350 MAD HT / mois</td><td>Mix dominé par Solo et Cabinet, offre fondateurs et annuel à dix mois ; 450 MAD est le plafond optimiste</td></tr>
+        <tr><td>Marge brute</td><td class="num">65 – 70 %</td><td>Hébergement, messages, et surtout le support en darija et l'onboarding, qui sont des coûts de service</td></tr>
+        <tr><td>Attrition mensuelle</td><td class="num">3 à 4 % la première année</td><td>Marché qui préfère le mensuel ; objectif 2 % en année 2 grâce à l'annuel et aux relances qui créent l'habitude</td></tr>
+        <tr><td>Valeur vie client (LTV)</td><td class="num">6 000 – 8 000 MAD</td><td>ARPA × marge ÷ attrition</td></tr>
+        <tr><td>Coût d'acquisition (CAC)</td><td class="num">2 000 – 3 000 MAD</td><td>Média ≈ 1 500 à 2 500 MAD (coût par lead 150 à 250 MAD, 3 à 5 % de conversion lead → client) ; le parrainage entre confrères doit ramener le CAC moyen sous 2 000</td></tr>
+        <tr><td>LTV / CAC</td><td class="num">≈ 2,5 à 3,5</td><td>Acceptable seulement si l'attrition descend et si le parrainage prend le relais de la publicité</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="prose">
+  <p><strong>Sources de revenu au-delà de l'abonnement</strong> : onboarding sur site, options utilisateurs et dossiers, puis en vague 3 le <strong>portail client facturé par dossier</strong> (20 à 30 MAD par mois, que le cabinet refacture à son client), la signature qualifiée à l'acte et le connecteur de facturation électronique. Le marché des cabinets est petit en valeur (section 11) : c'est le portail par dossier qui fait sortir Daftar d'un plafond d'une trentaine de millions de dirhams par an.</p>
+  <div class="callout warn"><div class="ttl">Subvention Maroc PME</div><p>Mowakaba et le PACTE TPME financent 80 à 90 % des projets de digitalisation des TPE, avec des plafonds qui divergent selon les sources. L'éligibilité d'un abonnement logiciel n'est pas confirmée. Se faire référencer prestataire agréé et produire un devis annuel « éligible » est un levier de vente à valider avec Maroc PME avant d'en faire un argument.</p></div>
+  </div>
+</section>
+<section class="sec" id="s10">
+  <div class="sec-head"><span class="num">10</span><h2>Aller au marché</h2></div>
+  <p class="sec-sub">Dans ce métier, on achète ce qu'un confrère a vu tenir en saison. Dix précommandes payantes, un pilote sur données réelles pendant la saison des bilans, des témoignages, puis la publicité. Et des portes de passage avant chaque dépense.</p>
+
+  <div class="prose">
+  <h3>Positionnement et messages</h3>
+  <p><strong>Promesse centrale</strong> : « Tapez le nom du client, tout le dossier apparaît : identifiants, documents scannés, et chaque obligation en vert ou en rouge avant que la DGI ne s'en aperçoive. » Daftar n'est pas un logiciel comptable : il se pose au-dessus de Sage, KHABIR, EBP ou Odoo.</p>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Segment</th><th>Douleur documentée</th><th>Message</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Comptables agréés de 1 à 5 personnes</strong> (cœur de cible, dont ~2 500 récemment régularisés)</td><td>Nouveau cachet OPCA, pas de process, un Excel par client, pièces par WhatsApp et clé USB, pénalités automatiques quand SIMPL tombe, notes d'honoraires informelles, concurrence des bilans à prix cassés</td><td>« Vous avez le cachet, ayez le cabinet : vos 80 dossiers dans une seule fiche, vos échéances signalées à J-7 et en rouge dès le lendemain, vos honoraires encaissés, en dix minutes à partir de votre Excel. »</td></tr>
+        <tr><td><strong>Cabinets d'expertise comptable</strong></td><td>Équipés Sage Expert mais sans pilotage : charge par collaborateur, retards par dossier, secret professionnel, turnover</td><td>« Le tableau de bord que Sage ne vous donne pas : retards par dossier, charge par chef de mission, journal d'audit conforme à la loi 09-08, données hébergées au Maroc. »</td></tr>
+        <tr><td><strong>Anciens comptables sans titre</strong></td><td>Depuis août 2025, plus de droit d'exercer en indépendant</td><td>Pas de message commercial. Un mode « collaborateur » rattaché à un cabinet inscrit qui supervise et signe.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="prose">
+  <p><strong>Trois accroches en darija</strong> à tester : <span class="darija">« Daftar : kteb smiyat l-client, l-milaf kayban »</span> (tape le nom du client, le dossier apparaît) · <span class="darija">« L7mar kayban 3endek qbel ma tji l-gharama »</span> (le rouge s'affiche chez toi avant que la pénalité n'arrive) · <span class="darija">« Salina m3a l-kartonat w l-Excel : kolchi f Daftar »</span> (fini les cartons et l'Excel, tout est dans Daftar).</p>
+  <p>Règles : jamais « conseil fiscal », « certification » ou « certifié CNDP » ; jamais de date promise pour la facturation électronique ; les campagnes promeuvent Daftar, jamais un cabinet (la publicité personnelle est interdite aux comptables agréés) ; le mot « fiduciaire » disparaît du marketing.</p>
+
+  <h3>Les phases du lancement</h3>
+  </div>
+  <ol class="steps">
+    <li><b>Précommandes (septembre – novembre 2026).</b> Quinze à vingt entretiens en cabinet, en observant plutôt qu'en demandant : où sont rangés les accusés, où sont les identifiants, qui gère la CNSS. Question test : « me donnez-vous vos 80 dossiers en Excel pour une démo ? » Objectif : <strong>dix précommandes à 990 DH pour six mois</strong> (remboursables) avant de payer un développeur. Recrutement dans les groupes Facebook de la profession, par les conseils régionaux et sur le terrain.</li>
+    <li><b>Pilote sur données réelles (fin janvier – avril 2027).</b> Version pilote entre les mains des dix cabinets précommandés pour la TVA de fin janvier, l'état des salaires de fin février, les liasses du 31 mars et l'IR du 30 avril. En parallèle, le calendrier fiscal 2027 gratuit et le simulateur de pénalités publiés en décembre 2026 captent des inscriptions.</li>
+    <li><b>V1 payante (mai 2027).</b> Grille publique, offre fondateurs, dix témoignages de cabinets qui ont passé un 31 mars avec l'outil, campagnes légères (5 000 MAD par mois au plus) pour tester les messages.</li>
+    <li><b>Acquisition payante (septembre 2027, puis janvier 2028).</b> Campagnes complètes après la première porte de passage : 40 cabinets payants et 75 % des obligations passées au vert avec preuve.</li>
+  </ol>
+  <div class="prose">
+  <div class="callout"><div class="ttl">Trois portes de passage</div><p><strong>Avant de coder</strong> : dix précommandes payantes. <strong>Avant tout achat média supérieur à 5 000 MAD par mois</strong> : 40 cabinets payants et 75 % des obligations passées au vert avec preuve. <strong>Avant d'ouvrir une seconde ville avec un salarié dédié</strong> : 150 cabinets et une attrition inférieure à 3 %.</p></div>
+  </div>
+
+  <div class="prose"><h3>Séquence géographique</h3></div>
+  <div class="table-wrap compact">
+    <table>
+      <thead><tr><th>Période</th><th>Villes</th><th>Pourquoi</th><th>Moyens</th></tr></thead>
+      <tbody>
+        <tr><td>2026 – mi-2027</td><td>Casablanca-Settat</td><td>37,8 % des sociétés actives, 68 % des experts-comptables, 33 959 créations en 2025, 276 comptables agréés sur la liste de 2023</td><td>Précommandes, pilote, démonstrations sur site par le fondateur</td></tr>
+        <tr><td>mi-2027</td><td>Rabat-Salé-Kénitra</td><td>14,1 % des sociétés, 189 comptables agréés, Technopark</td><td>Déplacements hebdomadaires, publicité géociblée</td></tr>
+        <tr><td>fin 2027 – 2028</td><td>Tanger, Marrakech, Fès, Agadir</td><td>Plus de la moitié des comptables agréés sont hors de l'axe Casablanca-Rabat (Tanger 170, Marrakech 167, Fès 157, Agadir 131 en 2023) ; conseils régionaux ; GITEX Africa à Marrakech</td><td>Un commercial itinérant après 40 cabinets payants, conventions régionales, onboarding en visio</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="prose">
+  <h3>Canaux et budget sur douze mois de commercialisation</h3>
+  <p>Repères marocains 2025-2026 : Meta en B2B, CPM 50 à 80 MAD et CPC 4 à 8 MAD ; Google Search « logiciel » 4 à 12 MAD le clic ; coût par lead B2B qualifié 150 à 500 MAD selon les agences. Meta ne sait pas isoler une audience de quelques milliers de comptables : nous retenons un coût par lead de 150 à 250 MAD et 3 à 5 % de conversion lead → client, à vérifier dès le premier mois. Le parrainage entre confrères doit devenir le premier canal.</p>
+  </div>
+  <div class="table-wrap compact">
+    <table>
+      <thead><tr><th>Canal</th><th class="num">Mai – août 2027</th><th class="num">Sept. – déc. 2027</th><th class="num">Janv. – avr. 2028</th><th>Rôle</th></tr></thead>
+      <tbody>
+        <tr><td>Meta (Facebook, Instagram, vidéos en darija)</td><td class="num">3 000</td><td class="num">8 000</td><td class="num">12 000</td><td>Volume de leads ; formats courts et témoignages ; plafond de coût par lead 250 MAD sinon pause</td></tr>
+        <tr><td>Google Search (« logiciel cabinet comptable Maroc », « suivi déclarations DGI »)</td><td class="num">2 000</td><td class="num">5 000</td><td class="num">8 000</td><td>Intention forte, personne n'occupe ces requêtes</td></tr>
+        <tr><td>YouTube en darija (tutoriels SIMPL, DAMANCOM, témoignages), contenu et référencement</td><td class="num">2 500</td><td class="num">3 000</td><td class="num">3 000</td><td>Confiance et référencement naturel, comme le font les intégrateurs Odoo</td></tr>
+        <tr><td>Événements (conseils régionaux, congrès de l'OEC si une édition 2027 a lieu, GITEX Africa)</td><td class="num">5 000</td><td class="num">15 000</td><td class="num">20 000</td><td>Références et partenariats ; coûts de stand à confirmer</td></tr>
+        <tr><td>Parrainage (un mois offert par cabinet parrainé)</td><td class="num">1 000</td><td class="num">3 000</td><td class="num">5 000</td><td>Objectif : 30 à 50 % des nouveaux clients</td></tr>
+        <tr><td>LinkedIn, TikTok</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td>Pas en année 1</td></tr>
+      </tbody>
+      <caption>Montants mensuels en MAD, hypothèses. Total sur douze mois de commercialisation ≈ 220 000 MAD. Aucune campagne à plus de 5 000 MAD par mois avant la porte de passage des 40 cabinets payants.</caption>
+    </table>
+  </div>
+
+  <div class="prose">
+  <h3>Partenariats et distribution</h3>
+  </div>
+  <div class="table-wrap compact">
+    <table>
+      <thead><tr><th>Partenaire</th><th>Ce qu'on apporte</th><th>Ce qu'on attend</th><th>Priorité</th></tr></thead>
+      <tbody>
+        <tr><td>Conseils régionaux de l'OPCA et de l'OEC ; un membre de l'Ordre au conseil de Daftar avec une part du capital</td><td>Tarif membre, webinaires « calendrier 2027 », kits CNDP</td><td>Convention ou label (conditions à négocier), accès aux listes, stand aux événements ; la distribution par les Ordres exige quelqu'un à l'intérieur</td><td>Haute</td></tr>
+        <tr><td>Pôle experts-comptables de la CNDP (convention DATA-TIKA du 15 avril 2026)</td><td>Proposition d'un modèle type « clientèle des cabinets comptables »</td><td>Une autorisation simplifiée à la place de la F112 : l'argument de conformité n° 1</td><td>Haute</td></tr>
+        <tr><td>Maroc PME (Mowakaba, PACTE TPME)</td><td>Prestataire référencé, devis conformes</td><td>Financement de 80 à 90 % de l'abonnement et de l'onboarding, si un abonnement est éligible</td><td>Haute</td></tr>
+        <tr><td>Technopark, Startup VB, CEED</td><td>—</td><td>Locaux à 50 DH/m², bourse et prêt d'honneur, visibilité</td><td>Haute, dès le premier mois</td></tr>
+        <tr><td>Banques : Dar Al Moukawil (Attijariwafa), Bank of Africa</td><td>Cabinets partenaires équipés pour leurs clients TPE</td><td>Apport de dossiers, co-marketing</td><td>Moyenne</td></tr>
+        <tr><td>ENCG (12 écoles), ISCAE</td><td>Licence gratuite pour les cours, cas pratiques</td><td>Futurs collaborateurs prescripteurs, stagiaires</td><td>Moyenne</td></tr>
+        <tr><td>Experio, Hisab, Facturis, Humantal, Manageo</td><td>Intégration plutôt que concurrence</td><td>Co-vente, connecteurs</td><td>Moyenne</td></tr>
+        <tr><td>Revendeurs Sage et Odoo</td><td>Connecteur import-export ; pas de commission (ils vendent déjà Sage Gestion Cabinet, conflit d'intérêt)</td><td>Compatibilité et crédibilité auprès des cabinets équipés</td><td>Basse</td></tr>
+        <tr><td>Charikaty, Inyad</td><td>Routage des sociétés créées vers des cabinets Daftar</td><td>Flux de nouveaux dossiers (109 656 créations par an)</td><td>Année 2</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="prose">
+  <h3>Vente et onboarding</h3>
+  <ol>
+    <li>Lead (parrainage, publicité, terrain) → réponse sur WhatsApp Business en darija ou en français sous une heure ouvrée.</li>
+    <li>Démo de 30 minutes en visio ou sur site, <strong>sur les données du prospect</strong> : on importe son Excel en direct et on montre ses obligations en rouge pour le mois.</li>
+    <li>Vérification du numéro d'inscription OPCA ou OEC (condition d'accès). Essai de 30 jours avec checklist : import, scan de cinq dossiers, dépôt en vrac des accusés du mois, activation des rappels.</li>
+    <li>Formation d'une heure par rôle, guide vidéo en darija.</li>
+    <li>Paiement : virement pour l'annuel, carte récurrente pour le mensuel ; relance automatique, suspension en lecture seule après 30 jours d'impayé.</li>
+    <li>Support WhatsApp sept jours sur sept aux heures de pointe (jusqu'au 10 pour la CNSS, fin de mois pour la TVA, mars et avril).</li>
+  </ol>
+  <p><strong>Ce qui construit la confiance</strong> : hébergement au Maroc, formalités CNDP faites et affichées, contrat de sous-traitance, journal d'audit, logos et témoignages des pilotes par ville, facture conforme avec ICE et TVA, export des données en un clic, assurance responsabilité professionnelle, et l'absence de fausse promesse.</p>
+  <div class="callout"><div class="ttl">La communauté avant le produit</div><p>Publier gratuitement un calendrier fiscal 2027 versionné, un simulateur de pénalités et le changelog de chaque loi de finances, les diffuser dans les groupes Facebook de la profession (la page « Fiduciaire Maroc » compte environ 48 000 abonnés), sur YouTube en darija et dans les conseils régionaux. Daftar doit devenir la source de référence des comptables agréés de province avant d'être leur logiciel.</p></div>
+  </div>
+</section>
+<section class="sec" id="s11">
+  <div class="sec-head"><span class="num">11</span><h2>Équipe, coûts et prévisions</h2></div>
+  <p class="sec-sub">Un marché petit en valeur mais presque vide, et dont la taille exacte n'est pas connue. Deux relecteurs ont divisé les hypothèses commerciales par deux : voici le plan qui en résulte.</p>
+
+  <div class="prose"><h3>Taille du marché</h3>
+  <p>Les chiffres disponibles mélangent des personnes et des cabinets. La liste électorale de l'OPCA de 2023, seule donnée vérifiée, compte 1 232 comptables agréés personnes physiques ; le site de l'OPCA en déclare « 4 000 » en 2025 après les vagues de régularisation ; l'OEC compte 887 inscrits. Le nombre de sociétés de comptables agréés est inconnu mais faible. Les annuaires suggèrent 3 000 à 4 000 structures actives. Les fiduciaires sans titre sortent du marché adressable.</p>
+  </div>
+  <div class="table-wrap compact">
+    <table>
+      <thead><tr><th>Niveau</th><th>Définition</th><th class="num">Cabinets</th><th class="num">MAD HT / an</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Marché total</strong></td><td>Cabinets et comptables agréés inscrits + cabinets d'expertise comptable, à 4 000 MAD de revenu moyen par an (ARPA prudent)</td><td class="num">2 500 – 5 000</td><td class="num">10 – 20 M</td></tr>
+        <tr><td><strong>Marché accessible</strong></td><td>Structures de 1 à 20 personnes dans les six grandes agglomérations, hors Big Four et gros cabinets déjà équipés</td><td class="num">1 500 – 3 000</td><td class="num">6 – 12 M</td></tr>
+        <tr><td><strong>Objectif à 12 mois de commercialisation</strong> (mai 2028)</td><td>Résultat du plan ci-dessous</td><td class="num">100 – 130</td><td class="num">≈ 0,4 – 0,55 M annualisé</td></tr>
+        <tr><td><strong>Objectif à 24 mois</strong> = n° 1</td><td>10 à 12 % du marché total, davantage que tout acteur local de gestion de cabinet</td><td class="num">300 – 400</td><td class="num">1,2 – 1,7 M</td></tr>
+      </tbody>
+      <caption>Le tableau national de l'OPCA du 19 septembre 2025 doit être récupéré pour figer le décompte personnes physiques / sociétés. Au-delà de ces montants, la croissance vient du portail client facturé par dossier (section 09).</caption>
+    </table>
+  </div>
+
+  <div class="prose"><h3>Équipe : deux personnes payées plus le fondateur jusqu'à 100 cabinets</h3></div>
+  <div class="table-wrap compact">
+    <table>
+      <thead><tr><th>Poste</th><th>Quand</th><th class="num">Coût mensuel (MAD)</th><th>Remarque</th></tr></thead>
+      <tbody>
+        <tr><td>Fondateur (produit, ventes, partenariats)</td><td>Mois 0</td><td class="num">5 000</td><td>Rémunération minimale la première année</td></tr>
+        <tr><td>Associé technique (développeur senior)</td><td>Mois 0</td><td class="num">12 000 + part du capital</td><td>Préférer une part du capital à un freelance payé au mois</td></tr>
+        <tr><td>Responsable onboarding et support (comptable confirmé, 5 ans en cabinet)</td><td>Au premier revenu (précommandes encaissées)</td><td class="num">8 000</td><td>Le premier recrutement n'est pas un commercial</td></tr>
+        <tr><td>Comptable agréé ou expert-comptable référent</td><td>Mois 0</td><td class="num">4 000 + 2 à 4 % du capital</td><td>Deux à trois jours par mois à 500-800 MAD de l'heure valent plus que cela : le capital compense</td></tr>
+        <tr><td>Commercial terrain</td><td>Après 40 cabinets payants</td><td class="num">6 000 + commissions</td><td>Un seul en année 1</td></tr>
+        <tr><td>Développeur junior</td><td>Après 100 cabinets payants</td><td class="num">9 000</td><td></td></tr>
+        <tr><td>Charges sociales (≈ 21 %)</td><td></td><td class="num"></td><td>Sur les salaires versés</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="prose">
+  <p><strong>Budget jusqu'à 100 cabinets payants (environ 18 mois) : 500 000 à 600 000 MAD</strong>, dont ressources humaines ≈ 360 000, marketing ≈ 100 000 (aucune campagne lourde avant la porte de passage), hébergement, sauvegardes et test d'intrusion ≈ 40 000, SARL, CNDP, conditions générales, avocat et assurance responsabilité ≈ 50 000, Technopark et déplacements ≈ 40 000. Les précommandes (10 × 990 MAD), puis les abonnements annuels encaissés d'avance, couvrent une partie de ce besoin.</p>
+
+  <h3>Financement</h3>
+  </div>
+  <div class="table-wrap compact">
+    <table>
+      <thead><tr><th>Source</th><th class="num">Montant</th><th>Conditions et délais</th></tr></thead>
+      <tbody>
+        <tr><td>Apport du fondateur et proches</td><td class="num">150 – 200 000 MAD</td><td>Capital</td></tr>
+        <tr><td>Innov Invest (Tamwilcom), Tech Start puis Tech Boost</td><td class="num">≤ 200 000 puis ≤ 500 000 MAD</td><td>Prêt d'honneur à 0 %, via une structure labellisée ; 3 à 6 mois d'instruction : <strong>déposer dès la SARL constituée</strong>, sinon la trésorerie casse au printemps 2027</td></tr>
+        <tr><td>Startup VB (Digital Morocco 2030)</td><td class="num">Bourse ≤ 200 000 + prêt d'honneur ≤ 500 000 MAD</td><td>Opérateurs Technopark, CEED, Flat6Labs ; mêmes délais</td></tr>
+        <tr><td>Précommandes et abonnements annuels</td><td class="num">variable</td><td>Le levier de trésorerie le plus sain</td></tr>
+        <tr><td>212Founders, Maroc Numeric Fund</td><td class="num">100 000 $ à 13 M MAD</td><td>Seulement si le portail par dossier ouvre un marché plus large ; ne pas lever à des conditions de capital-risque sur le seul marché des cabinets</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="prose"><h3>Trajectoire (hypothèses prudentes)</h3></div>
+  <div class="table-wrap compact">
+    <table>
+      <thead><tr><th>Période</th><th>Étape</th><th class="num">Cabinets payants (fin de période)</th><th class="num">MRR (MAD HT)</th><th>Condition</th></tr></thead>
+      <tbody>
+        <tr><td>sept. – déc. 2026</td><td>Précommandes, construction</td><td class="num">10 précommandes</td><td class="num">0 (9 900 encaissés)</td><td>Dix cabinets prêts à payer avant de coder</td></tr>
+        <tr><td>janv. – avr. 2027</td><td>Pilote sur la saison des bilans</td><td class="num">10</td><td class="num">≈ 1 650</td><td>Zéro échéance fausse, dix témoignages</td></tr>
+        <tr><td>mai – août 2027</td><td>V1, offre fondateurs, parrainage</td><td class="num">35 – 45</td><td class="num">11 000 – 15 000</td><td>Porte de passage : 40 payants et 75 % d'obligations vertes avec preuve</td></tr>
+        <tr><td>sept. – déc. 2027</td><td>Première campagne complète, Rabat</td><td class="num">65 – 85</td><td class="num">21 000 – 28 000</td><td>Coût par lead sous 250 MAD, attrition sous 4 %</td></tr>
+        <tr><td>janv. – avr. 2028</td><td>Campagne de saison, commercial terrain</td><td class="num">100 – 130</td><td class="num">33 000 – 45 000</td><td>Porte de passage : 150 cabinets et attrition sous 3 % avant une seconde ville avec salarié dédié</td></tr>
+        <tr><td>mai 2028 – avr. 2029</td><td>Régions, vague 3, portail par dossier</td><td class="num">300 – 400</td><td class="num">100 000 – 140 000</td><td>Point mort en vue</td></tr>
+      </tbody>
+      <caption>ARPA 320 à 350 MAD, attrition 3 à 4 % la première année, conversion lead → client 3 à 5 %. Le scénario optimiste de l'étude initiale (175 cabinets et 79 000 MAD de MRR douze mois après le lancement) reste possible si le parrainage fonctionne dès le début ; il ne doit pas servir de base au budget.</caption>
+    </table>
+  </div>
+
+  <div class="prose">
+  <p><strong>Point mort</strong> : avec une équipe de quatre à cinq personnes, les coûts fixes de croisière sont d'environ 60 000 à 70 000 MAD par mois ; à 65-70 % de marge brute il faut 90 000 à 105 000 MAD de MRR, soit <strong>270 à 320 cabinets</strong>, atteints entre le 24<sup>e</sup> et le 30<sup>e</sup> mois. Le portail client facturé par dossier peut l'avancer d'un semestre.</p>
+
+  <h3>Indicateurs et jalons vers la première place</h3>
+  </div>
+  <div class="table-wrap compact">
+    <table>
+      <thead><tr><th>Indicateur</th><th class="num">avr. 2027</th><th class="num">déc. 2027</th><th class="num">avr. 2028</th><th class="num">avr. 2029</th></tr></thead>
+      <tbody>
+        <tr><td>Cabinets payants</td><td class="num">10 pilotes</td><td class="num">65 – 85</td><td class="num">100 – 130</td><td class="num">300 – 400</td></tr>
+        <tr><td>Dossiers gérés (≈ 70 par cabinet)</td><td class="num">700</td><td class="num">5 000</td><td class="num">8 000</td><td class="num">25 000</td></tr>
+        <tr><td>Attrition mensuelle</td><td class="num">—</td><td class="num">≤ 4 %</td><td class="num">≤ 3 %</td><td class="num">≤ 2 %</td></tr>
+        <tr><td>Import Excel terminé sous 7 jours</td><td class="num">80 %</td><td class="num">85 %</td><td class="num">90 %</td><td class="num">90 %</td></tr>
+        <tr><td>Essai → payant</td><td class="num">—</td><td class="num">25 %</td><td class="num">30 %</td><td class="num">35 %</td></tr>
+        <tr><td>Part des clients par parrainage et partenaires</td><td class="num">—</td><td class="num">30 %</td><td class="num">40 %</td><td class="num">50 %</td></tr>
+        <tr><td>Obligations passées au vert avec preuve (usage réel)</td><td class="num">60 %</td><td class="num">75 %</td><td class="num">85 %</td><td class="num">90 %</td></tr>
+        <tr><td>Obligations déposées à temps chez les clients Daftar</td><td class="num">mesuré</td><td class="num">≥ 90 %</td><td class="num">≥ 95 %</td><td class="num">≥ 95 %</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="prose">
+  <p><strong>Ce que veut dire « n° 1 »</strong>, mesurablement, à 24 mois de commercialisation : 300 à 400 cabinets payants, au moins 25 000 dossiers sous gestion, première position Google sur « logiciel cabinet comptable Maroc » et « suivi déclarations DGI », une convention avec au moins un conseil régional de l'OPCA, un modèle type CNDP obtenu ou en cours, trois connecteurs vivants (Sage ou KHABIR, un outil de facturation client, un outil de paie), et une preuve de valeur publiée : le taux d'obligations déposées à temps chez les clients Daftar.</p>
+  </div>
+</section>
+<section class="sec" id="s12">
+  <div class="sec-head"><span class="num">12</span><h2>Feuille de route</h2></div>
+  <p class="sec-sub">Vingt-quatre mois, calés sur le calendrier de la profession : vendre avant de construire, construire avant la saison des bilans, prouver pendant, étendre après.</p>
+  <ul class="timeline">
+    <li><span class="when">sept. – oct. 2026</span><div class="what"><b>Fondations</b>Une heure de navigateur sur fiducio.ma, comptaplus.ma, ExpertC et Experio ; quinze à vingt entretiens en cabinet ; nom vérifié à l'OMPIC et domaine réservé ; SARL ; formalités CNDP propres à Daftar ; dossiers Innov Invest et Startup VB déposés ; associé technique et référent comptable au capital ; questions écrites à la CNDP, à la CNSS et à Maroc PME ; avis d'avocat sur le périmètre commercial.</div></li>
+    <li><span class="when">oct. – nov. 2026</span><div class="what"><b>Dix précommandes</b>990 DH pour six mois, remboursables, signées sur une maquette et l'import de l'Excel du prospect. Table des douze règles rédigée et signée par le référent. Hébergeur marocain choisi. Si les dix précommandes ne viennent pas, le prix ou la douleur sont faux : on corrige avant de coder.</div></li>
+    <li><span class="when">nov. 2026 – janv. 2027</span><div class="what"><b>Socle, mois 1 à 3</b>Modèle de données, fiche client, recherche, rôles, import Excel ; documents, scan, dossier surveillé ; moteur d'obligations testé sur les calendriers 2026 et 2027. Calendrier fiscal 2027 gratuit et simulateur de pénalités publiés en décembre pour capter les premières inscriptions.</div></li>
+    <li><span class="when">fin janv. – avr. 2027</span><div class="what"><b>Version pilote pendant la saison des bilans</b>Dix cabinets précommandés sur leurs vraies données : TVA de fin janvier, état des salaires de fin février, liasses du 31 mars, IR du 30 avril. Dépôt en vrac des accusés, honoraires en mode registre, clôture annuelle, tableau de bord. Objectif : zéro échéance fausse, dix témoignages.</div></li>
+    <li><span class="when">mai 2027</span><div class="what"><b>V1 payante</b>Grille publique 199 / 449 / 899, offre fondateurs douze mois, sécurité complète et test d'intrusion, kits CNDP, campagnes légères pour tester les messages en darija. Ouverture progressive de Rabat par le fondateur.</div></li>
+    <li><span class="when">mai – déc. 2027</span><div class="what"><b>Vague 2 et première porte de passage</b>Règles secondaires, générateurs de fichiers officiels, import des balances Sage et KHABIR, score de conformité interne, OCR après test sur 200 documents, SMS. Dès 40 cabinets payants et 75 % d'obligations vertes avec preuve : première campagne complète en septembre, un commercial terrain, conventions avec un conseil régional.</div></li>
+    <li><span class="when">janv. – avr. 2028</span><div class="what"><b>Deuxième saison des bilans</b>Campagne de saison en janvier et février, cent cabinets visés en avril, référencement Maroc PME, modèle type CNDP proposé au pôle experts-comptables.</div></li>
+    <li><span class="when">mai 2028 – avr. 2029</span><div class="what"><b>Vague 3 et régions</b>Portail client par dossier en arabe, darija et français ; collecte WhatsApp par l'API après consentement et formalité ; signature qualifiée ; module contrôle fiscal ; connecteur facturation électronique dès la spécification ; Tanger, Marrakech, Fès, Agadir avec un salarié dédié dès 150 cabinets ; 300 à 400 cabinets et point mort en vue.</div></li>
+  </ul>
+</section>
+<section class="sec" id="s13">
+  <div class="sec-head"><span class="num">13</span><h2>Risques et parades</h2></div>
+  <p class="sec-sub">Le premier risque n'est pas la concurrence : c'est une règle d'échéance fausse qui coûte une pénalité à un client et la confiance d'un cabinet. Le deuxième est de vendre au mauvais segment.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Risque</th><th>Gravité</th><th>Parade</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Une règle d'échéance fausse</strong> → pénalité chez un client → perte de confiance</td><td><span class="pill red">très élevée</span></td><td>Table de règles sourcée et versionnée, signée par le référent, statut « à confirmer » visible, tests automatiques sur le calendrier, procédure d'alerte à tous les cabinets quand une règle est corrigée, assurance responsabilité professionnelle, conditions générales : l'outil aide, le cabinet reste responsable.</td></tr>
+        <tr><td><strong>Vendre à des non-inscrits</strong> : depuis août 2025, l'exercice sans inscription OPCA ou OEC est illégal ; l'OPCA peut agir en justice</td><td><span class="pill red">très élevée</span></td><td>Numéro d'inscription exigé à l'onboarding, clause de résiliation si le client perd son inscription, marketing sans le mot « fiduciaire », avis d'avocat sur la complicité de droit commun, mode « collaborateur » pour les anciens sans titre.</td></tr>
+        <tr><td><strong>CNDP</strong> : la fiche avec numéro de CIN exige une autorisation de deux mois par cabinet ; un hébergement ou une API à l'étranger exige une notification de transfert par cabinet</td><td><span class="pill red">très élevée</span></td><td>Mode déclaration sans CIN par défaut (déclaration type 32-2015, récépissé sous 24 h), mode autorisation optionnel, hébergement au Maroc, aucun sous-traitant étranger, API WhatsApp repoussée, modèle type sectoriel proposé au pôle experts-comptables de la CNDP.</td></tr>
+        <tr><td><strong>Confiance</strong> : refus de confier les pièces et les identifiants des clients à un tiers</td><td><span class="pill red">très élevée</span></td><td>Hébergement au Maroc, formalités affichées, contrat de sous-traitance, double authentification, aucun mot de passe stocké, export en un clic, références visibles, précommande remboursable.</td></tr>
+        <tr><td><strong>Périmètre trop large</strong> : un socle de neuf mois appelé MVP</td><td><span class="pill amber">élevée</span></td><td>Huit modules, douze règles, ni compteur de temps, ni versions de documents, ni API WhatsApp, ni mots de passe ; version pilote en trois mois, v1 en sept.</td></tr>
+        <tr><td><strong>Tableau de bord rouge à tort</strong> → les collaborateurs cessent de le regarder</td><td><span class="pill amber">élevée</span></td><td>Date de prise en charge, drapeau « gérée par », statut dormant, dépôt en vrac des accusés, passage groupé au statut « déclaré ».</td></tr>
+        <tr><td><strong>Fondateur non technique et non comptable</strong>, dépendant d'un développeur payé au mois</td><td><span class="pill amber">élevée</span></td><td>Associé technique au capital, référent comptable au capital, membre d'un Ordre au conseil, code documenté et tests automatisés du moteur.</td></tr>
+        <tr><td><strong>Hypothèses commerciales trop optimistes</strong> (conversion, ARPA, attrition)</td><td><span class="pill amber">élevée</span></td><td>Précommandes payantes avant de coder, portes de passage avant chaque dépense, budget bâti sur les hypothèses prudentes (section 11), parrainage comme premier canal.</td></tr>
+        <tr><td><strong>Attrition après la saison des bilans</strong></td><td><span class="pill amber">élevée</span></td><td>Annuel à dix mois, rappels mensuels qui créent l'habitude (le 10, la fin de mois), responsable onboarding de formation comptable, relance et suspension en lecture seule plutôt que coupure.</td></tr>
+        <tr><td><strong>Sous-capitalisation</strong> et délais des programmes publics (3 à 6 mois)</td><td><span class="pill amber">élevée</span></td><td>Dossiers Innov Invest et Startup VB déposés dès la SARL, précommandes et annuels encaissés d'avance, deux personnes payées seulement, embauches conditionnées aux cabinets payants.</td></tr>
+        <tr><td><strong>Réaction d'Experio</strong> (3 000 utilisateurs, partenaire de l'OEC), des intégrateurs Odoo ou de Sage</td><td><span class="pill amber">moyenne</span></td><td>Ne pas concurrencer la production comptable ; connecteurs ; vitesse sur la localisation marocaine (règles, darija, mode panne) ; proposition de partenariat à Experio dès la v1, avec un plan de repli si elle ajoute une fiche client.</td></tr>
+        <tr><td><strong>Fatigue publicitaire</strong> sur une audience de quelques milliers de cabinets que Meta ne cible pas nativement</td><td><span class="pill amber">moyenne</span></td><td>Parrainage entre confrères, contenu et référencement, conseils régionaux, plafond de coût par lead, pas de LinkedIn ni de TikTok en année 1.</td></tr>
+        <tr><td><strong>Encaissement</strong> : espèces, chèques, impayés, churn involontaire</td><td><span class="pill amber">moyenne</span></td><td>Annuel par virement, carte récurrente, cash via CashPlus, relance automatique, suspension en lecture seule après 30 jours.</td></tr>
+        <tr><td><strong>Coût du stockage à l'échelle</strong> (documents sur 10 ans, sauvegardes hors site)</td><td><span class="pill amber">moyenne</span></td><td>Quotas par plan, compression des scans, modèle de coût revu chaque trimestre, migration vers un cloud marocain à la traction.</td></tr>
+        <tr><td><strong>Pannes SIMPL et DAMANCOM</strong></td><td><span class="pill green">faible pour nous</span></td><td>Le mode panne horodaté transforme la panne en argument de vente.</td></tr>
+        <tr><td><strong>Facturation électronique décrétée avec un délai court</strong></td><td><span class="pill amber">moyenne</span></td><td>Factures déjà structurées pour le format UBL, veille du décret, partenariat possible avec Hisab ou Facturis.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+<section class="sec" id="s14">
+  <div class="sec-head"><span class="num">14</span><h2>À valider sur le terrain</h2></div>
+  <p class="sec-sub">La recherche a été faite depuis un écran, puis relue par un expert-comptable et un investisseur, puis complétée sur les deux points les plus lourds (CNDP, loi 127-12). Voici ce qui est réglé, ce qui reste ouvert, et ce qu'il faut faire dans les trente jours.</p>
+
+  <div class="prose"><h3>Ce que les relectures ont réglé</h3></div>
+  <div class="table-wrap compact">
+    <table>
+      <thead><tr><th>Question</th><th>Réponse</th><th>Conséquence dans ce plan</th></tr></thead>
+      <tbody>
+        <tr><td>Un cabinet peut-il éviter l'autorisation CNDP malgré les CIN ?</td><td>Non : aucune dispense dans les 76 délibérations publiées. Déclaration type « gestion des clients » (32-2015) sans CIN, autorisation F112 avec CIN.</td><td>Fiche en deux modes ; hébergement au Maroc ; API WhatsApp repoussée ; modèle type à proposer au pôle experts-comptables créé en avril 2026.</td></tr>
+        <tr><td>Peut-on vendre aux fiduciaires non inscrites ?</td><td>Depuis le 21 août 2025, leur exercice est illégal (art. 98 de la loi 127-12) ; la loi ne vise pas les éditeurs, mais l'OPCA peut agir et la complicité de droit commun reste théoriquement possible.</td><td>Cible : comptables agréés et experts-comptables ; numéro d'inscription exigé ; avis d'avocat sur ce point précis.</td></tr>
+        <tr><td>Existe-t-il un seuil de chiffre d'affaires pour les clients d'un comptable agréé ?</td><td>Non, aucun dans la loi ; le « 50 M MAD » est le seuil du commissaire aux comptes pour une SARL.</td><td>Pas de règle « seuil comptable agréé » ; alerte « commissaire aux comptes obligatoire » à la place.</td></tr>
+        <tr><td>Combien de comptables agréés ?</td><td>1 232 personnes physiques vérifiées (liste électorale 2023) ; « 4 000 » déclarés par l'OPCA en 2025 ; tableau du 19 septembre 2025 inaccessible.</td><td>Marché total ramené à 2 500 – 5 000 structures ; cible à 24 mois ramenée à 300 – 400 cabinets.</td></tr>
+        <tr><td>Le MVP tient-il en quatre mois ?</td><td>Non selon les deux relecteurs : six à sept mois pour un socle coupé de moitié.</td><td>Version pilote en trois mois, v1 en sept ; compteur de temps, versions, API WhatsApp et mots de passe retirés.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="prose"><h3>Questions encore ouvertes</h3></div>
+  <div class="table-wrap compact">
+    <table>
+      <thead><tr><th>Question</th><th>À qui</th><th>Pourquoi ça compte</th></tr></thead>
+      <tbody>
+        <tr><td>Échéance exacte de la déclaration et du paiement DAMANCOM (le 10 ? le 15 pour le paiement ?) et modalités de délégation à un cabinet après la réforme Mon e-ID ; existe-t-il un vrai espace « tiers déclarant » multi-clients sur SIMPL et DAMANCOM ?</td><td>CNSS, DGI, et un test sur un vrai compte</td><td>Règle la plus fréquente du moteur ; conception du module d'accès aux portails</td></tr>
+        <tr><td>Traitement des échéances qui tombent un samedi ; date de l'état des rémunérations versées à des tiers pour les sociétés ; lecture retenue pour le taux sur dividendes</td><td>DGI, référent</td><td>Trois points où les sources divergent</td></tr>
+        <tr><td>Critère des catégories de syndics (recettes ou charges appelées) ; validité du certificat négatif ; délais de dissolution et de radiation</td><td>Bulletin officiel n° 7391, OMPIC, greffe</td><td>Profils de fiche et événements de vie</td></tr>
+        <tr><td>Un abonnement logiciel est-il éligible à Mowakaba ou au PACTE TPME, et avec quel plafond ?</td><td>Maroc PME</td><td>Argument de vente et devis « éligible »</td></tr>
+        <tr><td>Grille de Barid eSign, liste des prestataires de confiance, spécification de l'API de facturation électronique, coût d'une assurance responsabilité professionnelle pour un éditeur qui calcule des échéances</td><td>Barid Al-Maghrib, DGSSI, DGI, assureurs</td><td>Vague 3 et budget</td></tr>
+        <tr><td>Décompte personnes physiques / sociétés du tableau OPCA du 19 septembre 2025 ; prix et traction réels de Fiducio, ComptaPlus, ExpertC, Experio (une heure de navigateur suffit)</td><td>opca.ma dès qu'il répond ; sites des éditeurs</td><td>Taille du marché et positionnement des prix</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="prose">
+  <h3>Ce que seuls des entretiens peuvent dire</h3>
+  <p>Quinze à vingt entretiens d'une heure avec des gérants de cabinets de 1 à 6 personnes, à Casablanca et dans une ville de province, en observant plutôt qu'en demandant :</p>
+  <ul>
+    <li><strong>Impayés</strong> : part des honoraires payés en retard, en espèces, en chèque ; clients perdus pour non-paiement ; pratique de la lettre de mission et de la facture. Aucune donnée publique n'existe.</li>
+    <li><strong>Charge</strong> : nombre de dossiers par collaborateur, temps passé par type de dossier, qui gère la CNSS chez chaque client.</li>
+    <li><strong>Outils</strong> : logiciel de production, formats d'export, où sont rangés les accusés SIMPL et les identifiants aujourd'hui.</li>
+    <li><strong>Volonté de payer</strong> : « me donnez-vous vos 80 dossiers en Excel pour une démo ? » puis « signez-vous une précommande à 990 DH ? » ; test des grilles 199 / 449 / 899 et 249 / 599 / 1 190.</li>
+    <li><strong>Reprise</strong> : que se passe-t-il quand un client change de cabinet, quelles pièces manquent le plus souvent.</li>
+  </ul>
+
+  <h3>Tests techniques avant de choisir</h3>
+  <ul>
+    <li>OCR sur 200 CIN, factures et relevés marocains réels : PaddleOCR et Tesseract auto-hébergés contre les services de la région Oracle Casablanca.</li>
+    <li>Extraction du texte de vrais accusés SIMPL et DAMANCOM (identifiant fiscal, période) pour le dépôt en vrac.</li>
+    <li>Délivrabilité e-mail depuis une entité marocaine ; import de fichiers Excel de cabinets réels.</li>
+  </ul>
+
+  <h3>Les trente premiers jours</h3>
+  </div>
+  <ol class="steps">
+    <li><b>Une heure de navigateur</b> sur fiducio.ma, comptaplus.ma, ExpertC et Experio ; vérifier le nom et réserver le domaine.</li>
+    <li><b>Recruter l'associé technique et le référent comptable</b> au capital ; lancer les entretiens et les précommandes.</li>
+    <li><b>Constituer la SARL</b>, déposer les formalités CNDP de Daftar, <b>déposer les dossiers Innov Invest et Startup VB</b> le même mois.</li>
+    <li><b>Envoyer les questions écrites</b> à la CNDP (modèle type sectoriel via le pôle experts-comptables), à la CNSS et à Maroc PME ; consulter un avocat sur le périmètre commercial.</li>
+    <li><b>Choisir l'hébergeur marocain</b>, ouvrir le dépôt de code, écrire la table des douze règles avec ses sources et la faire signer.</li>
+    <li><b>Contacter un conseil régional de l'OPCA</b> et candidater au Technopark.</li>
+  </ol>
+</section>
+
+<footer>
+  <p><strong>Méthode.</strong> Ce plan repose sur sept volets de recherche web menés les 1<sup>er</sup> et 2 septembre 2026 (profession, clients et dossiers, calendrier des obligations, concurrence, cadre légal et technique, douleurs du terrain, marché et acquisition), suivis d'une vérification des règles fiscales et sociales contre les textes (CGI 2026, loi 47-06, loi 5-96, code de commerce, communiqués DGI et CNSS : 55 points confirmés, 29 corrigés), de trois propositions stratégiques indépendantes évaluées par deux relecteurs (un expert-comptable et un investisseur), puis de deux recherches complémentaires sur les délibérations de la CNDP et sur le texte des lois 127-12 et 53-19. Plusieurs sites officiels étaient inaccessibles pendant la recherche (tax.gov.ma, opca.ma, ompic.ma, ae.gov.ma, une partie de cnss.ma) : les points concernés sont signalés « à confirmer » et regroupés en section 14.</p>
+  <p><strong>Ce document n'est pas un conseil fiscal ou juridique.</strong> Les règles décrites doivent être relues par un expert-comptable ou un comptable agréé avant d'être codées dans le moteur d'obligations, puis maintenues à chaque loi de finances.</p>
+</footer>
+</div>
+</main>
+</div>
+
+</body>
+</html>
