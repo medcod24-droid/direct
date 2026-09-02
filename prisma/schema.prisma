@@ -1,4 +1,4 @@
-// Daftar — schéma de données
+// Direct Conseil — schéma de données
 //
 // Provider: sqlite en dev/test, postgresql en production (voir README « Base de données »).
 // Aucun enum Prisma n'est utilisé : SQLite ne les supporte pas. Les valeurs sont des String

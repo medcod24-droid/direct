@@ -1,9 +1,10 @@
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LoginForm } from "./LoginForm";
 import { getAuthContext } from "@/lib/authz/guard";
 
-export const metadata = { title: "Connexion — Daftar" };
+export const metadata = { title: "Connexion — Direct Conseil" };
 
 export default async function LoginPage() {
   const ctx = await getAuthContext();
@@ -11,6 +12,19 @@ export default async function LoginPage() {
 
   return (
     <div className="bg-surface border border-line rounded-xl p-6 shadow-sm">
+      <div className="flex justify-center mb-6">
+        <span className="brand-plate">
+          <Image
+            src="/logo.png"
+            alt="Direct Conseil — centre d'affaires et comptabilité"
+            width={720}
+            height={240}
+            priority
+            className="brand-logo"
+          />
+        </span>
+      </div>
+
       <h1 className="text-xl font-semibold mb-1">Connexion</h1>
       <p className="text-sm text-muted mb-6">Accédez à votre cabinet.</p>
       <LoginForm />

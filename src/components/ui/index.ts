@@ -1,5 +1,5 @@
 /**
- * Couche de design Daftar. Tout composant d'interface passe par ici :
+ * Couche de design Direct Conseil. Tout composant d'interface passe par ici :
  * aucun style ad hoc dans les pages, aucune chaîne française codée en dur
  * dans les composants (les libellés viennent de `@/lib/i18n`).
  */

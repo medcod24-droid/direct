@@ -5,7 +5,7 @@ import { listRequests } from "@/server/services/requests";
 import { Card, EmptyState, PageHeader, StatusPill } from "@/components/ui";
 import { ReviewActions } from "./ReviewActions";
 
-export const metadata = { title: "Demandes de pièces — Daftar" };
+export const metadata = { title: "Demandes de pièces — Direct Conseil" };
 export const dynamic = "force-dynamic";
 
 export default async function RequestsPage({

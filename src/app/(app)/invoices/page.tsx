@@ -7,7 +7,7 @@ import {
   Table, TableWrap, TBody, TD, TH, THead, TR,
 } from "@/components/ui";
 
-export const metadata = { title: "Honoraires — Daftar" };
+export const metadata = { title: "Honoraires — Direct Conseil" };
 export const dynamic = "force-dynamic";
 
 export default async function InvoicesPage() {

@@ -20,7 +20,7 @@ import {
 } from "@/components/ui";
 import { DeadlineActions, GenerateButton } from "./DeadlineActions";
 
-export const metadata = { title: "Échéances — Daftar" };
+export const metadata = { title: "Échéances — Direct Conseil" };
 export const dynamic = "force-dynamic";
 
 export default async function DeadlinesPage({

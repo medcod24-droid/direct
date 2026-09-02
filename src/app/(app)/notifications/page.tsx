@@ -3,7 +3,7 @@ import { requireAuth } from "@/lib/authz/guard";
 import { relativeDays } from "@/lib/format";
 import { Card, EmptyState, PageHeader } from "@/components/ui";
 
-export const metadata = { title: "Notifications — Daftar" };
+export const metadata = { title: "Notifications — Direct Conseil" };
 export const dynamic = "force-dynamic";
 
 export default async function NotificationsPage() {

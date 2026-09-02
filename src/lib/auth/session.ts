@@ -2,7 +2,7 @@ import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { platformDb } from "@/lib/db/tenant";
 import { env } from "@/lib/env";
 
-export const SESSION_COOKIE = "daftar_session";
+export const SESSION_COOKIE = "dc_session";
 const SESSION_TTL_MS = 1000 * 60 * 60 * 12; // 12 h
 const ABSOLUTE_MAX_MS = 1000 * 60 * 60 * 24 * 30;
 

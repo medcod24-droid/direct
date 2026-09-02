@@ -4,7 +4,7 @@ import { formatDate, formatMad } from "@/lib/format";
 import { platformDb } from "@/lib/db/tenant";
 import { Alert, Badge, Card, PageHeader, Table, TableWrap, TBody, TD, TH, THead, TR } from "@/components/ui";
 
-export const metadata = { title: "Paramètres — Daftar" };
+export const metadata = { title: "Paramètres — Direct Conseil" };
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
@@ -119,7 +119,7 @@ export default async function SettingsPage() {
           <dd>Maroc</dd>
         </dl>
         <Alert tone="info" className="mt-3">
-          Daftar n&apos;est pas « certifié CNDP » : une telle certification n&apos;existe pas.
+          Direct Conseil n&apos;est pas « certifié CNDP » : une telle certification n&apos;existe pas.
           Le cabinet reste responsable de traitement et dépose sa propre formalité.
         </Alert>
       </Card>

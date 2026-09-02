@@ -2,7 +2,7 @@ import { requireStaff } from "@/lib/authz/guard";
 import { PageHeader } from "@/components/ui";
 import { NewClientForm } from "./NewClientForm";
 
-export const metadata = { title: "Nouveau dossier — Daftar" };
+export const metadata = { title: "Nouveau dossier — Direct Conseil" };
 
 export default async function NewClientPage() {
   const ctx = await requireStaff("client.create");

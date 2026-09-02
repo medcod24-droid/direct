@@ -1,11 +1,11 @@
-# Daftar
+# Direct Conseil
 
 Plateforme de gestion de cabinet pour les comptables agréés (OPCA) et les experts-comptables
 (OEC) au Maroc. Un cabinet y centralise ses dossiers clients, ses documents, ses échéances
 fiscales et sociales, ses demandes de pièces, ses tâches et ses honoraires.
 
-Ce n'est **pas** un logiciel comptable : Daftar se pose au-dessus de Sage, KHABIR, EBP ou Odoo
-et ne produit aucune écriture. Positionnement, marché et règles métier : `docs/plan-daftar.html`.
+Ce n'est **pas** un logiciel comptable : Direct Conseil se pose au-dessus de Sage, KHABIR, EBP ou Odoo
+et ne produit aucune écriture. Positionnement, marché et règles métier : `docs/plan-direct-conseil.html`.
 
 ## Démarrage
 
@@ -18,7 +18,7 @@ SEED_DEMO=1 npm run db:seed   # ajoute un cabinet de démonstration
 npm run dev
 ```
 
-Compte de démonstration : `demo@daftar.ma` / `Demo2026!Cabinet`.
+Compte de démonstration : `demo@directconseil.ma` / `Demo2026!Cabinet`.
 
 ## Scripts
 
@@ -58,6 +58,8 @@ src/lib/         socle : db, auth, authz, storage, deadlines, billing, i18n, for
 src/server/      services métier (aucune logique dans les pages)
 src/app/         routes Next.js : (auth), (app) espace cabinet, (portal) espace client, api
 src/components/  design system
+public/          fichiers servis tels quels (logo)
+brand/           logo source en pleine résolution
 tests/           unit, security, integration
 var/storage/     documents (hors racine web, jamais servi statiquement)
 docs/            plan de lancement et dossier de recherche

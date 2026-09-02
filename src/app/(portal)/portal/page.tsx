@@ -4,7 +4,7 @@ import { formatDate, formatMad, relativeDays } from "@/lib/format";
 import { Badge, Card, EmptyState, StatusPill } from "@/components/ui";
 import { PortalUpload } from "./PortalUpload";
 
-export const metadata = { title: "Mon espace — Daftar" };
+export const metadata = { title: "Mon espace — Direct Conseil" };
 export const dynamic = "force-dynamic";
 
 /**

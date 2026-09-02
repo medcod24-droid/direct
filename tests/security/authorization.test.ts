@@ -27,7 +27,7 @@ function contextFor(input: {
   const scope = { cabinetId: input.cabinetId, clientIds: input.clientIds ?? null };
   return {
     sessionId: "test-session",
-    user: { id: input.userId, email: "test@daftar.ma", name: "Test", locale: "fr" },
+    user: { id: input.userId, email: "test@directconseil.ma", name: "Test", locale: "fr" },
     cabinet: {
       id: input.cabinetId,
       name: "Cabinet",

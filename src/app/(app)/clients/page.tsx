@@ -18,7 +18,7 @@ import {
   TableWrap,
 } from "@/components/ui";
 
-export const metadata = { title: "Clients — Daftar" };
+export const metadata = { title: "Clients — Direct Conseil" };
 export const dynamic = "force-dynamic";
 
 export default async function ClientsPage({

@@ -4,7 +4,7 @@ import { formatMad, relativeDays } from "@/lib/format";
 import { getCabinetDashboard, getClientsNeedingAttention } from "@/server/services/dashboard";
 import { Alert, Card, EmptyState, PageHeader, StatTile } from "@/components/ui";
 
-export const metadata = { title: "Tableau de bord — Daftar" };
+export const metadata = { title: "Tableau de bord — Direct Conseil" };
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {

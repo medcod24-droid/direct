@@ -6,7 +6,7 @@
 
 # STRATÉGIE A-produit-MVP
 
-# Daftar — MVP et feuille de route produit (gestion de cabinet comptable, Maroc)
+# Direct Conseil — MVP et feuille de route produit (gestion de cabinet comptable, Maroc)
 
 *Base : digest de recherche du 1-2/09/2026 et fichier de vérification (les lignes CORRIGÉ priment ; les points NON VÉRIFIÉ sont marqués « à confirmer » ; mes ajouts sont marqués « hypothèse »).*
 
@@ -20,13 +20,13 @@
 
 ## 2. Périmètre MVP (build 3-4 mois)
 
-Principe : Daftar est une couche « gestion de cabinet » (CRM + obligations + GED + honoraires + pilotage), pas un logiciel comptable. Tout ce qui suit est du MVP ; le reste est en V2/V3.
+Principe : Direct Conseil est une couche « gestion de cabinet » (CRM + obligations + GED + honoraires + pilotage), pas un logiciel comptable. Tout ce qui suit est du MVP ; le reste est en V2/V3.
 
 ### 2.1 Rôles et permissions
 
 | Rôle | Fiches client | Documents | Obligations | Honoraires | Coffre accès portails | Admin |
 |---|---|---|---|---|---|---|
-| Admin (gérant, EC/CA signataire) | tout | tout | tout | tout | lecture + écriture | utilisateurs, règles, facturation Daftar |
+| Admin (gérant, EC/CA signataire) | tout | tout | tout | tout | lecture + écriture | utilisateurs, règles, facturation Direct Conseil |
 | Chef de mission | tout | tout | valide « déclaré/payé » | lecture | lecture (journalisée) | non |
 | Collaborateur | son portefeuille | son portefeuille | marque « déclaré » avec preuve | lecture de ses dossiers | lecture sur ses dossiers (journalisée) | non |
 | Aide-comptable / stagiaire | lecture | upload + classement | lecture | aucun | aucun | non |
@@ -231,7 +231,7 @@ Financement : Innov Invest Tech Start (≤ 200 000 DH à 0 %) puis Tech Boost ; 
 
 # STRATÉGIE B-differenciation
 
-# Daftar — Vision produit « 10x » pour la gestion de cabinet comptable au Maroc
+# Direct Conseil — Vision produit « 10x » pour la gestion de cabinet comptable au Maroc
 
 *Document de stratégie produit, 2 septembre 2026. Base : digest de recherche + fichier de vérification (les corrections CORRIGÉ priment ; les points NON VÉRIFIÉ sont marqués « à confirmer » ; mes propres ajouts sont marqués « hypothèse »).*
 
@@ -241,7 +241,7 @@ Financement : Innov Invest Tech Start (≤ 200 000 DH à 0 %) puis Tech Boost ; 
 
 Aujourd'hui un cabinet marocain vit dans quatre outils qui ne se parlent pas : **Excel** (un fichier par client), **le papier** (dossiers physiques, 10 ans de conservation art. 211 CGI), **WhatsApp** (canal réel de réception des pièces, « jusqu'à 20 % du temps » à chercher une facture) et **Sage/KHABIR** (production comptable, interface « 2005-2010 », ni honoraires, ni CRM, ni temps passé). Le segment « gestion de cabinet » est **quasi vide** au Maroc : ExpertC (60-80 DH/utilisateur/mois) n'a ni GED ni obligations ; Experio (3 000+ utilisateurs, partenaire OEC) fait de l'OCR/pré-compta sans fiche client ni honoraires ; Fiducio/ComptaPlus n'ont aucune traction démontrable ; Kabineo (France) a exactement l'idée mais aucune localisation DGI/CNSS.
 
-**Le « 10x » de Daftar ne vient pas d'une fonctionnalité mais d'une chaîne fermée** : *pièce reçue → classée dans le bon dossier → obligation générée par le régime du client → passée au vert uniquement avec preuve de dépôt → honoraires facturés et encaissés → marge et charge visibles au dashboard.* Aucun outil marocain ne ferme cette boucle. Et Daftar **n'est pas un logiciel comptable** : il ne concurrence pas Sage/KHABIR sur l'écriture, il s'y branche (import/export), ce qui évite le cahier des charges CNC (FEC, clôture) tant qu'aucune écriture n'est saisie.
+**Le « 10x » de Direct Conseil ne vient pas d'une fonctionnalité mais d'une chaîne fermée** : *pièce reçue → classée dans le bon dossier → obligation générée par le régime du client → passée au vert uniquement avec preuve de dépôt → honoraires facturés et encaissés → marge et charge visibles au dashboard.* Aucun outil marocain ne ferme cette boucle. Et Direct Conseil **n'est pas un logiciel comptable** : il ne concurrence pas Sage/KHABIR sur l'écriture, il s'y branche (import/export), ce qui évite le cahier des charges CNC (FEC, clôture) tant qu'aucune écriture n'est saisie.
 
 Promesse marketing en une ligne : **« Plus rien ne se perd, plus rien n'est en retard, et vous savez enfin ce que chaque client vous rapporte. »**
 
@@ -277,7 +277,7 @@ Légende effort : S (< 1 mois-homme), M (1-3), L (> 3). Priorité : **now** (MVP
 |---|---|---|---|---|---|---|
 | **OCR de documents marocains hébergé au Maroc** | VALIDÉ, séquencé | Saisie manuelle des identifiants et typage manuel → extraction CIN, ICE, IF, RC, montants HT/TVA/TTC, recherche plein texte, classement automatique des photos WhatsApp. | Google Invoice Parser ne lit pas l'arabe, AWS Textract non plus ; envoyer une CIN à une API US/EU = transfert CNDP. Un OCR auto-hébergé (PaddleOCR/Tesseract avec correction RTL) ou OCI région Casablanca est un avantage structurel face à tout concurrent étranger. | L | Performance réelle sur CIN bilingues non testée → jeu d'échantillons dès le MVP. MVP = typage manuel + regex ICE/IF ; OCR complet en phase 2. | next |
 | **Générateurs de fichiers officiels + import/export Sage/KHABIR** | VALIDÉ | Ressaisie entre outils → export CSV/Excel des balances, génération XML état 9421, relevé de déductions TVA (EDI), eBDS DAMANCOM ; import des écritures KHABIR/Sage. | SIMPL et DAMANCOM n'ont **pas d'API** : le seul levier est le fichier. GénéraFi a montré la voie avec « SIMPL Manager ». | M | Formats exacts 2026 non vérifiés ; RPA optionnelle seulement. Ne pas refaire la production comptable. | next |
-| **Score de conformité client 0-100** | VALIDÉ | Portefeuille non trié → score = complétude des pièces + respect des échéances + paiement des honoraires ; envoyé au client chaque mois par WhatsApp (« votre score Daftar : 82/100, il manque 3 factures »). | Répond au reproche des dirigeants (« aucune transparence, je pilote à l'aveugle ») et transforme le cabinet en conseiller. Base d'une surcharge « client difficile ». | M | Dépend de la collecte et du moteur. Pondération = hypothèse à calibrer. | next |
+| **Score de conformité client 0-100** | VALIDÉ | Portefeuille non trié → score = complétude des pièces + respect des échéances + paiement des honoraires ; envoyé au client chaque mois par WhatsApp (« votre score Direct Conseil : 82/100, il manque 3 factures »). | Répond au reproche des dirigeants (« aucune transparence, je pilote à l'aveugle ») et transforme le cabinet en conseiller. Base d'une surcharge « client difficile ». | M | Dépend de la collecte et du moteur. Pondération = hypothèse à calibrer. | next |
 | **Time tracking léger + rentabilité réelle** | VALIDÉ | Dossiers non rentables invisibles → timer par dossier, comparaison aux fourchettes de marché (AE 300-1 000 DH, TPE 600-5 000, PME 5 000-15 000). | Pression sur les prix (bilans « à des prix très bas »), aucun barème depuis la sanction du Conseil de la concurrence (2022). | S/M | Adoption faible du timer en petite fiduciaire (hypothèse) → temps standard par défaut. | next |
 | **E-signature de la lettre de mission et des PV** | VALIDÉ, en deux temps | Signature manuscrite scannée = **aucune valeur juridique** (FAQ DGSSI Q19) → signature simple/avancée avec hash SHA-256 + horodatage pour lettres de mission et PV internes ; signature qualifiée à distance via Barid eSign pour les actes à fort enjeu. | Loi 43-20 en vigueur, Barid eSign accrédité. Le dépôt des comptes (depotbilan) et les PV d'AG deviennent 100 % numériques. | M | Grille Barid eSign inconnue (≈ 1 200 DH/an cité, non vérifié) ; liste des PSCo agréés non publiée. | next |
 | **Module contrôle fiscal** | VALIDÉ (recentré) | Panique à la réception d'un avis → compte à rebours (avis 15 j, réponse 30 j, 2e notification 60 j, recours 30 j), checklist des pièces, journal des échanges, **export complet du dossier en un clic** (art. 210 : FEC sous 30 jours), registre des pertes de documents (LRAR sous 15 jours). | 82 017 contrôles sur pièces en 2025 ; art. 213 : absence de pièces = rejet de comptabilité. | M | Délais 30/60 j confirmés seulement sur sources secondaires → à sécuriser sur art. 220-221. | next |
@@ -291,9 +291,9 @@ Légende effort : S (< 1 mois-homme), M (1-3), L (> 3). Priorité : **now** (MVP
 | **Assistant IA sur le CGI 2026 et les notes circulaires** | VALIDÉ mais later, usage interne uniquement | Corpus disponible (CGI 2026 de 765 pages, NC 737). Valeur réelle mais risque de conseil erroné et coût L ; à réserver au cabinet, jamais au client, avec citation d'article obligatoire. Avant cela, le **changelog réglementaire** (now, S) capte l'essentiel du bénéfice marketing. |
 | **Parsing de relevés bancaires PDF + rapprochement** | later | Open banking non réglementé, aucune API bancaire ; l'OCR arabe/français doit d'abord être fiable. Effort L. |
 | **Intégration OMPIC / depotbilan** | later (API) / now (checklist) | API Directinfo « base + options × 50 000 DH » invérifiable ; depotbilan sans API. Dans le MVP : checklist de formalités avec délais (RC dans le mois, bénéficiaires effectifs dans le mois, dépôt des comptes 30 j SARL / 2 mois SA). |
-| **Marketplace cabinets ↔ clients** | REJETÉ pour 24 mois | Problème du démarrage à froid, sensibilité des Ordres (seuls EC et CA peuvent légalement tenir la comptabilité de tiers ; fiduciaires sans titre exclues par la loi 53-19 — risque de faire de Daftar un complice d'exercice illégal), et cannibalisation de la confiance des cabinets. Remplacer par des **partenariats apporteurs de dossiers** (Charikaty, Dar Al Moukawil, Bank of Africa, Inyad) avec routage vers les cabinets Daftar. |
+| **Marketplace cabinets ↔ clients** | REJETÉ pour 24 mois | Problème du démarrage à froid, sensibilité des Ordres (seuls EC et CA peuvent légalement tenir la comptabilité de tiers ; fiduciaires sans titre exclues par la loi 53-19 — risque de faire de Direct Conseil un complice d'exercice illégal), et cannibalisation de la confiance des cabinets. Remplacer par des **partenariats apporteurs de dossiers** (Charikaty, Dar Al Moukawil, Bank of Africa, Inyad) avec routage vers les cabinets Direct Conseil. |
 | **Paie complète** | REJETÉ | Humantal, Mizan, OJRA, AJIEL existent ; « la paie reste le point faible d'Odoo ». Se connecter (import eBDS) plutôt que construire. |
-| **Communauté de comptables** | VALIDÉ comme canal, pas comme produit | Ressources gratuites (calendrier fiscal 2027 versionné, simulateur de pénalités, changelog LF), groupe WhatsApp Daftar, présence congrès OEC (novembre) et GITEX Africa (avril). Cible : les groupes Facebook existants (« Fiduciaire Maroc » ≈ 48 000 abonnés). |
+| **Communauté de comptables** | VALIDÉ comme canal, pas comme produit | Ressources gratuites (calendrier fiscal 2027 versionné, simulateur de pénalités, changelog LF), groupe WhatsApp Direct Conseil, présence congrès OEC (novembre) et GITEX Africa (avril). Cible : les groupes Facebook existants (« Fiduciaire Maroc » ≈ 48 000 abonnés). |
 
 ---
 
@@ -303,18 +303,18 @@ Légende effort : S (< 1 mois-homme), M (1-3), L (> 3). Priorité : **now** (MVP
 
 **Wow n°2 (minute 3-6) — « La facture arrive par WhatsApp, elle se range toute seule ».** Le commercial sort son téléphone, envoie la photo d'une facture au numéro WhatsApp du cabinet de démo. Elle apparaît dans le dossier du client de démo, la case « factures d'achat — août » se coche, le compteur de pièces manquantes passe de 3 à 2. Puis on clique « relancer les 6 clients en retard » : le prospect voit partir un message en darija avec la liste exacte des pièces manquantes. Enfin, on saisit le montant en espèces d'une facture > 5 000 DH : alerte « TVA non déductible (art. 106-II) ».
 
-**Wow n°3 (minute 6-10) — « Le jour où ça tourne mal ».** Scénario 1 : 30 avril, SIMPL est en panne. Clic sur « Mode panne » : chaque tentative est horodatée, la capture d'écran stockée, la réclamation de remise de majorations pré-rédigée. Scénario 2 : un contrôleur demande le dossier d'un client. On tape son nom, la fiche 360 apparaît (identifiants, 10 ans de pièces hashées et horodatées, preuves de dépôt, PV signés) → « Exporter le dossier complet » en un clic. Scénario 3 : un collaborateur démissionne. Clic « désactiver » → fiche de passation générée (dossiers, accès portails, particularités, échéances à 30 jours). Message : « Avec Daftar, le cabinet ne dépend plus d'une personne ni d'un serveur étranger : hébergé au Maroc, déclaré CNDP. »
+**Wow n°3 (minute 6-10) — « Le jour où ça tourne mal ».** Scénario 1 : 30 avril, SIMPL est en panne. Clic sur « Mode panne » : chaque tentative est horodatée, la capture d'écran stockée, la réclamation de remise de majorations pré-rédigée. Scénario 2 : un contrôleur demande le dossier d'un client. On tape son nom, la fiche 360 apparaît (identifiants, 10 ans de pièces hashées et horodatées, preuves de dépôt, PV signés) → « Exporter le dossier complet » en un clic. Scénario 3 : un collaborateur démissionne. Clic « désactiver » → fiche de passation générée (dossiers, accès portails, particularités, échéances à 30 jours). Message : « Avec Direct Conseil, le cabinet ne dépend plus d'une personne ni d'un serveur étranger : hébergé au Maroc, déclaré CNDP. »
 
 ---
 
 ## 4. Stratégie de « moat » (défendabilité)
 
-1. **Effet de réseau cabinet → client → cabinet.** Chaque client final reçoit ses relances, son score de conformité et ses attestations « via Daftar » sur WhatsApp. Un dirigeant qui possède deux sociétés chez deux fiduciaires différentes demandera à la seconde pourquoi elle n'a pas Daftar (hypothèse, mécanisme classique du portail en marque blanche). Objectif : que le nom devienne le standard de la relation cabinet-client, comme Damancom l'est pour la CNSS.
-2. **Données réglementaires vivantes.** Le moteur de règles versionné (LF 2025/2026/2027, jours fériés, changelog) est un actif qui se renforce chaque année et que ni ExpertC ni Kabineo ne possèdent. Y ajouter des données que personne n'a : benchmarks anonymisés d'honoraires par type de dossier, statistiques de pannes SIMPL/DAMANCOM, taux de retard par obligation — vendus ensuite aux Ordres et à la presse comme « baromètre Daftar » (hypothèse).
+1. **Effet de réseau cabinet → client → cabinet.** Chaque client final reçoit ses relances, son score de conformité et ses attestations « via Direct Conseil » sur WhatsApp. Un dirigeant qui possède deux sociétés chez deux fiduciaires différentes demandera à la seconde pourquoi elle n'a pas Direct Conseil (hypothèse, mécanisme classique du portail en marque blanche). Objectif : que le nom devienne le standard de la relation cabinet-client, comme Damancom l'est pour la CNSS.
+2. **Données réglementaires vivantes.** Le moteur de règles versionné (LF 2025/2026/2027, jours fériés, changelog) est un actif qui se renforce chaque année et que ni ExpertC ni Kabineo ne possèdent. Y ajouter des données que personne n'a : benchmarks anonymisés d'honoraires par type de dossier, statistiques de pannes SIMPL/DAMANCOM, taux de retard par obligation — vendus ensuite aux Ordres et à la presse comme « baromètre Direct Conseil » (hypothèse).
 3. **Intégrations = fossé technique.** Sans API DGI/CNSS, la valeur est dans les fichiers (état 9421, EDI TVA, eBDS), les connecteurs Sage/KHABIR, les partenariats Hisab/Facturis (facturation client), Humantal/Mizan (paie), et le futur connecteur xHub dès publication de la spécification. Chaque format maîtrisé est un mois de retard pour un entrant.
 4. **Coûts de sortie légitimes.** Dix ans d'archives probantes (hash, horodatage, journal d'audit), l'historique des preuves de dépôt et le coffre des accès sont **exportables en un clic** (exigence CNDP et contrôle fiscal) — mais l'export ne recrée pas les règles, les relances ni le score. La rétention vient de la confiance, pas du verrouillage.
 5. **Marque et distribution.** Prix publics en MAD (199/449/899 DH HT/mois, seul ExpertC publie ses prix), hébergement au Maroc, kit CNDP, support WhatsApp en darija aux heures d'échéances, devis « éligible MOWAKABA/PACTE TPME » (éligibilité d'un abonnement SaaS à confirmer), références OEC/OPCA visibles, parrainage (1 mois offert).
-6. **Communauté avant le produit.** Calendrier fiscal gratuit, simulateur de pénalités public, changelog LF diffusé dans les groupes Facebook et au congrès OEC : Daftar devient la source de référence des comptables agréés de province avant même d'être leur logiciel.
+6. **Communauté avant le produit.** Calendrier fiscal gratuit, simulateur de pénalités public, changelog LF diffusé dans les groupes Facebook et au congrès OEC : Direct Conseil devient la source de référence des comptables agréés de province avant même d'être leur logiciel.
 
 ---
 
@@ -328,12 +328,12 @@ Base : TAM ≈ 6 000 structures × 5 400 DH ≈ 32 MDH/an ; plan média an 1 ≈
 | Dossiers actifs sous gestion | **≥ 50 000** (≈ 80 par cabinet) | ≈ 13 % des 380 230 entreprises personnes morales actives : masse critique pour le baromètre et les partenaires. |
 | MRR | **≈ 280 000-320 000 DH HT** (ARPA 450 DH) | ≈ 3,5-3,8 MDH d'ARR, seuil de rentabilité d'une équipe de 8-10 personnes (hypothèse). |
 | Churn mensuel | **≤ 2 %** (3 % toléré an 1) | LTV ≈ 18 000 DH, LTV/CAC ≥ 5 avec CAC ≤ 3 000 DH. |
-| Preuve de valeur | **Taux d'obligations déposées à temps ≥ 95 %** chez les clients Daftar (vs inconnu avant) ; 0 pénalité « oubliée » constatée | C'est la promesse marketing, il faut la mesurer. |
+| Preuve de valeur | **Taux d'obligations déposées à temps ≥ 95 %** chez les clients Direct Conseil (vs inconnu avant) ; 0 pénalité « oubliée » constatée | C'est la promesse marketing, il faut la mesurer. |
 | Couverture | Casablanca-Settat + Rabat-Salé-Kénitra à M+12 ; Tanger, Marrakech, Agadir, Fès à M+24 | Suit la répartition des EC (88 % sur l'axe) puis des CA « de province ». |
 | Notoriété | 1re position Google sur « logiciel fiduciaire Maroc », « suivi déclarations DGI », « gestion cabinet comptable » ; stand au congrès OEC ; convention ou tarif membre avec l'OPCA (conditions à négocier) | Personne n'occupe ces requêtes avec un produit dédié. |
 | Écosystème | ≥ 3 connecteurs vivants (Sage/KHABIR import, Hisab ou Facturis, Humantal ou Mizan) ; connecteur e-facture prêt le jour de la publication du décret | Le fossé technique décrit en §4. |
 
-Séquence : **0-6 mois** socle §2.1 + 30 cabinets pilotes à Casablanca (onboarding sur site, prix pilote) ; **6-12 mois** OCR, fichiers officiels, score, bot WhatsApp, lancement des campagnes (janvier-février avant la saison des bilans, septembre) ; **12-24 mois** portail client, e-signature qualifiée, module contrôle fiscal, expansion régionale, baromètre Daftar et partenariats apporteurs de dossiers.
+Séquence : **0-6 mois** socle §2.1 + 30 cabinets pilotes à Casablanca (onboarding sur site, prix pilote) ; **6-12 mois** OCR, fichiers officiels, score, bot WhatsApp, lancement des campagnes (janvier-février avant la saison des bilans, septembre) ; **12-24 mois** portail client, e-signature qualifiée, module contrôle fiscal, expansion régionale, baromètre Direct Conseil et partenariats apporteurs de dossiers.
 
 **Trois risques à lever avant d'écrire une ligne de code** : (1) 15-20 entretiens de fiduciaires sur l'acceptation du WhatsApp tiers, la grille 199/449/899 et le taux d'impayés réel ; (2) réponse écrite de la CNDP sur F112 vs dispense pour « tenue de comptabilité » et sur le statut de sous-traitant ; (3) test d'OCR sur 200 CIN/factures marocaines réelles pour décider entre auto-hébergé et OCI Casablanca.
 
@@ -342,7 +342,7 @@ Séquence : **0-6 mois** socle §2.1 + 30 cabinets pilotes à Casablanca (onboar
 
 # STRATÉGIE C-business-GTM
 
-# Business plan — Daftar, plateforme de gestion de cabinet pour fiduciaires, comptables agréés et experts-comptables au Maroc
+# Business plan — Direct Conseil, plateforme de gestion de cabinet pour fiduciaires, comptables agréés et experts-comptables au Maroc
 
 *Version du 2 septembre 2026. Toutes les données chiffrées proviennent du digest de recherche et du fichier de vérification ; les corrections (CORRIGÉ) ont été appliquées, les points NON VÉRIFIÉS sont signalés « à confirmer », et les chiffres propres à ce plan sont étiquetés « hypothèse ».*
 
@@ -380,7 +380,7 @@ Le marché est petit en valeur mais quasi vide : aucun outil marocain ne combine
 
 ## 2. Positionnement et messages
 
-**Promesse centrale (français)** : *« Daftar : tapez le nom du client, tout le dossier apparaît — identifiants, documents scannés, et chaque obligation en vert ou en rouge avant que la DGI ne s'en aperçoive. »* Daftar n'est pas un logiciel comptable : il se pose au-dessus de Sage, KHABIR, EBP ou Odoo (import Excel/CSV) comme couche de gestion de cabinet : CRM client, échéancier, GED, honoraires, statistiques.
+**Promesse centrale (français)** : *« Direct Conseil : tapez le nom du client, tout le dossier apparaît — identifiants, documents scannés, et chaque obligation en vert ou en rouge avant que la DGI ne s'en aperçoive. »* Direct Conseil n'est pas un logiciel comptable : il se pose au-dessus de Sage, KHABIR, EBP ou Odoo (import Excel/CSV) comme couche de gestion de cabinet : CRM client, échéancier, GED, honoraires, statistiques.
 
 | Segment | Douleur documentée | Message |
 |---|---|---|
@@ -389,9 +389,9 @@ Le marché est petit en valeur mais quasi vide : aucun outil marocain ne combine
 | **Comptables agréés récemment régularisés (~3 900)** | Nouveau cachet OPCA, pas de process, concurrence des « bilans à prix cassés », projet de code de déontologie imposant des honoraires écrits (décret 2.23.150, projet) | « Vous avez le cachet, ayez le cabinet : lettre de mission signée, facture avec TVA, dossier client irréprochable, en 10 minutes à partir de votre Excel. » |
 
 **Trois taglines en darija** (à tester en pub Meta/YouTube) :
-1. **« دفتر : كتب سمية الكليان، الملف كيبان »** — *Daftar : kteb smiyat l-client, l-milaf kayban.* (Tape le nom du client, le dossier apparaît.)
+1. **« دفتر : كتب سمية الكليان، الملف كيبان »** — *Direct Conseil : kteb smiyat l-client, l-milaf kayban.* (Tape le nom du client, le dossier apparaît.)
 2. **« الأحمر كيبان عندك قبل ما تجي الغرامة »** — *L7mar kayban 3endek qbel ma tji l-gharama.* (Le rouge s'affiche chez toi avant que la pénalité n'arrive.)
-3. **« سالينا مع الكارطونات و الإكسيل : كلشي فدفتر »** — *Salina m3a l-kartonat w l-Excel : kolchi f Daftar.* (Fini les cartons et l'Excel : tout est dans Daftar.)
+3. **« سالينا مع الكارطونات و الإكسيل : كلشي فدفتر »** — *Salina m3a l-kartonat w l-Excel : kolchi f Direct Conseil.* (Fini les cartons et l'Excel : tout est dans Direct Conseil.)
 
 Règles de communication : jamais de mention « conseil fiscal » ou « certification » (monopole OEC, loi 15-89) ; ne pas prétendre à une « certification CNDP » ; ne pas promettre de dates pour la facturation électronique (décret non publié, calendriers des éditeurs non officiels — CORRIGÉ).
 
@@ -415,13 +415,13 @@ Règles de communication : jamais de mention « conseil fiscal » ou « certific
 
 | Référence | Coût observé | Lecture |
 |---|---|---|
-| Sage Expert | 12 000-25 000 DH/an (+ maintenance ~20 %) | Daftar Cabinet = 4 490 DH/an, complément, pas remplacement |
+| Sage Expert | 12 000-25 000 DH/an (+ maintenance ~20 %) | Direct Conseil Cabinet = 4 490 DH/an, complément, pas remplacement |
 | KHABIR | 5 000-12 000 DH licence + 15-20 % | idem, production comptable |
-| ExpertC | 60-80 DH/utilisateur/mois | 5 utilisateurs = 300-400 DH sans GED ni obligations ; Daftar 449 avec les deux |
-| Fiducio | 80-150 €/mois (≈ 880-1 650 DH) | à confirmer (site illisible) ; Daftar en dessous |
-| Finza (offre cabinets) | 3 800-22 000 DH/an | Daftar dans la fourchette basse |
-| Kabineo (France) | ≈ 11 DH/dossier/mois | 150 dossiers = 1 650 DH/mois ; Daftar ≈ 3 DH/dossier |
-| Honoraires du cabinet | TPE 500-1 500 DH/mois à Casablanca ; un cabinet de 50 dossiers à 1 000 DH encaisse ~50 000 DH/mois | Daftar Cabinet = 0,9 % du CA ; une seule pénalité TVA évitée (5 % ≤ 30 j, 15 % au-delà, minimum 500 DH — art. 184 CGI) rembourse un mois |
+| ExpertC | 60-80 DH/utilisateur/mois | 5 utilisateurs = 300-400 DH sans GED ni obligations ; Direct Conseil 449 avec les deux |
+| Fiducio | 80-150 €/mois (≈ 880-1 650 DH) | à confirmer (site illisible) ; Direct Conseil en dessous |
+| Finza (offre cabinets) | 3 800-22 000 DH/an | Direct Conseil dans la fourchette basse |
+| Kabineo (France) | ≈ 11 DH/dossier/mois | 150 dossiers = 1 650 DH/mois ; Direct Conseil ≈ 3 DH/dossier |
+| Honoraires du cabinet | TPE 500-1 500 DH/mois à Casablanca ; un cabinet de 50 dossiers à 1 000 DH encaisse ~50 000 DH/mois | Direct Conseil Cabinet = 0,9 % du CA ; une seule pénalité TVA évitée (5 % ≤ 30 j, 15 % au-delà, minimum 500 DH — art. 184 CGI) rembourse un mois |
 
 Le seuil psychologique est le « < 1 000 DH/mois » que les fiduciaires pratiquent elles-mêmes : tous les plans mensuels restent sous ce seuil.
 
@@ -499,7 +499,7 @@ Total médias + contenu + événements sur 12 mois ≈ **265 000 DH** (hypothès
 | **ENCG (12 écoles, 4 000-5 000 lauréats/an), ISCAE** | Licence gratuite pour les cours, cas pratiques | Futurs collaborateurs prescripteurs, stagiaires OPCA | Moyenne |
 | **Revendeurs Sage/Odoo** (Forsoft, MS-MA, Omegasoft Agadir, Oasis, Karizma) | Commission 20 % première année (hypothèse), connecteur import/export | Distribution en régions, crédibilité auprès des cabinets équipés | Moyenne |
 | **Experio, Hisab, Humantal, Facturis, Manageo** | Intégration (OCR/pré-compta, facturation clients, paie) au lieu de concurrence | Co-vente, connecteurs, préparation e-facturation 2027-2028 | Moyenne |
-| **Charikaty, Inyad** | Routage des sociétés créées vers des fiduciaires Daftar | Flux de nouveaux dossiers (109 656 créations/an) | Basse (année 2) |
+| **Charikaty, Inyad** | Routage des sociétés créées vers des fiduciaires Direct Conseil | Flux de nouveaux dossiers (109 656 créations/an) | Basse (année 2) |
 
 ---
 
@@ -585,7 +585,7 @@ Jalons non chiffrés : convention avec un conseil régional OPCA (M6), référen
 | **Confiance** : refus de confier CIN, identifiants SIMPL/Damancom et pièces à un tiers | Élevée / élevé | Hébergement au Maroc, F211 + kit F112, DPA, MFA, coffre chiffré sans stockage de mots de passe portails, export en un clic, références OEC/OPCA, pilote gratuit visible |
 | **Churn** après la saison des bilans | Moyenne / élevé | Plans annuels (2 mois offerts), rappels WhatsApp qui créent l'habitude mensuelle (CNSS le 10, TVA fin de mois), CSM comptable de formation, score de conformité par client |
 | **Réaction de Sage/Odoo/Experio** (module « gestion cabinet » ou baisse de prix) | Moyenne / moyen | Ne pas concurrencer la production comptable ; connecteurs import/export ; vitesse sur la localisation marocaine (obligations, pénalités, darija) ; partenariat plutôt qu'affrontement avec Experio (partenaire OEC) |
-| **Réglementation** : réforme de la loi 09-08, décret e-facturation, question de l'exercice illégal par des fiduciaires sans titre | Moyenne / moyen | Veille juridique trimestrielle, règles versionnées (LF 2026/2027), CGU précisant que Daftar est un outil et non un prestataire comptable ; obtenir un avis écrit sur la vente à des fiduciaires non ordinales |
+| **Réglementation** : réforme de la loi 09-08, décret e-facturation, question de l'exercice illégal par des fiduciaires sans titre | Moyenne / moyen | Veille juridique trimestrielle, règles versionnées (LF 2026/2027), CGU précisant que Direct Conseil est un outil et non un prestataire comptable ; obtenir un avis écrit sur la vente à des fiduciaires non ordinales |
 | **Fatigue publicitaire** et hausse des CPL sur une audience de 6 000 structures | Élevée / moyen | Rotation créative en darija, contenu SEO et YouTube, parrainage (objectif 30-50 % des clients), événements et terrain ; plafond CPL 150 DH sinon pause |
 | **Encaissement** : fiduciaires habituées aux espèces/chèques, impayés | Moyenne / moyen | Prépaiement annuel par virement, carte récurrente CMI, cash via CashPlus (YouCan Pay), suspension en lecture seule après 30 jours d'impayé, relance automatique |
 | **Dépendance aux portails publics** (pannes SIMPL/Damancom, pas d'API) | Élevée / faible pour nous | « Mode panne » horodaté et réclamation type : la panne devient un argument de vente, pas un risque produit |

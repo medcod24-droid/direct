@@ -15,7 +15,7 @@ describe("assertPasswordPolicy", () => {
   it("accepte un mot de passe solide", () => {
     expect(() => assertPasswordPolicy(FORT)).not.toThrow();
     expect(() => assertPasswordPolicy("Fiduciaire-Rabat-2026")).not.toThrow();
-    expect(() => assertPasswordPolicy(FORT, "rabia@daftar.ma")).not.toThrow();
+    expect(() => assertPasswordPolicy(FORT, "rabia@directconseil.ma")).not.toThrow();
   });
 
   it("refuse un mot de passe trop court", () => {
@@ -42,19 +42,19 @@ describe("assertPasswordPolicy", () => {
   it("refuse un mot de passe de la liste noire, même réécrit en casse mixte", () => {
     expect(() => assertPasswordPolicy("Motdepasse123")).toThrow(/trop courant/);
     expect(() => assertPasswordPolicy("Comptable2026")).toThrow(/trop courant/);
-    expect(() => assertPasswordPolicy("Daftar123456")).toThrow(/trop courant/);
+    expect(() => assertPasswordPolicy("DirectConseil1")).toThrow(/trop courant/);
   });
 
   it("refuse un mot de passe contenant l'identifiant de l'e-mail", () => {
-    expect(() => assertPasswordPolicy("Rabia-Secret-2026", "rabia@daftar.ma")).toThrow(
+    expect(() => assertPasswordPolicy("Rabia-Secret-2026", "rabia@directconseil.ma")).toThrow(
       /votre identifiant/,
     );
     // La comparaison est insensible à la casse.
-    expect(() => assertPasswordPolicy("Xx-RABIA-2026xx", "rabia@daftar.ma")).toThrow(
+    expect(() => assertPasswordPolicy("Xx-RABIA-2026xx", "rabia@directconseil.ma")).toThrow(
       /votre identifiant/,
     );
     // Seule la partie locale est comparée : le domaine ne compte pas.
-    expect(() => assertPasswordPolicy("Daftar-Ma-2026x", "rabia@daftar.ma")).not.toThrow();
+    expect(() => assertPasswordPolicy("DirectConseil-26x", "rabia@directconseil.ma")).not.toThrow();
   });
 
   it("cumule les erreurs et les expose par champ", () => {

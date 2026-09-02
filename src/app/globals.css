@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /* ==========================================================================
-   Daftar — couche de design.
+   Direct Conseil — couche de design.
    Outil professionnel dense : neutres légèrement teintés vers l'accent,
    jamais de gris pur. Les couleurs sémantiques (rouge / ambre / vert) sont
    réservées aux statuts de conformité, jamais décoratives.
@@ -229,5 +229,46 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* ==========================================================================
+   Marque
+   ========================================================================== */
+
+/*
+ * Le logo est composé de blanc et de vert : il ne se lit que sur un fond sombre.
+ * En thème clair on lui pose donc une plaque sombre ; en thème sombre la plaque
+ * disparaît et le logo repose directement sur la carte.
+ */
+.brand-plate {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.75rem;
+  background: #0d1512;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .brand-plate {
+    padding: 0;
+    background: transparent;
+  }
+}
+
+:root[data-theme="dark"] .brand-plate {
+  padding: 0;
+  background: transparent;
+}
+
+.brand-logo {
+  width: 14rem;
+  height: auto;
+}
+
+@media (min-width: 640px) {
+  .brand-logo {
+    width: 16rem;
   }
 }

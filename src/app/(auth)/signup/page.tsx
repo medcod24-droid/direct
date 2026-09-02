@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { SignupForm } from "./SignupForm";
 import { getAuthContext } from "@/lib/authz/guard";
 
-export const metadata = { title: "Créer un cabinet — Daftar" };
+export const metadata = { title: "Créer un cabinet — Direct Conseil" };
 
 export default async function SignupPage() {
   const ctx = await getAuthContext();

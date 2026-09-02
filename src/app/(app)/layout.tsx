@@ -32,7 +32,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="min-h-screen bg-bg text-ink flex">
       <aside className="w-60 shrink-0 border-e border-line bg-surface hidden md:flex md:flex-col">
         <div className="px-5 py-4 border-b border-line">
-          <div className="font-semibold tracking-tight">Daftar</div>
+          <div className="font-semibold tracking-tight">Direct Conseil</div>
           <div className="text-xs text-muted truncate">{ctx.cabinet.name}</div>
         </div>
         <nav className="flex-1 p-3 grid gap-0.5 content-start">
@@ -54,7 +54,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <div className="flex-1 min-w-0 flex flex-col">
         <header className="h-14 border-b border-line bg-surface flex items-center gap-3 px-4 md:px-6">
           <Link href="/dashboard" className="md:hidden font-semibold">
-            Daftar
+            Direct Conseil
           </Link>
           <div className="flex-1" />
           <Link

@@ -7,7 +7,7 @@ import {
   Table, TableWrap, TBody, TD, TH, THead, TR,
 } from "@/components/ui";
 
-export const metadata = { title: "Documents — Daftar" };
+export const metadata = { title: "Documents — Direct Conseil" };
 export const dynamic = "force-dynamic";
 
 export default async function DocumentsPage({

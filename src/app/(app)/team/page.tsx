@@ -4,7 +4,7 @@ import { platformDb } from "@/lib/db/tenant";
 import { ROLE_LABELS } from "@/lib/domain/labels";
 import { Badge, Card, PageHeader, Table, TableWrap, TBody, TD, TH, THead, TR } from "@/components/ui";
 
-export const metadata = { title: "Équipe — Daftar" };
+export const metadata = { title: "Équipe — Direct Conseil" };
 export const dynamic = "force-dynamic";
 
 export default async function TeamPage() {

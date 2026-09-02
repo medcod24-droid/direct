@@ -323,9 +323,9 @@ async function seedDemo() {
   });
 
   const owner = await db.user.upsert({
-    where: { email: "demo@daftar.ma" },
+    where: { email: "demo@directconseil.ma" },
     update: {},
-    create: { email: "demo@daftar.ma", name: "Gérant Démo", passwordHash, locale: "fr" },
+    create: { email: "demo@directconseil.ma", name: "Gérant Démo", passwordHash, locale: "fr" },
   });
 
   await db.membership.upsert({
@@ -384,7 +384,7 @@ async function seedDemo() {
       ],
     });
   }
-  console.log("Cabinet de démonstration : cabinet-demo (demo@daftar.ma)");
+  console.log("Cabinet de démonstration : cabinet-demo (demo@directconseil.ma)");
 }
 
 main()

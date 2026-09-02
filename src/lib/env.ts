@@ -17,7 +17,7 @@ const schema = z.object({
   /** Fournisseur d'e-mail : "console" en dev, un vrai fournisseur en production. */
   EMAIL_PROVIDER: z.enum(["console", "smtp"]).default("console"),
   SMTP_URL: z.string().optional(),
-  EMAIL_FROM: z.string().default("Daftar <no-reply@daftar.ma>"),
+  EMAIL_FROM: z.string().default("Direct Conseil <no-reply@directconseil.ma>"),
 });
 
 let cached: z.infer<typeof schema> | null = null;

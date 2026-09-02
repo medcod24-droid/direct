@@ -7,7 +7,7 @@ const MIN_LENGTH = 12;
 /** Mots de passe trop courants, refusés quelle que soit leur complexité. */
 const BLOCKLIST = new Set([
   "motdepasse123", "password1234", "azerty123456", "123456789012",
-  "daftar123456", "administrateur", "comptable2026",
+  "directconseil1", "administrateur", "comptable2026",
 ]);
 
 export function assertPasswordPolicy(password: string, email?: string): void {

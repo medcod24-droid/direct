@@ -13,15 +13,15 @@ import { PrismaClient } from "@prisma/client";
  * revue de code (voir le test tests/security/tenant-isolation.test.ts).
  */
 
-const globalForPrisma = globalThis as unknown as { __daftarPrisma?: PrismaClient };
+const globalForPrisma = globalThis as unknown as { __dcPrisma?: PrismaClient };
 
 export const platformDb =
-  globalForPrisma.__daftarPrisma ??
+  globalForPrisma.__dcPrisma ??
   new PrismaClient({
     log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
   });
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.__daftarPrisma = platformDb;
+if (process.env.NODE_ENV !== "production") globalForPrisma.__dcPrisma = platformDb;
 
 /** Modèles dont chaque ligne appartient à un cabinet (cabinetId non nul). */
 const TENANT_MODELS = new Set([

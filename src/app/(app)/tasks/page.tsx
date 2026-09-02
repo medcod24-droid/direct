@@ -4,7 +4,7 @@ import { formatDate, relativeDays } from "@/lib/format";
 import { listTasks } from "@/server/services/tasks";
 import { Card, EmptyState, PageHeader, StatusPill } from "@/components/ui";
 
-export const metadata = { title: "Tâches — Daftar" };
+export const metadata = { title: "Tâches — Direct Conseil" };
 export const dynamic = "force-dynamic";
 
 export default async function TasksPage({
