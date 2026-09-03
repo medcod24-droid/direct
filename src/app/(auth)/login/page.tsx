@@ -30,7 +30,7 @@ export default async function LoginPage() {
       <LoginForm />
       <p className="text-sm text-muted mt-6">
         Pas encore de cabinet ?{" "}
-        <Link href="/signup" className="text-accentInk underline underline-offset-2">
+        <Link href="/signup" className="text-accent underline underline-offset-2 hover:text-[var(--accent-strong)]">
           Créer un compte
         </Link>
       </p>

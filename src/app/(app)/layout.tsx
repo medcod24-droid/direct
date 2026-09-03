@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { logoutAction } from "@/app/actions/auth";
 import { getAuthContext } from "@/lib/authz/guard";
 import { Avatar, Badge } from "@/components/ui";
+import { MobileNav, SidebarNav } from "./AppNav";
 
 const NAV = [
   { href: "/dashboard", label: "Tableau de bord", permission: "cabinet.view" },
@@ -35,17 +36,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <div className="font-semibold tracking-tight">Direct Conseil</div>
           <div className="text-xs text-muted truncate">{ctx.cabinet.name}</div>
         </div>
-        <nav className="flex-1 p-3 grid gap-0.5 content-start">
-          {items.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="px-3 py-2 rounded-md text-sm text-ink2 hover:bg-surface2 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+        <SidebarNav items={items} />
         <div className="p-3 border-t border-line text-xs text-muted">
           Données hébergées au Maroc
         </div>
@@ -53,15 +44,32 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
       <div className="flex-1 min-w-0 flex flex-col">
         <header className="h-14 border-b border-line bg-surface flex items-center gap-3 px-4 md:px-6">
-          <Link href="/dashboard" className="md:hidden font-semibold">
+          <MobileNav items={items} cabinetName={ctx.cabinet.name} />
+          <Link href="/dashboard" className="md:hidden font-semibold whitespace-nowrap">
             Direct Conseil
           </Link>
           <div className="flex-1" />
           <Link
             href="/notifications"
-            className="text-sm text-ink2 hover:text-ink flex items-center gap-2"
+            aria-label="Notifications"
+            className="flex shrink-0 items-center gap-2 rounded-md px-1.5 py-1 text-sm text-ink2 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
-            Notifications
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className="sm:hidden"
+            >
+              <path d="M18 8A6 6 0 1 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.7 21a2 2 0 0 1-3.4 0" />
+            </svg>
+            <span className="hidden sm:inline">Notifications</span>
             {unread > 0 ? <Badge tone="accent">{unread}</Badge> : null}
           </Link>
           <div className="flex items-center gap-2">
@@ -74,14 +82,30 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <form action={logoutAction}>
             <button
               type="submit"
-              className="text-sm text-muted hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded px-2 py-1"
+              aria-label="Déconnexion"
+              className="flex shrink-0 items-center rounded px-2 py-1 text-sm text-muted hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             >
-              Déconnexion
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                className="sm:hidden"
+              >
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <path d="M16 17l5-5-5-5M21 12H9" />
+              </svg>
+              <span className="hidden sm:inline">Déconnexion</span>
             </button>
           </form>
         </header>
 
-        <main className="flex-1 p-4 md:p-6 max-w-[1400px] w-full">{children}</main>
+        <main className="flex-1 w-full max-w-[1400px] mx-auto p-4 md:p-6">{children}</main>
       </div>
     </div>
   );

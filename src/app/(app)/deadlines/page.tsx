@@ -130,7 +130,7 @@ export default async function DeadlinesPage({
               href={href({ status: tab.key })}
               className={`px-3 py-1.5 rounded-md border ${
                 status === tab.key
-                  ? "border-accent text-accentInk bg-accentSoft"
+                  ? "border-accent text-accent bg-accentSoft"
                   : "border-line text-ink2 hover:bg-surface2"
               }`}
             >

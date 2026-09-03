@@ -18,7 +18,7 @@ export default async function SignupPage() {
       <SignupForm />
       <p className="text-sm text-muted mt-6">
         Vous avez déjà un compte ?{" "}
-        <Link href="/login" className="text-accentInk underline underline-offset-2">
+        <Link href="/login" className="text-accent underline underline-offset-2 hover:text-[var(--accent-strong)]">
           Se connecter
         </Link>
       </p>

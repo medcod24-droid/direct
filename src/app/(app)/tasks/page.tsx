@@ -27,13 +27,13 @@ export default async function TasksPage({
       <nav className="flex gap-2 text-sm">
         <Link
           href="/tasks"
-          className={`px-3 py-1.5 rounded-md border ${mine ? "border-accent text-accentInk bg-accentSoft" : "border-line text-ink2"}`}
+          className={`px-3 py-1.5 rounded-md border ${mine ? "border-accent text-accent bg-accentSoft" : "border-line text-ink2"}`}
         >
           Mes tâches
         </Link>
         <Link
           href="/tasks?scope=team"
-          className={`px-3 py-1.5 rounded-md border ${!mine ? "border-accent text-accentInk bg-accentSoft" : "border-line text-ink2"}`}
+          className={`px-3 py-1.5 rounded-md border ${!mine ? "border-accent text-accent bg-accentSoft" : "border-line text-ink2"}`}
         >
           Équipe
         </Link>
