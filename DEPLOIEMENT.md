@@ -47,6 +47,75 @@ Ce que cette démo implique, et qu'il faut dire à la personne qui teste :
 
 Entre deux essais, `npm run db:reset` remet la plateforme à zéro.
 
+## Vercel — gratuit, sans serveur à tenir
+
+Vercel n'offre ni disque durable ni base de données : deux pièces se branchent à
+côté. L'ensemble tient dans les offres gratuites.
+
+| Besoin | Service | Variable |
+|---|---|---|
+| Base de données | Neon (PostgreSQL) | `DATABASE_URL` |
+| Documents | Vercel Blob | `BLOB_READ_WRITE_TOKEN` |
+
+### Ce que le code fait de lui-même
+
+**Le fournisseur de base bascule au build.** Prisma n'accepte pas de variable
+pour `provider` : le dépôt reste en `sqlite`, ce qui garde le développement local
+et les 211 tests utilisables sans serveur de base, et `npm run vercel-build`
+réécrit le schéma en `postgresql` avant de générer le client. La copie du dépôt
+sur l'hébergeur étant jetable, cette réécriture ne laisse aucune trace.
+
+**Le pilote de stockage se choisit seul.** La présence de
+`BLOB_READ_WRITE_TOKEN` suffit : sans lui, les fichiers vont sur le disque, comme
+en local et sur un serveur classique.
+
+**Les documents sont chiffrés avant dépôt.** Vercel Blob ne propose qu'un accès
+public. Le produit garantit qu'aucun document n'est lisible sans passer par le
+contrôle d'autorisation : le contenu est donc chiffré en AES-256-GCM avec une
+clé dérivée d'`APP_SECRET`, et l'URL seule ne donne rien d'exploitable. Corollaire
+à connaître : **changer `APP_SECRET` rend les documents déjà déposés illisibles.**
+
+### Étapes
+
+1. Pousser le dépôt sur GitHub.
+2. Sur [neon.tech](https://neon.tech), créer un projet et copier la chaîne de
+   connexion.
+3. Sur Vercel, importer le dépôt GitHub.
+4. Dans l'onglet **Storage** du projet Vercel, créer un Blob store : la variable
+   `BLOB_READ_WRITE_TOKEN` est ajoutée automatiquement.
+5. Dans **Settings → Environment Variables** :
+
+```
+DATABASE_URL=<chaîne Neon, avec ?sslmode=require>
+APP_SECRET=<openssl rand -base64 48>
+APP_URL=https://<votre-projet>.vercel.app
+EMAIL_PROVIDER=console
+```
+
+`STORAGE_ROOT` est inutile ici : le pilote Blob ne s'en sert pas.
+
+6. Déployer. `vercel-build` bascule le schéma, crée les tables, charge les règles
+   d'échéances puis compile.
+
+### Vérifier
+
+```
+https://<votre-projet>.vercel.app/api/health
+```
+
+Puis créer un cabinet depuis `/signup`, créer un dossier, **déposer un document
+et le retélécharger** : c'est ce qui prouve que le Blob est bien branché. Un
+échec au dépôt signifie que `BLOB_READ_WRITE_TOKEN` manque.
+
+### Limites de ce montage
+
+- Hébergement hors du Maroc — voir la mise en garde loi 09-08 plus bas. Données
+  fictives uniquement.
+- Un document est lu entièrement en mémoire pour être déchiffré : la limite de
+  25 Mo par fichier (`MAX_UPLOAD_MB`) prend ici tout son sens.
+- L'offre gratuite de Neon met la base en veille après inactivité : la première
+  visite après une pause peut être lente.
+
 ## Démonstration hébergée, indépendante de votre machine
 
 Pour que quelqu'un essaie la plateforme quand il veut, sans que votre ordinateur

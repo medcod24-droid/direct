@@ -1,9 +1,8 @@
 import { createHash, randomUUID } from "node:crypto";
-import { createReadStream } from "node:fs";
-import { mkdir, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { env } from "@/lib/env";
 import { ValidationError } from "@/lib/errors";
+import { storageDriver } from "./drivers";
 
 /**
  * Stockage privé des documents.
@@ -12,8 +11,9 @@ import { ValidationError } from "@/lib/errors";
  * - Le nom d'origine n'est jamais utilisé sur le disque (traversée de chemin, collisions).
  * - Chaque écriture calcule un SHA-256 : intégrité au sens de la loi 53-05 et détection
  *   de doublons.
- * - L'implémentation locale est remplaçable par un stockage objet privé (S3, OVH, cloud
- *   marocain) sans toucher au code métier : seule cette interface est utilisée.
+ * - L'écriture réelle est déléguée à un pilote (`./drivers`) : disque local par
+ *   défaut, stockage objet là où il n'y a pas de disque durable. Le code métier
+ *   ne connaît que cette interface.
  */
 export type StoredFile = {
   storageKey: string;
@@ -87,16 +87,6 @@ export function assertContentMatchesType(buffer: Buffer, mimeType: string): void
   if (!ok) throw new ValidationError("Le contenu du fichier ne correspond pas à son type déclaré.");
 }
 
-function resolveKey(storageKey: string): string {
-  const root = path.resolve(env().STORAGE_ROOT);
-  const target = path.resolve(root, storageKey);
-  // Défense contre la traversée de chemin, même si la clé provient de la base.
-  if (target !== root && !target.startsWith(root + path.sep)) {
-    throw new ValidationError("Chemin de stockage invalide.");
-  }
-  return target;
-}
-
 export async function putFile(input: {
   cabinetId: string;
   filename: string;
@@ -109,9 +99,7 @@ export async function putFile(input: {
 
   const year = new Date().getUTCFullYear();
   const storageKey = path.join(input.cabinetId, String(year), `${randomUUID()}.bin`);
-  const target = resolveKey(storageKey);
-  await mkdir(path.dirname(target), { recursive: true });
-  await writeFile(target, input.buffer, { mode: 0o600 });
+  await storageDriver().put(storageKey, input.buffer);
 
   return {
     storageKey,
@@ -122,22 +110,21 @@ export async function putFile(input: {
   };
 }
 
-export function readFileStream(storageKey: string) {
-  return createReadStream(resolveKey(storageKey));
+/**
+ * Flux de lecture d'un document.
+ *
+ * Asynchrone : un stockage objet doit d'abord récupérer l'objet, là où le disque
+ * ouvre le fichier immédiatement. Une clé invalide fait rejeter la promesse,
+ * elle n'est jamais lue.
+ */
+export async function readFileStream(storageKey: string): Promise<NodeJS.ReadableStream> {
+  return storageDriver().read(storageKey);
 }
 
 export async function fileExists(storageKey: string): Promise<boolean> {
-  // resolveKey est appelé hors du try : une clé invalide est un bug à signaler,
-  // pas un fichier « absent ».
-  const target = resolveKey(storageKey);
-  try {
-    await stat(target);
-    return true;
-  } catch {
-    return false;
-  }
+  return storageDriver().exists(storageKey);
 }
 
 export async function deleteFile(storageKey: string): Promise<void> {
-  await rm(resolveKey(storageKey), { force: true });
+  await storageDriver().remove(storageKey);
 }

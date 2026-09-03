@@ -174,7 +174,7 @@ export async function openDocument(ctx: AuthContext, documentId: string) {
     userAgent: ctx.userAgent,
   });
 
-  return { document, stream: readFileStream(document.storageKey) };
+  return { document, stream: await readFileStream(document.storageKey) };
 }
 
 export async function setDocumentStatus(

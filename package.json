@@ -14,10 +14,12 @@
     "db:reset": "tsx prisma/reset.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "start:hosted": "prisma db push --skip-generate --accept-data-loss && tsx prisma/seed.ts && next start"
+    "start:hosted": "prisma db push --skip-generate --accept-data-loss && tsx prisma/seed.ts && next start",
+    "vercel-build": "node prisma/set-provider.mjs postgresql && prisma generate && prisma db push --skip-generate && tsx prisma/seed.ts && next build"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
+    "@vercel/blob": "^2.8.0",
     "bcryptjs": "^2.4.3",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",

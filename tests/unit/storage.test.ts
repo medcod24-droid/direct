@@ -270,10 +270,12 @@ describe("putFile", () => {
 describe("protection contre la traversée de chemin", () => {
   const clesMalveillantes = ["../../../etc/passwd", "../secret.bin", "/etc/passwd", "..", "../"];
 
-  it("la lecture d'une clé sortant de la racine est refusée", () => {
+  it("la lecture d'une clé sortant de la racine est refusée", async () => {
     for (const cle of clesMalveillantes) {
-      expect(() => readFileStream(cle)).toThrow(ValidationError);
-      expect(() => readFileStream(cle)).toThrow(/Chemin de stockage invalide/);
+      // La lecture est asynchrone depuis l'introduction des pilotes de stockage :
+      // une clé invalide fait rejeter la promesse au lieu de lever aussitôt.
+      await expect(readFileStream(cle)).rejects.toThrow(ValidationError);
+      await expect(readFileStream(cle)).rejects.toThrow(/Chemin de stockage invalide/);
     }
   });
 
@@ -290,7 +292,9 @@ describe("protection contre la traversée de chemin", () => {
       mimeType: "application/pdf",
       buffer: PDF,
     });
-    expect(() => readFileStream(stored.storageKey).close()).not.toThrow();
+    const flux = await readFileStream(stored.storageKey);
+    expect(flux).toBeDefined();
+    (flux as { destroy?: () => void }).destroy?.();
     await expect(deleteFile(stored.storageKey)).resolves.toBeUndefined();
   });
 });
