@@ -2,8 +2,8 @@ import Link from "next/link";
 import { requireStaff } from "@/lib/authz/guard";
 import { formatDate, formatMad, relativeDays } from "@/lib/format";
 import { effectiveDeadlineStatus, subtypeLabel, VAT_REGIME_LABELS } from "@/lib/domain/labels";
-import { getClientOverview } from "@/server/services/clients";
-import { Alert, Badge, Card, EmptyState, PageHeader, StatusPill } from "@/components/ui";
+import { getClientOverview, ratingsForClients } from "@/server/services/clients";
+import { Alert, Badge, Card, EmptyState, PageHeader, StarRating, StatusPill } from "@/components/ui";
 import { RequestForm } from "./RequestForm";
 import { UploadForm } from "./UploadForm";
 
@@ -15,12 +15,22 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   const data = await getClientOverview(ctx, id);
   const { client } = data;
 
+  // La note résume un comportement de paiement : c'est une information financière,
+  // réservée à qui peut déjà voir les honoraires (report.view exclut l'assistant
+  // et n'existe pas pour un compte client du portail).
+  const rating = ctx.can("report.view") ? (await ratingsForClients(ctx, [id])).get(id) : undefined;
+
   return (
     <div className="grid gap-5">
       <PageHeader
         title={client.legalName}
         subtitle={[client.tradeName, client.city, client.activity].filter(Boolean).join(" · ")}
-        actions={<StatusPill status={data.health.status} />}
+        actions={
+          <div className="flex items-center gap-3">
+            {rating ? <StarRating stars={rating.stars} reasons={rating.reasons} /> : null}
+            <StatusPill status={data.health.status} />
+          </div>
+        }
       />
 
       {data.health.status !== "green" ? (

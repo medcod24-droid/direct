@@ -401,7 +401,85 @@ async function seedDemo() {
       ],
     });
   }
+  await seedDemoInvoices(cabinet.id);
   console.log("Cabinet de démonstration : cabinet-demo (demo@directconseil.ma)");
+}
+
+/**
+ * Honoraires de démonstration.
+ *
+ * Les montants et les dates de règlement sont choisis pour produire les quatre
+ * situations que la note de dossier doit distinguer : gros payeur ponctuel,
+ * gros payeur en retard, petit payeur ponctuel, et dossier en souffrance.
+ * Sans factures, tous les dossiers resteraient « non évalué ».
+ */
+async function seedDemoInvoices(cabinetId: string) {
+  if ((await db.clientInvoice.count({ where: { cabinetId } })) > 0) return;
+
+  const clients = await db.client.findMany({
+    where: { cabinetId },
+    select: { id: true, legalName: true },
+  });
+  const find = (needle: string) => clients.find((c) => c.legalName.includes(needle));
+
+  const DAY = 86400000;
+  const monthsAgo = (n: number) => new Date(Date.now() - n * 30 * DAY);
+
+  type Plan = { client?: { id: string }; amount: number; months: number[]; delay: number | null };
+
+  const plans: Plan[] = [
+    // Gros dossier, règle avant l'échéance : doit ressortir au maximum.
+    { client: find("Benali"), amount: 450000, months: [9, 6, 3, 1], delay: -3 },
+    // Volume comparable, mais règle systématiquement en retard.
+    { client: find("Nour"), amount: 380000, months: [9, 6, 3], delay: 28 },
+    // Petit dossier, toujours à l'heure.
+    { client: find("Ouazzani"), amount: 30000, months: [8, 5, 2], delay: 0 },
+  ];
+
+  let sequence = 0;
+  for (const plan of plans) {
+    if (!plan.client) continue;
+    for (const months of plan.months) {
+      sequence += 1;
+      const issuedAt = monthsAgo(months);
+      const dueDate = new Date(issuedAt.getTime() + 30 * DAY);
+      const paidAt = plan.delay === null ? null : new Date(dueDate.getTime() + plan.delay * DAY);
+      await db.clientInvoice.create({
+        data: {
+          cabinetId,
+          clientId: plan.client.id,
+          reference: `DEMO-${String(sequence).padStart(4, "0")}`,
+          label: "Honoraires de tenue comptable",
+          amount: plan.amount,
+          paidAmount: paidAt ? plan.amount : 0,
+          issuedAt,
+          dueDate,
+          paidAt,
+          status: paidAt ? "paid" : "pending",
+        },
+      });
+    }
+  }
+
+  // Une facture échue jamais réglée, pour montrer la pénalité d'impayé.
+  const impaye = find("Nour");
+  if (impaye) {
+    const issuedAt = monthsAgo(4);
+    await db.clientInvoice.create({
+      data: {
+        cabinetId,
+        clientId: impaye.id,
+        reference: `DEMO-${String(sequence + 1).padStart(4, "0")}`,
+        label: "Honoraires — assemblée générale",
+        amount: 120000,
+        paidAmount: 0,
+        issuedAt,
+        dueDate: new Date(issuedAt.getTime() + 30 * DAY),
+        paidAt: null,
+        status: "pending",
+      },
+    });
+  }
 }
 
 main()

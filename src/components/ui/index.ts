@@ -17,6 +17,7 @@ export { Modal, type ModalProps, type ModalSize } from "./Modal";
 export { PageHeader, type PageHeaderProps } from "./PageHeader";
 export { Pagination, type PaginationProps } from "./Pagination";
 export { Select, type SelectOption, type SelectProps } from "./Select";
+export { StarRating, type StarRatingProps } from "./StarRating";
 export { StatTile, type DeltaDirection, type StatTileProps, type StatTone } from "./StatTile";
 export {
   StatusPill,

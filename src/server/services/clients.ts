@@ -5,6 +5,7 @@ import { requireClient } from "@/lib/authz/guard";
 import { assertWithinLimit } from "@/lib/billing/entitlements";
 import { computeHealth, type HealthResult } from "@/lib/domain/health";
 import { ForbiddenError } from "@/lib/errors";
+import { rateClient, volumePercentile, type Rating } from "@/lib/clients/rating";
 import { clientSchema, searchSchema } from "@/lib/validation/schemas";
 
 const DAY = 86400000;
@@ -207,6 +208,68 @@ export async function getClientOverview(ctx: AuthContext, clientId: string) {
       overdueInvoices: 0,
     }),
   };
+}
+
+/**
+ * Note des dossiers demandés, en trois requêtes quel que soit leur nombre.
+ *
+ * Le volume est comparé à celui de **tous** les dossiers du cabinet, pas seulement
+ * à ceux de la page en cours : sinon la note d'un dossier changerait selon la page
+ * où on le regarde. Le calcul lui-même est dans `lib/clients/rating.ts`.
+ */
+export async function ratingsForClients(
+  ctx: AuthContext,
+  clientIds: string[],
+  now = new Date(),
+): Promise<Map<string, Rating>> {
+  const result = new Map<string, Rating>();
+  if (clientIds.length === 0) return result;
+
+  const since = new Date(now.getTime() - 365 * DAY);
+
+  const [cabinetVolumes, invoices] = await Promise.all([
+    // Base de comparaison : chiffre d'affaires par dossier sur douze mois glissants.
+    ctx.db.clientInvoice.groupBy({
+      by: ["clientId"],
+      where: { issuedAt: { gte: since }, status: { not: "cancelled" } },
+      _sum: { amount: true },
+    }),
+    ctx.db.clientInvoice.findMany({
+      where: { clientId: { in: clientIds } },
+      select: {
+        clientId: true,
+        amount: true,
+        paidAmount: true,
+        dueDate: true,
+        paidAt: true,
+        status: true,
+        issuedAt: true,
+      },
+    }),
+  ]);
+
+  const allAmounts = cabinetVolumes.map((row) => row._sum.amount ?? 0);
+  const volumeByClient = new Map(cabinetVolumes.map((row) => [row.clientId, row._sum.amount ?? 0]));
+
+  const byClient = new Map<string, typeof invoices>();
+  for (const invoice of invoices) {
+    const list = byClient.get(invoice.clientId);
+    if (list) list.push(invoice);
+    else byClient.set(invoice.clientId, [invoice]);
+  }
+
+  for (const clientId of clientIds) {
+    result.set(
+      clientId,
+      rateClient({
+        invoices: byClient.get(clientId) ?? [],
+        volumePercentile: volumePercentile(volumeByClient.get(clientId) ?? 0, allAmounts),
+        now,
+      }),
+    );
+  }
+
+  return result;
 }
 
 export async function createClient(ctx: AuthContext, input: unknown) {

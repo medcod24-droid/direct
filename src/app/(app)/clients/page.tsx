@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { requireStaff } from "@/lib/authz/guard";
 import { subtypeLabel } from "@/lib/domain/labels";
-import { listClients } from "@/server/services/clients";
+import { listClients, ratingsForClients } from "@/server/services/clients";
 import {
   Badge,
   Button,
   EmptyState,
   PageHeader,
   Pagination,
+  StarRating,
   StatusPill,
   Table,
   TBody,
@@ -33,6 +34,12 @@ export default async function ClientsPage({
     status: params.status,
     page: params.page ?? 1,
   });
+
+  // Même règle que sur la fiche : la note résume un comportement de paiement,
+  // donc une information financière, réservée à `report.view`.
+  const ratings = ctx.can("report.view")
+    ? await ratingsForClients(ctx, result.items.map((c) => c.id))
+    : null;
 
   const buildHref = (page: number) => {
     const query = new URLSearchParams();
@@ -100,6 +107,7 @@ export default async function ClientsPage({
                   <TH>ICE</TH>
                   <TH>Ville</TH>
                   <TH>État</TH>
+                  {ratings ? <TH>Note</TH> : null}
                   <TH numeric>Échéances</TH>
                 </TR>
               </THead>
@@ -124,6 +132,15 @@ export default async function ClientsPage({
                     <TD>
                       <StatusPill status={client.health.status} title={client.health.reasons.join(" · ")} />
                     </TD>
+                    {ratings ? (
+                      <TD>
+                        <StarRating
+                          size="sm"
+                          stars={ratings.get(client.id)?.stars ?? null}
+                          reasons={ratings.get(client.id)?.reasons}
+                        />
+                      </TD>
+                    ) : null}
                     <TD numeric>{client.openDeadlines}</TD>
                   </TR>
                 ))}
