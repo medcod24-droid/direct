@@ -103,11 +103,35 @@ export async function updateClientAction(
 ): Promise<ActionState> {
   try {
     const ctx = await requireStaff("client.update");
-    await updateClient(ctx, clientId, Object.fromEntries(form.entries()));
+    // Champs listés explicitement plutôt que `Object.fromEntries` : une case
+    // décochée n'est pas envoyée par le navigateur, et un schéma partiel
+    // l'ignorerait — « employeur » n'aurait jamais pu être retiré.
+    await updateClient(ctx, clientId, {
+      kind: str(form, "kind"),
+      subtype: str(form, "subtype"),
+      legalName: str(form, "legalName"),
+      tradeName: str(form, "tradeName"),
+      ice: str(form, "ice"),
+      if: str(form, "if"),
+      rc: str(form, "rc"),
+      city: str(form, "city"),
+      phone: str(form, "phone"),
+      email: str(form, "email"),
+      activity: str(form, "activity"),
+      vatRegime: str(form, "vatRegime"),
+      taxRegime: str(form, "taxRegime"),
+      isEmployer: form.get("isEmployer") === "on",
+      fiscalYearEndMonth: str(form, "fiscalYearEndMonth"),
+      fiscalYearEndDay: str(form, "fiscalYearEndDay"),
+      takeoverDate: str(form, "takeoverDate"),
+      feeAmount: str(form, "feeAmount") ? Number(str(form, "feeAmount")) * 100 : undefined,
+      feeFrequency: str(form, "feeFrequency"),
+    });
     revalidatePath(`/clients/${clientId}`);
+    revalidatePath("/clients");
     return { ok: true, message: "Dossier mis à jour." };
   } catch (error) {
-    return fail(error);
+    return { ...fail(error), values: formValues(form) };
   }
 }
 

@@ -4,7 +4,7 @@ import { formatDate, formatMad, relativeDays } from "@/lib/format";
 import { effectiveDeadlineStatus, subtypeLabel, VAT_REGIME_LABELS } from "@/lib/domain/labels";
 import { getClientOverview, ratingsForClients } from "@/server/services/clients";
 import { listClientAssignees, listMembers } from "@/server/services/members";
-import { Alert, Badge, Card, EmptyState, PageHeader, StarRating, StatusPill } from "@/components/ui";
+import { Alert, Badge, Button, Card, EmptyState, PageHeader, StarRating, StatusPill } from "@/components/ui";
 import { Assignees } from "./Assignees";
 import { RequestForm } from "./RequestForm";
 import { UploadForm } from "./UploadForm";
@@ -39,6 +39,11 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           <div className="flex items-center gap-3">
             {rating ? <StarRating stars={rating.stars} reasons={rating.reasons} /> : null}
             <StatusPill status={data.health.status} />
+            {ctx.can("client.update") ? (
+              <Button href={`/clients/${id}/edit`} variant="secondary" size="sm">
+                Modifier
+              </Button>
+            ) : null}
           </div>
         }
       />
