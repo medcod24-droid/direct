@@ -84,6 +84,7 @@ export default async function TeamPage() {
                     <TD>
                       <MemberControls
                         membershipId={member.membershipId}
+                        name={member.name}
                         role={member.role}
                         restrictedToAssigned={member.restrictedToAssigned}
                         // Ni soi-même — pour ne pas se verrouiller — ni le propriétaire,

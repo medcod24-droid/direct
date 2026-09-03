@@ -8,7 +8,7 @@ import {
   updateMemberAction,
   type ActionState,
 } from "@/app/actions/app";
-import { Alert, Button, Card, Field, Input, Select } from "@/components/ui";
+import { Alert, Button, Card, Field, Input, Modal, Select } from "@/components/ui";
 
 const initial: ActionState & { inviteUrl?: string } = {};
 
@@ -111,12 +111,14 @@ export function InviteMember() {
 /** Rôle et portée d'un collaborateur, modifiables en place. */
 export function MemberControls({
   membershipId,
+  name,
   role,
   restrictedToAssigned,
   locked,
   lockedReason,
 }: {
   membershipId: string;
+  name: string;
   role: string;
   restrictedToAssigned: boolean;
   locked: boolean;
@@ -124,6 +126,7 @@ export function MemberControls({
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
 
   if (locked) {
     return <span className="text-xs text-muted">{lockedReason}</span>;
@@ -162,22 +165,51 @@ export function MemberControls({
           Dossiers assignés seulement
         </label>
 
-        <Button
-          size="sm"
-          variant="ghost"
-          disabled={pending}
-          onClick={() => {
-            setError(null);
-            start(async () => {
-              const result = await removeMemberAction(membershipId);
-              if (result.error) setError(result.error);
-            });
-          }}
-        >
+        {/* Retirer coupe l'accès et ne se défait pas depuis l'application :
+            il faut une nouvelle invitation. La confirmation est donc obligatoire. */}
+        <Button size="sm" variant="ghost" disabled={pending} onClick={() => setConfirming(true)}>
           Retirer
         </Button>
       </div>
       {error ? <span className="text-xs text-danger">{error}</span> : null}
+
+      <Modal
+        open={confirming}
+        onClose={() => setConfirming(false)}
+        title="Retirer ce collaborateur ?"
+        size="sm"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setConfirming(false)}>
+              Annuler
+            </Button>
+            <Button
+              variant="danger"
+              disabled={pending}
+              onClick={() => {
+                setError(null);
+                start(async () => {
+                  const result = await removeMemberAction(membershipId);
+                  if (result.error) setError(result.error);
+                  setConfirming(false);
+                });
+              }}
+            >
+              {pending ? "Retrait…" : "Retirer définitivement"}
+            </Button>
+          </>
+        }
+      >
+        <p>
+          <strong>{name}</strong> perdra immédiatement l&apos;accès au cabinet, à ses dossiers et
+          à ses documents.
+        </p>
+        <p className="mt-2 text-xs text-muted">
+          Son compte n&apos;est pas supprimé, et le travail déjà effectué reste attribué à son
+          nom dans l&apos;historique. Pour le réintégrer, il faudra lui envoyer une nouvelle
+          invitation.
+        </p>
+      </Modal>
     </div>
   );
 }
