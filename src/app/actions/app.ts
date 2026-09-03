@@ -22,9 +22,26 @@ import { createTask, updateTask } from "@/server/services/tasks";
 export type ActionState = {
   error?: string;
   fieldErrors?: Record<string, string[]>;
+  /** Saisie renvoyée telle quelle pour repeupler le formulaire après un refus. */
+  values?: Record<string, string>;
   ok?: boolean;
   message?: string;
 };
+
+/**
+ * Champs texte du formulaire, pour les réafficher après une erreur.
+ * Les fichiers sont exclus (non réaffichables) ainsi que les champs internes de
+ * Next, et rien n'est renvoyé qui n'ait déjà été soumis par l'utilisateur.
+ */
+function formValues(form: FormData): Record<string, string> {
+  const values: Record<string, string> = {};
+  for (const [key, value] of form.entries()) {
+    if (typeof value !== "string") continue;
+    if (key.startsWith("$ACTION")) continue;
+    values[key] = value;
+  }
+  return values;
+}
 
 function fail(error: unknown): ActionState {
   const { message, fieldErrors } = toPublicError(error);
@@ -65,7 +82,7 @@ export async function createClientAction(_prev: ActionState, form: FormData): Pr
     });
     id = client.id;
   } catch (error) {
-    return fail(error);
+    return { ...fail(error), values: formValues(form) };
   }
   revalidatePath("/clients");
   redirect(`/clients/${id}`);

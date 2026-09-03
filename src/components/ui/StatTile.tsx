@@ -1,4 +1,5 @@
 import { clsx } from "clsx";
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 /**
@@ -87,9 +88,17 @@ export function StatTile({ label, value, hint, delta, tone = "neutral", href, cl
 
   if (href) {
     return (
-      <a href={href} className={clsx(shell, "block transition-colors hover:bg-surface2", className)}>
+      <Link
+        href={href}
+        className={clsx(
+          shell,
+          "block transition-colors hover:bg-surface2",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+          className,
+        )}
+      >
         {body}
-      </a>
+      </Link>
     );
   }
 

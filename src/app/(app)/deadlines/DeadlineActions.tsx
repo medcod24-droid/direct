@@ -117,8 +117,30 @@ export function DeadlineActions({
         </Button>
       )}
 
-      <Button size="sm" variant="ghost" onClick={() => setOutageOpen(true)}>
-        Panne
+      {/* Action rare : elle ne mérite pas le poids d'un troisième libellé répété
+          sur chaque ligne. Icône seule, mais nommée pour les lecteurs d'écran. */}
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => setOutageOpen(true)}
+        aria-label="Signaler une panne de portail"
+        title="Signaler une panne de portail"
+        className="px-1.5"
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
+          <path d="M12 9v4M12 17h.01" />
+        </svg>
       </Button>
 
       <Modal

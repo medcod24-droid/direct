@@ -47,23 +47,27 @@ export default async function DashboardPage() {
           value={data.deadlines.overdue}
           tone={data.deadlines.overdue > 0 ? "danger" : "success"}
           hint="Gérées par le cabinet, sans preuve de dépôt"
+          href="/deadlines?status=overdue"
         />
         <StatTile
           label="Échéances cette semaine"
           value={data.deadlines.week + data.deadlines.today}
           tone={data.deadlines.today > 0 ? "warning" : "neutral"}
           hint={`${data.deadlines.today} aujourd'hui`}
+          href="/deadlines"
         />
         <StatTile
           label="Pièces à examiner"
           value={data.requests.toReview}
           hint={`${data.requests.pending} en attente chez les clients`}
+          href="/requests"
         />
         <StatTile
           label="Honoraires impayés"
           value={formatMad(data.invoices.outstanding)}
           tone={data.invoices.overdueCount > 0 ? "warning" : "neutral"}
           hint={`${data.invoices.overdueCount} facture(s) en retard`}
+          href="/invoices"
         />
       </section>
 
@@ -110,17 +114,67 @@ export default async function DashboardPage() {
         </Card>
       </section>
 
-      <section className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-        <StatTile label="Clients" value={data.clients.total} hint={`+${data.clients.newThisMonth} ce mois`} />
-        <StatTile label="Mes tâches" value={data.tasks.mine} hint={`${data.tasks.overdue} en retard au cabinet`} />
-        <StatTile label="Documents ce mois" value={data.documents.thisMonth} />
-        <StatTile
-          label="Pièces qui expirent"
-          value={data.documents.expiringSoon}
-          hint="Dans les 30 jours"
-          tone={data.documents.expiringSoon > 0 ? "warning" : "neutral"}
-        />
-      </section>
+      <Card title="Le cabinet en chiffres" padded={false}>
+        <dl className="grid grid-cols-2 divide-line sm:grid-cols-4 sm:divide-x">
+          <Figure
+            href="/clients"
+            label="Clients"
+            value={data.clients.total}
+            hint={`+${data.clients.newThisMonth} ce mois`}
+          />
+          <Figure
+            href="/tasks"
+            label="Mes tâches"
+            value={data.tasks.mine}
+            hint={`${data.tasks.overdue} en retard au cabinet`}
+          />
+          <Figure
+            href="/documents"
+            label="Documents ce mois"
+            value={data.documents.thisMonth}
+          />
+          <Figure
+            href="/documents"
+            label="Pièces qui expirent"
+            value={data.documents.expiringSoon}
+            hint="Dans les 30 jours"
+            tone={data.documents.expiringSoon > 0 ? "warn" : undefined}
+          />
+        </dl>
+      </Card>
     </div>
+  );
+}
+
+/**
+ * Chiffre de contexte : même information qu'une tuile, poids visuel moindre.
+ * Réservé aux valeurs qui ne demandent pas d'action immédiate.
+ */
+function Figure({
+  label,
+  value,
+  hint,
+  href,
+  tone,
+}: {
+  label: string;
+  value: number;
+  hint?: string;
+  href: string;
+  tone?: "warn";
+}) {
+  return (
+    <Link
+      href={href}
+      className="block border-b border-line p-4 transition-colors last:border-b-0 hover:bg-surface2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:border-b-0"
+    >
+      <dt className="text-xs font-medium uppercase tracking-wide text-muted">{label}</dt>
+      <dd
+        className={`mt-1 text-xl font-semibold tabular ${tone === "warn" ? "text-warn" : "text-ink"}`}
+      >
+        {value}
+      </dd>
+      {hint ? <p className="mt-0.5 text-xs text-muted">{hint}</p> : null}
+    </Link>
   );
 }
