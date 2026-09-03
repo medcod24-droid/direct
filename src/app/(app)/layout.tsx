@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { logoutAction } from "@/app/actions/auth";
 import { getAuthContext } from "@/lib/authz/guard";
-import { Avatar, Badge } from "@/components/ui";
+import { Avatar, Badge, Logo } from "@/components/ui";
 import { MobileNav, SidebarNav } from "./AppNav";
 
 const NAV = [
@@ -32,9 +32,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen bg-bg text-ink flex">
       <aside className="w-60 shrink-0 border-e border-line bg-surface hidden md:flex md:flex-col">
-        <div className="px-5 py-4 border-b border-line">
-          <div className="font-semibold tracking-tight">Direct Conseil</div>
-          <div className="text-xs text-muted truncate">{ctx.cabinet.name}</div>
+        <div className="border-b border-line px-5 py-4">
+          <Link href="/dashboard" className="block rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+            <Logo className="w-40" priority />
+          </Link>
+          <div className="mt-2 truncate text-xs text-muted">{ctx.cabinet.name}</div>
         </div>
         <SidebarNav items={items} />
         <div className="p-3 border-t border-line text-xs text-muted">
@@ -45,8 +47,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <div className="flex-1 min-w-0 flex flex-col">
         <header className="h-14 border-b border-line bg-surface flex items-center gap-3 px-4 md:px-6">
           <MobileNav items={items} cabinetName={ctx.cabinet.name} />
-          <Link href="/dashboard" className="md:hidden font-semibold whitespace-nowrap">
-            Direct Conseil
+          <Link href="/dashboard" className="md:hidden rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+            <Logo className="w-32" />
           </Link>
           <div className="flex-1" />
           <Link

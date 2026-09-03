@@ -1,6 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Logo } from "@/components/ui";
 import { LoginForm } from "./LoginForm";
 import { getAuthContext } from "@/lib/authz/guard";
 
@@ -12,17 +12,8 @@ export default async function LoginPage() {
 
   return (
     <div className="bg-surface border border-line rounded-xl p-6 shadow-sm">
-      <div className="flex justify-center mb-6">
-        <span className="brand-plate">
-          <Image
-            src="/logo.png"
-            alt="Direct Conseil — centre d'affaires et comptabilité"
-            width={720}
-            height={240}
-            priority
-            className="brand-logo"
-          />
-        </span>
+      <div className="mb-6 flex justify-center">
+        <Logo className="w-56 sm:w-64" priority />
       </div>
 
       <h1 className="text-xl font-semibold mb-1">Connexion</h1>

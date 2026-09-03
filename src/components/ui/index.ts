@@ -12,6 +12,7 @@ export { Card, type CardProps } from "./Card";
 export { EmptyState, type EmptyStateProps } from "./EmptyState";
 export { Field, type FieldControlProps, type FieldProps } from "./Field";
 export { Input, type InputProps } from "./Input";
+export { Logo, type LogoProps } from "./Logo";
 export { Modal, type ModalProps, type ModalSize } from "./Modal";
 export { PageHeader, type PageHeaderProps } from "./PageHeader";
 export { Pagination, type PaginationProps } from "./Pagination";
