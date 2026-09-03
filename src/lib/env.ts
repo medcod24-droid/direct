@@ -36,3 +36,17 @@ export function env() {
 }
 
 export const isProduction = () => env().NODE_ENV === "production";
+
+/**
+ * Noms des variables refusées par `env()`, extraits de son message d'erreur.
+ * Les valeurs ne sont jamais lues : seuls les noms sortent d'ici, ce qui permet
+ * de diagnostiquer une configuration incomplète sans rien divulguer.
+ */
+export function invalidEnvNames(error: unknown): string[] {
+  const detail = error instanceof Error ? error.message : "";
+  const listed = detail.match(/invalides\s*:\s*(.+?)\.\s*Voir/)?.[1] ?? "";
+  return listed
+    .split(",")
+    .map((name) => name.trim())
+    .filter(Boolean);
+}
