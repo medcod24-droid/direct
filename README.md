@@ -30,6 +30,7 @@ Compte de démonstration : `demo@directconseil.ma` / `Demo2026!Cabinet`.
 | `npm test` | Suite complète (unitaires, sécurité, intégration) |
 | `npm run db:push` | Applique le schéma Prisma à la base |
 | `npm run db:seed` | Données de référence |
+| `npm run db:reset` | Vide les données d'exploitation, garde les règles |
 
 ## Base de données
 
@@ -77,8 +78,9 @@ directe, manipulation d'identifiants, contournement des limites de plan) sont co
 
 ## Déploiement
 
-Prérequis : Node 20+, PostgreSQL 15+, un stockage de fichiers persistant et chiffré,
-HTTPS obligatoire.
+Procédure complète : `DEPLOIEMENT.md`. Prérequis : Node 20+, PostgreSQL 15+, un stockage
+de fichiers **persistant** (un hébergeur serverless ne convient pas, les documents sont
+écrits sur disque) et chiffré, HTTPS obligatoire.
 
 1. Variables d'environnement (voir `.env.example`) : `DATABASE_URL`, `APP_SECRET`,
    `STORAGE_ROOT`, `APP_URL`, `EMAIL_PROVIDER`, `NODE_ENV=production`.
