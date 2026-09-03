@@ -1,6 +1,55 @@
 # Mise en ligne
 
-Procédure pour publier Direct Conseil et donner un lien à un cabinet.
+## Démo rapide, sans hébergeur
+
+Pour faire essayer la plateforme à quelqu'un avant de choisir un domaine et un
+hébergeur : l'application tourne sur votre machine, un tunnel lui donne une
+adresse HTTPS publique. Rien à héberger, pas de PostgreSQL, rien à payer.
+
+```bash
+brew install cloudflared
+```
+
+Deux terminaux, à laisser ouverts.
+
+**Terminal 1 — l'application, en version compilée :**
+
+```bash
+cd ~/Desktop/Direct && npm run build && npm run start
+```
+
+**Terminal 2 — le tunnel :**
+
+```bash
+cloudflared tunnel --url http://localhost:3000
+```
+
+Le tunnel affiche une adresse en `https://xxx.trycloudflare.com`. C'est le lien
+à transmettre, suivi de `/signup` : la personne crée son propre cabinet, il n'y
+a pas de compte administrateur par défaut.
+
+Pour que les liens d'invitation pointent vers le tunnel et non vers `localhost`,
+relancer le terminal 1 avec l'adresse obtenue :
+
+```bash
+APP_URL="https://xxx.trycloudflare.com" npm run start
+```
+
+Ce que cette démo implique, et qu'il faut dire à la personne qui teste :
+
+- **la machine doit rester allumée**, et l'adresse change à chaque redémarrage
+  du tunnel ;
+- les données vont dans le SQLite local, pas dans une base de production ;
+- le cookie de session n'est pas `Secure`, `.env` fixant `NODE_ENV=development` ;
+- aucun courriel n'est envoyé : les liens d'invitation s'affichent à l'écran ;
+- **données fictives uniquement** — voir la mise en garde sur la loi 09-08
+  ci-dessous.
+
+Entre deux essais, `npm run db:reset` remet la plateforme à zéro.
+
+## Mise en ligne durable
+
+Quand la démo a fait son office et qu'il s'agit d'accueillir de vrais dossiers.
 
 ## Deux contraintes qui décident de l'hébergeur
 
