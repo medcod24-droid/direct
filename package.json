@@ -13,7 +13,8 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:reset": "tsx prisma/reset.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "start:hosted": "prisma db push --skip-generate --accept-data-loss && tsx prisma/seed.ts && next start"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
@@ -22,8 +23,10 @@
     "date-fns": "^4.4.0",
     "nanoid": "^5.1.16",
     "next": "^15.5.25",
+    "prisma": "^6.19.3",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "tsx": "^4.23.13",
     "zod": "^3.25.76"
   },
   "devDependencies": {
@@ -33,9 +36,7 @@
     "@types/react-dom": "^19.2.5",
     "autoprefixer": "^10.5.4",
     "postcss": "^8.5.26",
-    "prisma": "^6.19.3",
     "tailwindcss": "^3.4.19",
-    "tsx": "^4.23.13",
     "typescript": "^5.9.3",
     "vitest": "^2.1.9"
   }

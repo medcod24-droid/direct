@@ -47,6 +47,78 @@ Ce que cette démo implique, et qu'il faut dire à la personne qui teste :
 
 Entre deux essais, `npm run db:reset` remet la plateforme à zéro.
 
+## Démonstration hébergée, indépendante de votre machine
+
+Pour que quelqu'un essaie la plateforme quand il veut, sans que votre ordinateur
+soit allumé. Compte payant chez l'hébergeur (quelques dollars par mois), mais ni
+dépôt GitHub ni Docker.
+
+### Ce que cette installation est, et n'est pas
+
+La base reste **SQLite**, posée sur le disque persistant à côté des documents.
+C'est volontaire pour une démonstration : ni serveur PostgreSQL à gérer, ni
+migration, une seule chose à sauvegarder. Le schéma n'utilise aucune
+particularité SQLite, le passage à PostgreSQL décrit plus bas reste donc ouvert
+quand de vrais dossiers arriveront.
+
+### Étapes
+
+```bash
+npm i -g @railway/cli
+railway login
+```
+
+Depuis le dossier du projet :
+
+```bash
+railway init
+```
+
+Dans l'interface Railway, sur le service créé :
+
+1. **Volume** — en ajouter un, monté sur `/data`. Sans lui, la base et les
+   documents disparaissent à chaque redéploiement.
+2. **Variables** :
+
+```
+DATABASE_URL=file:/data/prod.db
+STORAGE_ROOT=/data/storage
+APP_SECRET=<openssl rand -base64 48>
+APP_URL=https://<votre-app>.up.railway.app
+NODE_ENV=production
+EMAIL_PROVIDER=console
+```
+
+Puis :
+
+```bash
+railway up
+```
+
+`railway.json` fixe la commande de démarrage à `npm run start:hosted`, qui crée
+le schéma et charge les règles d'échéances au premier lancement, puis à chaque
+redémarrage sans rien écraser. Vérifié sur un disque vierge : la base et les
+15 règles sont créées seules.
+
+`APP_URL` doit être renseignée avec l'adresse réelle une fois connue, sinon les
+liens d'invitation pointeraient vers `localhost`.
+
+### Vérifier
+
+```
+https://<votre-app>.up.railway.app/api/health
+```
+
+Puis créer un cabinet depuis `/signup`, déposer un document, **redéployer**, et
+vérifier que le document est toujours téléchargeable : c'est ce qui prouve que le
+volume est bien monté.
+
+### Le lien à transmettre
+
+`https://<votre-app>.up.railway.app/signup` — la personne crée son propre
+cabinet, il n'y a pas de compte administrateur par défaut. Données fictives
+uniquement, voir la mise en garde loi 09-08 plus bas.
+
 ## Mise en ligne durable
 
 Quand la démo a fait son office et qu'il s'agit d'accueillir de vrais dossiers.
