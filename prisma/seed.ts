@@ -14,6 +14,20 @@ const db = new PrismaClient();
 
 const PLANS = [
   {
+    // Phase de lancement : le produit est gratuit et sans limite. Les plans payants
+    // restent en base (isPublic: false) pour être réactivés sans migration le jour
+    // où un prestataire de paiement marocain sera branché.
+    code: "free",
+    name: "Gratuit",
+    priceMad: 0,
+    maxClients: null,
+    maxUsers: null,
+    maxStorageMb: null,
+    maxMonthlyUploads: null,
+    features: ["clients", "documents", "deadlines", "requests", "tasks", "dashboard", "invoices", "portal"],
+    sortOrder: 0,
+  },
+  {
     code: "starter",
     name: "Starter",
     priceMad: 19900,
@@ -22,6 +36,7 @@ const PLANS = [
     maxStorageMb: 5000,
     maxMonthlyUploads: 500,
     features: ["clients", "documents", "deadlines", "requests", "tasks"],
+    isPublic: false,
     sortOrder: 1,
   },
   {
@@ -33,6 +48,7 @@ const PLANS = [
     maxStorageMb: 50000,
     maxMonthlyUploads: 3000,
     features: ["clients", "documents", "deadlines", "requests", "tasks", "dashboard", "invoices", "portal"],
+    isPublic: false,
     sortOrder: 2,
   },
   {
@@ -44,6 +60,7 @@ const PLANS = [
     maxStorageMb: 200000,
     maxMonthlyUploads: null,
     features: ["clients", "documents", "deadlines", "requests", "tasks", "dashboard", "invoices", "portal", "api", "multi_site"],
+    isPublic: false,
     sortOrder: 3,
   },
   {
@@ -300,7 +317,7 @@ async function main() {
 }
 
 async function seedDemo() {
-  const plan = await db.plan.findUniqueOrThrow({ where: { code: "professional" } });
+  const plan = await db.plan.findUniqueOrThrow({ where: { code: "free" } });
   const passwordHash = await bcrypt.hash("Demo2026!Cabinet", 12);
 
   const cabinet = await db.cabinet.upsert({
@@ -315,8 +332,8 @@ async function seedDemo() {
       subscription: {
         create: {
           planId: plan.id,
-          status: "trialing",
-          trialEndsAt: new Date(Date.now() + 30 * 86400000),
+          status: "active",
+          trialEndsAt: null,
         },
       },
     },

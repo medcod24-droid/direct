@@ -1,6 +1,5 @@
 import { requireStaff } from "@/lib/authz/guard";
 import { getEntitlements } from "@/lib/billing/entitlements";
-import { formatDate, formatMad } from "@/lib/format";
 import { platformDb } from "@/lib/db/tenant";
 import { Alert, Badge, Card, PageHeader, Table, TableWrap, TBody, TD, TH, THead, TR } from "@/components/ui";
 
@@ -9,9 +8,8 @@ export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   const ctx = await requireStaff("cabinet.view");
-  const [entitlements, plans, cabinet, rules] = await Promise.all([
+  const [entitlements, cabinet, rules] = await Promise.all([
     getEntitlements(ctx.cabinet.id).catch(() => null),
-    platformDb.plan.findMany({ where: { isPublic: true }, orderBy: { sortOrder: "asc" } }),
     ctx.db.cabinet.findFirst({ where: { id: ctx.cabinet.id } }),
     ctx.db.deadlineRule.findMany({ orderBy: { code: "asc" } }),
   ]);
@@ -27,14 +25,7 @@ export default async function SettingsPage() {
           <div className="grid gap-3">
             <div className="flex flex-wrap items-center gap-3">
               <span className="text-lg font-medium">{entitlements.planName}</span>
-              <Badge tone={entitlements.status === "active" ? "green" : "amber"}>
-                {entitlements.status === "trialing" ? "Essai" : entitlements.status}
-              </Badge>
-              {entitlements.trialEndsAt ? (
-                <span className="text-sm text-muted">
-                  Fin d&apos;essai le {formatDate(entitlements.trialEndsAt)}
-                </span>
-              ) : null}
+              <Badge tone="green">Gratuit</Badge>
             </div>
             <TableWrap>
               <Table>
@@ -75,29 +66,14 @@ export default async function SettingsPage() {
         )}
       </Card>
 
-      <Card title="Plans disponibles">
-        <div className="grid gap-3 sm:grid-cols-3">
-          {plans.map((plan) => (
-            <div
-              key={plan.id}
-              className={`rounded-lg border p-4 ${
-                plan.code === entitlements?.planCode ? "border-accent bg-accentSoft" : "border-line"
-              }`}
-            >
-              <div className="font-medium">{plan.name}</div>
-              <div className="text-2xl tabular my-1">{formatMad(plan.priceMad)}</div>
-              <div className="text-xs text-muted">par mois, HT</div>
-              <ul className="text-sm text-ink2 mt-2 grid gap-0.5">
-                <li>{plan.maxClients ?? "∞"} dossiers</li>
-                <li>{plan.maxUsers ?? "∞"} utilisateurs</li>
-                <li>{plan.maxStorageMb ? `${Math.round(plan.maxStorageMb / 1000)} Go` : "∞"} de stockage</li>
-              </ul>
-            </div>
-          ))}
-        </div>
-        <p className="text-xs text-muted mt-3">
-          Le changement de plan et le paiement en ligne seront branchés sur un prestataire
-          marocain (CMI, YouCan Pay). L&apos;architecture d&apos;abonnement est déjà en place.
+      <Card title="Formule">
+        <p className="text-sm text-ink2">
+          Direct Conseil est <strong>gratuit et sans limite</strong> pendant la phase de
+          lancement : nombre de dossiers, d&apos;utilisateurs et volume de stockage illimités,
+          sans date d&apos;expiration.
+        </p>
+        <p className="text-xs text-muted mt-2">
+          Aucun paiement n&apos;est demandé et aucun moyen de paiement n&apos;est enregistré.
         </p>
       </Card>
 

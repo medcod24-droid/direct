@@ -38,7 +38,9 @@ export async function signupCabinet(
     throw new ValidationError("Impossible de créer ce compte. Essayez de vous connecter.");
   }
 
-  const plan = await platformDb.plan.findUnique({ where: { code: "professional" } });
+  // Phase de lancement : tout nouveau cabinet ouvre sur le plan gratuit, sans période
+  // d'essai, donc sans échéance qui viendrait bloquer la saisie.
+  const plan = await platformDb.plan.findUnique({ where: { code: "free" } });
   if (!plan) throw new ValidationError("Aucun plan disponible. Contactez le support.");
 
   const passwordHash = await hashPassword(data.password);
@@ -58,8 +60,8 @@ export async function signupCabinet(
         subscription: {
           create: {
             planId: plan.id,
-            status: "trialing",
-            trialEndsAt: new Date(Date.now() + 30 * 86400000),
+            status: "active",
+            trialEndsAt: null,
           },
         },
       },
