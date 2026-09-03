@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { logoutAction } from "@/app/actions/auth";
 import { getAuthContext } from "@/lib/authz/guard";
-import { Avatar, Badge, Logo } from "@/components/ui";
+import { Avatar, Badge, Logo, ThemeToggle } from "@/components/ui";
 import { MobileNav, SidebarNav } from "./AppNav";
 
 const NAV = [
@@ -51,6 +51,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <Logo className="w-32" />
           </Link>
           <div className="flex-1" />
+          <ThemeToggle />
           <Link
             href="/notifications"
             aria-label="Notifications"

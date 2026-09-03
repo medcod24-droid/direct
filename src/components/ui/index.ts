@@ -40,3 +40,4 @@ export {
 } from "./Table";
 export { Tabs, type TabItem, type TabsProps } from "./Tabs";
 export { Textarea, type TextareaProps } from "./Textarea";
+export { ThemeToggle, THEME_KEY, type ThemeChoice } from "./ThemeToggle";

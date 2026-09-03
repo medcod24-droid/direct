@@ -24,6 +24,9 @@ export function Logo({ className, priority = false }: LogoProps) {
     width: 720,
     height: 240,
     priority,
+    // Sans `sizes`, Next demande la plus grande variante (1920 px) pour une image
+    // affichée à ~224 px : inutile à générer comme à transférer.
+    sizes: "256px",
     className: clsx("h-auto w-full", className && "w-full"),
   };
 

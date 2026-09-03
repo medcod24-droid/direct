@@ -10,7 +10,22 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr" dir="ltr">
+    // `suppressHydrationWarning` : le script ci-dessous pose `data-theme` sur
+    // <html> avant l'hydratation, donc l'attribut diffère volontairement du HTML
+    // rendu côté serveur. La suppression ne porte que sur cet élément.
+    <html lang="fr" dir="ltr" suppressHydrationWarning>
+      <head>
+        <script
+          // Exécuté avant la peinture : évite d'afficher brièvement le thème
+          // système alors que l'utilisateur a choisi l'autre. Clé partagée avec
+          // `ThemeToggle` (THEME_KEY).
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){try{var t=localStorage.getItem('dc-theme');" +
+              "if(t==='light'||t==='dark'){document.documentElement.dataset.theme=t;}}catch(e){}})();",
+          }}
+        />
+      </head>
       <body>{children}</body>
     </html>
   );
