@@ -1,25 +1,46 @@
 import Link from "next/link";
 import { requireStaff } from "@/lib/authz/guard";
 import { formatDate, formatMad } from "@/lib/format";
-import { invoiceSummary, listInvoices } from "@/server/services/invoices";
+import { invoiceSummary, listInvoices, nextInvoiceReference } from "@/server/services/invoices";
 import {
   EmptyState, PageHeader, StatTile, StatusPill,
   Table, TableWrap, TBody, TD, TH, THead, TR,
 } from "@/components/ui";
+import { NewInvoice, RecordPayment } from "./InvoiceForms";
 
 export const metadata = { title: "Honoraires — Direct Conseil" };
 export const dynamic = "force-dynamic";
 
 export default async function InvoicesPage() {
   const ctx = await requireStaff("invoice.view");
-  const [summary, invoices] = await Promise.all([
+  const canManage = ctx.can("invoice.manage");
+  const [summary, invoices, clients, suggestedReference] = await Promise.all([
     invoiceSummary(ctx),
     listInvoices(ctx, { status: "unpaid" }),
+    canManage
+      ? ctx.db.client.findMany({
+          where: { status: { not: "archived" } },
+          select: { id: true, legalName: true },
+          orderBy: { legalName: "asc" },
+        })
+      : Promise.resolve([]),
+    canManage ? nextInvoiceReference(ctx) : Promise.resolve(""),
   ]);
 
   return (
     <div className="grid gap-5">
-      <PageHeader title="Honoraires" subtitle="Ce que le cabinet facture et encaisse" />
+      <PageHeader
+        title="Honoraires"
+        subtitle="Ce que le cabinet facture et encaisse"
+        actions={
+          canManage ? (
+            <NewInvoice
+              clients={clients.map((c) => ({ id: c.id, label: c.legalName }))}
+              suggestedReference={suggestedReference}
+            />
+          ) : null
+        }
+      />
 
       <section className="grid gap-3 grid-cols-2 lg:grid-cols-4">
         <StatTile label="Impayés" value={formatMad(summary.outstanding)} tone={summary.outstanding > 0 ? "warning" : "neutral"} hint={`${summary.outstandingCount} facture(s)`} />
@@ -41,6 +62,7 @@ export default async function InvoicesPage() {
                 <TH>État</TH>
                 <TH numeric>Montant HT</TH>
                 <TH numeric>Reste dû</TH>
+                {canManage ? <TH>Actions</TH> : null}
               </TR>
             </THead>
             <TBody>
@@ -56,6 +78,15 @@ export default async function InvoicesPage() {
                   <TD><StatusPill status={invoice.status} /></TD>
                   <TD numeric>{formatMad(invoice.amount)}</TD>
                   <TD numeric>{formatMad(invoice.amount - invoice.paidAmount)}</TD>
+                  {canManage ? (
+                    <TD className="whitespace-nowrap">
+                      <RecordPayment
+                        invoiceId={invoice.id}
+                        reference={invoice.reference}
+                        remaining={invoice.amount - invoice.paidAmount}
+                      />
+                    </TD>
+                  ) : null}
                 </TR>
               ))}
             </TBody>

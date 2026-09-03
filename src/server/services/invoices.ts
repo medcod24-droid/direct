@@ -62,6 +62,25 @@ export async function invoiceSummary(ctx: AuthContext) {
   };
 }
 
+/**
+ * Prochaine référence libre, au format `AAAA-NNNN`.
+ *
+ * La référence est obligatoire et unique par cabinet : la proposer évite de la
+ * chercher à chaque facture, tout en la laissant modifiable — un cabinet qui a
+ * déjà sa propre numérotation la garde.
+ */
+export async function nextInvoiceReference(ctx: AuthContext, now = new Date()): Promise<string> {
+  const year = now.getUTCFullYear();
+  const last = await ctx.db.clientInvoice.findFirst({
+    where: { reference: { startsWith: `${year}-` } },
+    orderBy: { reference: "desc" },
+    select: { reference: true },
+  });
+  const previous = last ? Number.parseInt(last.reference.slice(5), 10) : 0;
+  const next = Number.isNaN(previous) ? 1 : previous + 1;
+  return `${year}-${String(next).padStart(4, "0")}`;
+}
+
 export async function createInvoice(ctx: AuthContext, input: unknown) {
   const data = invoiceSchema.parse(input);
   await requireClient(ctx, data.clientId);

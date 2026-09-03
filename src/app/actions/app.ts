@@ -386,9 +386,10 @@ export async function createInvoiceAction(
       dueDate: str(form, "dueDate") ?? new Date().toISOString(),
     });
     revalidatePath("/invoices");
+    revalidatePath("/dashboard");
     return { ok: true, message: "Facture enregistrée." };
   } catch (error) {
-    return fail(error);
+    return { ...fail(error), values: formValues(form) };
   }
 }
 
@@ -405,6 +406,7 @@ export async function recordPaymentAction(
       paymentMode: str(form, "paymentMode") ?? "transfer",
     });
     revalidatePath("/invoices");
+    revalidatePath("/dashboard");
     return { ok: true, message: "Encaissement enregistré." };
   } catch (error) {
     return fail(error);
