@@ -1,7 +1,8 @@
 "use client";
 
 import { clsx } from "clsx";
-import { useCallback, useEffect, useId, useRef, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { getDictionary, t, type Locale } from "@/lib/i18n";
 
 export type ModalSize = "sm" | "md" | "lg";
@@ -42,6 +43,9 @@ export function Modal({
   const dict = getDictionary(locale);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const restoreRef = useRef<HTMLElement | null>(null);
+  // `document` n'existe pas au rendu serveur : le portail attend le montage.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const headingId = useId();
   const descriptionId = useId();
 
@@ -75,10 +79,15 @@ export function Modal({
     };
   }, [open, requestClose]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-8">
+  // Rendu à la racine du document, jamais à l'endroit où le composant est appelé.
+  // Une boîte de dialogue déclarée dans une cellule de tableau héritait sinon de
+  // son style : `white-space: nowrap` sur la cellule empêchait le texte de la
+  // fenêtre de revenir à la ligne. Le portail règle aussi les cas d'ancêtre à
+  // `transform` ou `overflow`, qui piègent un élément `position: fixed`.
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto whitespace-normal p-4 sm:p-8">
       <div
         aria-hidden="true"
         onClick={requestClose}
@@ -139,6 +148,7 @@ export function Modal({
           </footer>
         ) : null}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

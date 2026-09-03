@@ -94,14 +94,16 @@ export function DeadlineActions({
     <div className="flex items-center gap-1.5">
       {!done ? (
         <>
-          <Button
-            size="sm"
-            variant="ghost"
-            disabled={pending}
-            onClick={() => start(() => updateDeadlineAction(id, "declare").then(() => undefined))}
-          >
-            Déclarée
-          </Button>
+          {status === "declared" ? null : (
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={pending}
+              onClick={() => start(() => updateDeadlineAction(id, "declare").then(() => undefined))}
+            >
+              Déclarée
+            </Button>
+          )}
           <Button size="sm" variant="secondary" disabled={pending} onClick={pay}>
             Payée
           </Button>

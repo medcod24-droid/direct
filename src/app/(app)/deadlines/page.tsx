@@ -214,8 +214,16 @@ export default async function DeadlinesPage({
                           {MANAGED_BY_LABELS[deadline.managedBy] ?? deadline.managedBy}
                         </Badge>
                       </TD>
-                      <TD>
+                      <TD className="whitespace-nowrap">
                         <StatusPill status={effectiveDeadlineStatus(deadline)} />
+                        {/* Déclarer après l'échéance n'efface pas le retard — c'est la
+                            règle du moteur — mais l'action doit rester visible. */}
+                        {deadline.status === "declared" ? (
+                          <div className="mt-0.5 text-xs text-muted">
+                            déclarée
+                            {deadline.declaredAt ? ` le ${formatDate(deadline.declaredAt)}` : ""}
+                          </div>
+                        ) : null}
                       </TD>
                       <TD>
                         {deadline.proof ? (
