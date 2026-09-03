@@ -165,6 +165,9 @@ export default async function DashboardPage() {
                   <div className="text-ink2">{item.summary}</div>
                   <div className="text-xs text-muted">
                     {item.client ? `${item.client.legalName} · ` : ""}
+                    {/* Qui a fait quoi : l'auteur est enregistré depuis le début,
+                        il n'était simplement pas affiché. */}
+                    {item.actorName ? `${item.actorName} · ` : ""}
                     {relativeDays(item.createdAt)}
                   </div>
                 </li>

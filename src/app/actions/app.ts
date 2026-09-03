@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requirePermission, requirePortal, requireStaff } from "@/lib/authz/guard";
+import { env } from "@/lib/env";
 import { toPublicError } from "@/lib/errors";
 import { markAllNotificationsRead, markNotificationRead } from "@/lib/notifications/service";
 import { archiveClient, assignCollaborator, createClient, updateClient } from "@/server/services/clients";
@@ -11,6 +12,12 @@ import { generateForYear, logOutageAttempt, setManagedBy, updateDeadlineStatus }
 import { createInvoice, recordPayment } from "@/server/services/invoices";
 import { createRequest, reviewRequest, submitRequest } from "@/server/services/requests";
 import { createTask, updateTask } from "@/server/services/tasks";
+import {
+  inviteMember,
+  removeMember,
+  revokeInvitation,
+  updateMember,
+} from "@/server/services/members";
 
 /**
  * Actions serveur.
@@ -419,4 +426,72 @@ export async function readAllNotificationsAction(): Promise<ActionState> {
   await markAllNotificationsRead(ctx.user.id);
   revalidatePath("/notifications");
   return { ok: true };
+}
+
+// --- équipe ------------------------------------------------------------------
+
+/**
+ * Invite un collaborateur et renvoie le lien d'acceptation.
+ *
+ * Le lien n'est affiché qu'une fois : la base ne garde que l'empreinte du jeton.
+ * L'envoi par courriel n'est pas branché (`EMAIL_PROVIDER=console` en
+ * développement), l'administrateur transmet donc le lien lui-même.
+ */
+export async function inviteMemberAction(
+  _prev: ActionState & { inviteUrl?: string },
+  form: FormData,
+): Promise<ActionState & { inviteUrl?: string }> {
+  try {
+    const ctx = await requireStaff("member.invite");
+    const { token } = await inviteMember(ctx, {
+      email: str(form, "email"),
+      role: str(form, "role"),
+      restrictedToAssigned: form.get("restrictedToAssigned") === "on",
+    });
+    revalidatePath("/team");
+    return {
+      ok: true,
+      message: "Invitation créée. Transmettez le lien ci-dessous.",
+      inviteUrl: `${env().APP_URL}/invitation/${token}`,
+    };
+  } catch (error) {
+    return { ...fail(error), values: formValues(form) };
+  }
+}
+
+export async function updateMemberAction(
+  membershipId: string,
+  role: string,
+  restrictedToAssigned: boolean,
+): Promise<ActionState> {
+  try {
+    const ctx = await requireStaff("member.manage");
+    await updateMember(ctx, membershipId, { role, restrictedToAssigned });
+    revalidatePath("/team");
+    return { ok: true, message: "Droits mis à jour." };
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+export async function removeMemberAction(membershipId: string): Promise<ActionState> {
+  try {
+    const ctx = await requireStaff("member.manage");
+    await removeMember(ctx, membershipId);
+    revalidatePath("/team");
+    return { ok: true, message: "Collaborateur retiré." };
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+export async function revokeInvitationAction(invitationId: string): Promise<ActionState> {
+  try {
+    const ctx = await requireStaff("member.invite");
+    await revokeInvitation(ctx, invitationId);
+    revalidatePath("/team");
+    return { ok: true, message: "Invitation annulée." };
+  } catch (error) {
+    return fail(error);
+  }
 }

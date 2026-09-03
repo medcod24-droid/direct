@@ -1,4 +1,5 @@
 import type { AuthContext } from "@/lib/authz/guard";
+import { platformDb } from "@/lib/db/tenant";
 import { getEntitlements, usageWarnings } from "@/lib/billing/entitlements";
 
 const DAY = 86400000;
@@ -87,6 +88,10 @@ export async function getCabinetDashboard(ctx: AuthContext) {
     getEntitlements(ctx.cabinet.id).catch(() => null),
   ]);
 
+  // `Activity` porte l'auteur mais sans relation vers `User` : les noms sont
+  // résolus en une requête, sur les seuls identifiants réellement présents.
+  const actorNames = await namesFor(recentActivity.map((a) => a.actorId));
+
   return {
     clients: { total: clientsTotal, active: clientsActive, newThisMonth: clientsNewThisMonth },
     deadlines: { overdue: deadlinesOverdue, today: deadlinesToday, week: deadlinesWeek },
@@ -98,13 +103,15 @@ export async function getCabinetDashboard(ctx: AuthContext) {
       count: invoicesOutstanding._count._all,
       overdueCount: invoicesOverdue,
     },
-    activity: recentActivity,
+    activity: recentActivity.map((item) => ({
+      ...item,
+      actorName: item.actorId ? (actorNames.get(item.actorId) ?? null) : null,
+    })),
     entitlements,
     warnings: entitlements ? usageWarnings(entitlements) : [],
   };
 }
 
-/** Clients demandant une attention : le tri se fait sur des faits, pas sur un score opaque. */
 /**
  * Tâches à ne pas manquer : urgentes, ou déjà en retard, ou dues sous 48 h.
  *
@@ -134,6 +141,7 @@ export async function getUrgentTasks(ctx: AuthContext, now = new Date()) {
   }));
 }
 
+/** Clients demandant une attention : le tri se fait sur des faits, pas sur un score opaque. */
 export async function getClientsNeedingAttention(ctx: AuthContext, limit = 8) {
   const now = new Date();
   const rows = await ctx.db.deadline.groupBy({
@@ -201,4 +209,15 @@ export async function getMonthlyStats(ctx: AuthContext, months = 6) {
   }
 
   return [...buckets.entries()].map(([month, values]) => ({ month, ...values }));
+}
+
+/** Noms des auteurs d'activité, par identifiant. Les nuls sont ignorés. */
+export async function namesFor(userIds: (string | null)[]): Promise<Map<string, string>> {
+  const ids = [...new Set(userIds.filter((id): id is string => Boolean(id)))];
+  if (ids.length === 0) return new Map();
+  const users = await platformDb.user.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, name: true },
+  });
+  return new Map(users.map((user) => [user.id, user.name]));
 }
