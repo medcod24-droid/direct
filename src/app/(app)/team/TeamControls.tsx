@@ -77,7 +77,7 @@ export function InviteMember() {
               />
             </Field>
             <Field label="Rôle" htmlFor="role" error={state.fieldErrors?.role?.[0]}>
-              <Select id="role" name="role" defaultValue={state.values?.role ?? "accountant"}>
+              <Select key={state.values?.role ?? "accountant"} id="role" name="role" defaultValue={state.values?.role ?? "accountant"}>
                 <option value="admin">Administrateur</option>
                 <option value="accountant">Comptable</option>
                 <option value="assistant">Assistant</option>

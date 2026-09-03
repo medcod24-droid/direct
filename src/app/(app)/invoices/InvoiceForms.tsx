@@ -53,7 +53,7 @@ export function NewInvoice({
 
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Dossier" htmlFor="clientId" error={fieldError("clientId")}>
-            <Select id="clientId" name="clientId" required defaultValue={kept("clientId")}>
+            <Select key={kept("clientId")} id="clientId" name="clientId" required defaultValue={kept("clientId")}>
               <option value="">Choisir un dossier…</option>
               {clients.map((client) => (
                 <option key={client.id} value={client.id}>

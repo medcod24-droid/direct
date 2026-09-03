@@ -13,6 +13,7 @@ import { createInvoice, recordPayment } from "@/server/services/invoices";
 import { createRequest, reviewRequest, submitRequest } from "@/server/services/requests";
 import { createTask, updateTask } from "@/server/services/tasks";
 import {
+  updateCabinetSettings,
   inviteMember,
   removeMember,
   revokeInvitation,
@@ -532,5 +533,33 @@ export async function unassignClientAction(clientId: string, userId: string): Pr
     return { ok: true };
   } catch (error) {
     return fail(error);
+  }
+}
+
+/** Réglages du cabinet, réservés à qui peut le gérer. */
+export async function updateCabinetSettingsAction(
+  _prev: ActionState,
+  form: FormData,
+): Promise<ActionState> {
+  try {
+    const ctx = await requireStaff("cabinet.manage");
+    await updateCabinetSettings(ctx, {
+      name: str(form, "name"),
+      ice: str(form, "ice"),
+      if: str(form, "if"),
+      rc: str(form, "rc"),
+      ordre: str(form, "ordre"),
+      ordreNum: str(form, "ordreNum"),
+      city: str(form, "city"),
+      phone: str(form, "phone"),
+      email: str(form, "email"),
+      cndpMode: str(form, "cndpMode"),
+      cndpRef: str(form, "cndpRef"),
+    });
+    revalidatePath("/settings");
+    revalidatePath("/", "layout");
+    return { ok: true, message: "Réglages enregistrés." };
+  } catch (error) {
+    return { ...fail(error), values: formValues(form) };
   }
 }

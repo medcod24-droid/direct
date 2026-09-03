@@ -43,13 +43,13 @@ export function ClientFields({ value, checked, fieldError, cndpMode }: ClientFie
             <Input id="tradeName" name="tradeName"  defaultValue={value("tradeName")} />
           </Field>
           <Field label="Type" htmlFor="kind" error={fieldError("kind")}>
-            <Select id="kind" name="kind" defaultValue={value("kind", "company")}>
+            <Select key={value("kind", "company")} id="kind" name="kind" defaultValue={value("kind", "company")}>
               <option value="company">Personne morale</option>
               <option value="individual">Personne physique</option>
             </Select>
           </Field>
           <Field label="Forme" htmlFor="subtype" error={fieldError("subtype")}>
-            <Select id="subtype" name="subtype" defaultValue={value("subtype", "sarl")}>
+            <Select key={value("subtype", "sarl")} id="subtype" name="subtype" defaultValue={value("subtype", "sarl")}>
               {CLIENT_SUBTYPES.map((group) => (
                 <optgroup key={group.group} label={group.group}>
                   {group.options.map(([value, label]) => (
@@ -94,7 +94,7 @@ export function ClientFields({ value, checked, fieldError, cndpMode }: ClientFie
       <Card title="Régime et échéances">
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Régime fiscal" htmlFor="taxRegime" error={fieldError("taxRegime")}>
-            <Select id="taxRegime" name="taxRegime" defaultValue={value("taxRegime", "is")}>
+            <Select key={value("taxRegime", "is")} id="taxRegime" name="taxRegime" defaultValue={value("taxRegime", "is")}>
               <option value="is">IS</option>
               <option value="rnr">IR — RNR</option>
               <option value="rns">IR — RNS</option>
@@ -104,7 +104,7 @@ export function ClientFields({ value, checked, fieldError, cndpMode }: ClientFie
             </Select>
           </Field>
           <Field label="Régime de TVA" htmlFor="vatRegime" hint="Mensuel dès 1 000 000 MAD de CA taxable" error={fieldError("vatRegime")}>
-            <Select id="vatRegime" name="vatRegime" defaultValue={value("vatRegime", "quarterly")}>
+            <Select key={value("vatRegime", "quarterly")} id="vatRegime" name="vatRegime" defaultValue={value("vatRegime", "quarterly")}>
               <option value="quarterly">Trimestriel</option>
               <option value="monthly">Mensuel</option>
               <option value="exempt">Hors champ / exonéré</option>
@@ -149,7 +149,7 @@ export function ClientFields({ value, checked, fieldError, cndpMode }: ClientFie
             <Input id="feeAmount" name="feeAmount" type="number" min={0} step="0.01"  defaultValue={value("feeAmount")} />
           </Field>
           <Field label="Périodicité" htmlFor="feeFrequency" error={fieldError("feeFrequency")}>
-            <Select id="feeFrequency" name="feeFrequency" defaultValue={value("feeFrequency", "monthly")}>
+            <Select key={value("feeFrequency", "monthly")} id="feeFrequency" name="feeFrequency" defaultValue={value("feeFrequency", "monthly")}>
               <option value="monthly">Mensuelle</option>
               <option value="quarterly">Trimestrielle</option>
               <option value="yearly">Annuelle</option>

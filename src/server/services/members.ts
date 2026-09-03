@@ -7,7 +7,7 @@ import { assertWithinLimit } from "@/lib/billing/entitlements";
 import { platformDb } from "@/lib/db/tenant";
 import type { Role } from "@/lib/domain/enums";
 import { ForbiddenError, NotFoundError, ValidationError } from "@/lib/errors";
-import { inviteSchema } from "@/lib/validation/schemas";
+import { cabinetSettingsSchema, inviteSchema } from "@/lib/validation/schemas";
 
 /**
  * Équipe du cabinet : invitations et droits des collaborateurs.
@@ -330,4 +330,42 @@ export async function unassignCollaborator(ctx: AuthContext, clientId: string, u
     metadata: { unassignedFrom: userId },
     ip: ctx.ip,
   });
+}
+
+/**
+ * Réglages du cabinet.
+ *
+ * `cndpMode` n'est pas un réglage d'affichage : en « autorisation », le numéro
+ * de CIN des gérants devient enregistrable (loi 09-08, art. 12-1-e). Le passage
+ * est donc journalisé, et la référence du dossier CNDP est demandée avec.
+ */
+export async function updateCabinetSettings(ctx: AuthContext, input: unknown) {
+  const data = cabinetSettingsSchema.parse(input);
+
+  if (data.cndpMode === "authorization" && !data.cndpRef) {
+    throw new ValidationError(
+      "Renseignez la référence de votre autorisation CNDP avant d'activer ce mode.",
+    );
+  }
+
+  const before = await ctx.db.cabinet.findFirst({ where: { id: ctx.cabinet.id } });
+  const updated = await ctx.db.cabinet.update({
+    where: { id: ctx.cabinet.id },
+    data,
+  });
+
+  await recordAudit({
+    action: "cabinet.settings_updated",
+    cabinetId: ctx.cabinet.id,
+    userId: ctx.user.id,
+    resourceType: "Cabinet",
+    resourceId: ctx.cabinet.id,
+    metadata: {
+      cndpModeFrom: before?.cndpMode ?? null,
+      cndpModeTo: data.cndpMode,
+    },
+    ip: ctx.ip,
+  });
+
+  return updated;
 }

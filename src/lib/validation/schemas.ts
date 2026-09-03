@@ -178,3 +178,18 @@ export const searchSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   perPage: z.coerce.number().int().min(1).max(100).default(25),
 });
+
+export const cabinetSettingsSchema = z.object({
+  name: trimmed(200).min(2, "Nom du cabinet requis."),
+  ice: iceSchema,
+  if: ifSchema,
+  rc: optionalText(40),
+  ordre: z.enum(["OPCA", "OEC"]).optional().or(z.literal("").transform(() => undefined)),
+  ordreNum: optionalText(40),
+  city: optionalText(80),
+  phone: optionalText(40),
+  email: z.string().trim().email("E-mail invalide.").optional().or(z.literal("").transform(() => undefined)),
+  /** « autorisation » débloque l'enregistrement du CIN des gérants (loi 09-08). */
+  cndpMode: z.enum(["declaration", "authorization"]),
+  cndpRef: optionalText(60),
+});

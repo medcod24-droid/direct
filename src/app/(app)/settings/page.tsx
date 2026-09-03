@@ -2,6 +2,7 @@ import { requireStaff } from "@/lib/authz/guard";
 import { getEntitlements } from "@/lib/billing/entitlements";
 import { platformDb } from "@/lib/db/tenant";
 import { Alert, Badge, Card, PageHeader, Table, TableWrap, TBody, TD, TH, THead, TR } from "@/components/ui";
+import { CabinetSettingsForm } from "./CabinetSettingsForm";
 
 export const metadata = { title: "Paramètres — Direct Conseil" };
 export const dynamic = "force-dynamic";
@@ -76,6 +77,29 @@ export default async function SettingsPage() {
           Aucun paiement n&apos;est demandé et aucun moyen de paiement n&apos;est enregistré.
         </p>
       </Card>
+
+      {ctx.can("cabinet.manage") ? (
+        <Card
+          title="Identité et conformité du cabinet"
+          description="Ces informations figurent sur vos documents et conditionnent le traitement des données."
+        >
+          <CabinetSettingsForm
+            current={{
+              name: cabinet?.name ?? "",
+              ice: cabinet?.ice ?? "",
+              if: cabinet?.if ?? "",
+              rc: cabinet?.rc ?? "",
+              ordre: cabinet?.ordre ?? "",
+              ordreNum: cabinet?.ordreNum ?? "",
+              city: cabinet?.city ?? "",
+              phone: cabinet?.phone ?? "",
+              email: cabinet?.email ?? "",
+              cndpMode: cabinet?.cndpMode ?? "declaration",
+              cndpRef: cabinet?.cndpRef ?? "",
+            }}
+          />
+        </Card>
+      ) : null}
 
       <Card title="Conformité (loi 09-08)">
         <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1.5 text-sm">

@@ -57,7 +57,7 @@ export function NewTaskForm({
 
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Priorité" htmlFor="priority" error={fieldError("priority")}>
-            <Select id="priority" name="priority" defaultValue={kept("priority", "normal")}>
+            <Select key={kept("priority", "normal")} id="priority" name="priority" defaultValue={kept("priority", "normal")}>
               <option value="low">Basse</option>
               <option value="normal">Normale</option>
               <option value="high">Haute</option>
@@ -75,7 +75,7 @@ export function NewTaskForm({
           </Field>
 
           <Field label="Dossier" htmlFor="clientId" optional error={fieldError("clientId")}>
-            <Select id="clientId" name="clientId" defaultValue={kept("clientId")}>
+            <Select key={kept("clientId")} id="clientId" name="clientId" defaultValue={kept("clientId")}>
               <option value="">Tâche interne au cabinet</option>
               {clients.map((client) => (
                 <option key={client.id} value={client.id}>
@@ -86,7 +86,7 @@ export function NewTaskForm({
           </Field>
 
           <Field label="Assignée à" htmlFor="assigneeId" optional error={fieldError("assigneeId")}>
-            <Select id="assigneeId" name="assigneeId" defaultValue={kept("assigneeId")}>
+            <Select key={kept("assigneeId")} id="assigneeId" name="assigneeId" defaultValue={kept("assigneeId")}>
               <option value="">Personne</option>
               {members.map((member) => (
                 <option key={member.id} value={member.id}>
