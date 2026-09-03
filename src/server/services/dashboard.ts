@@ -105,6 +105,35 @@ export async function getCabinetDashboard(ctx: AuthContext) {
 }
 
 /** Clients demandant une attention : le tri se fait sur des faits, pas sur un score opaque. */
+/**
+ * Tâches à ne pas manquer : urgentes, ou déjà en retard, ou dues sous 48 h.
+ *
+ * Elles sont remontées quel que soit l'assigné — une tâche urgente oubliée par
+ * un collaborateur absent doit rester visible par le cabinet. Une tâche urgente
+ * sans échéance est incluse : c'est justement celle qu'on oublie.
+ */
+export async function getUrgentTasks(ctx: AuthContext, now = new Date()) {
+  const soon = new Date(now.getTime() + 2 * 86400000);
+
+  const tasks = await ctx.db.task.findMany({
+    where: {
+      status: { notIn: ["done", "cancelled"] },
+      OR: [{ priority: "urgent" }, { dueDate: { lte: soon } }],
+    },
+    orderBy: { dueDate: "asc" },
+    include: {
+      client: { select: { id: true, legalName: true } },
+      assignee: { select: { id: true, name: true } },
+    },
+    take: 8,
+  });
+
+  return tasks.map((task) => ({
+    ...task,
+    overdue: task.dueDate !== null && task.dueDate.getTime() < now.getTime(),
+  }));
+}
+
 export async function getClientsNeedingAttention(ctx: AuthContext, limit = 8) {
   const now = new Date();
   const rows = await ctx.db.deadline.groupBy({

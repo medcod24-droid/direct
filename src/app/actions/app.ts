@@ -342,9 +342,10 @@ export async function createTaskAction(_prev: ActionState, form: FormData): Prom
       assigneeId: str(form, "assigneeId"),
     });
     revalidatePath("/tasks");
+    revalidatePath("/dashboard");
     return { ok: true, message: "Tâche créée." };
   } catch (error) {
-    return fail(error);
+    return { ...fail(error), values: formValues(form) };
   }
 }
 

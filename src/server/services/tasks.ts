@@ -1,4 +1,5 @@
 import { recordAudit } from "@/lib/audit";
+import { PRIORITY_RANK } from "@/lib/domain/labels";
 import type { AuthContext } from "@/lib/authz/guard";
 import { requireClient } from "@/lib/authz/guard";
 import { NotFoundError } from "@/lib/errors";
@@ -16,7 +17,7 @@ export async function listTasks(
   if (filters.status === "open") where.status = { notIn: ["done", "cancelled"] };
   else if (filters.status && filters.status !== "all") where.status = filters.status;
 
-  return ctx.db.task.findMany({
+  const tasks = await ctx.db.task.findMany({
     where,
     orderBy: [{ status: "asc" }, { dueDate: "asc" }],
     include: {
@@ -24,6 +25,17 @@ export async function listTasks(
       assignee: { select: { id: true, name: true } },
     },
     take: 300,
+  });
+
+  // Prisma ne sait pas ordonner une colonne texte selon un ordre métier : le
+  // classement par priorité se fait ici, sur un lot déjà borné à 300 lignes.
+  // Une tâche sans échéance passe après celles qui en ont une.
+  return tasks.sort((a, b) => {
+    const rank = (PRIORITY_RANK[a.priority] ?? 9) - (PRIORITY_RANK[b.priority] ?? 9);
+    if (rank !== 0) return rank;
+    const dueA = a.dueDate?.getTime() ?? Number.POSITIVE_INFINITY;
+    const dueB = b.dueDate?.getTime() ?? Number.POSITIVE_INFINITY;
+    return dueA - dueB;
   });
 }
 

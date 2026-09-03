@@ -1,17 +1,23 @@
 import Link from "next/link";
 import { requireStaff } from "@/lib/authz/guard";
-import { formatMad, relativeDays } from "@/lib/format";
-import { getCabinetDashboard, getClientsNeedingAttention } from "@/server/services/dashboard";
-import { Alert, Card, EmptyState, PageHeader, StatTile } from "@/components/ui";
+import { formatDate, formatMad, relativeDays } from "@/lib/format";
+import { PRIORITY_LABELS } from "@/lib/domain/labels";
+import {
+  getCabinetDashboard,
+  getClientsNeedingAttention,
+  getUrgentTasks,
+} from "@/server/services/dashboard";
+import { Alert, Badge, Card, EmptyState, PageHeader, StatTile } from "@/components/ui";
 
 export const metadata = { title: "Tableau de bord — Direct Conseil" };
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const ctx = await requireStaff("cabinet.view");
-  const [data, attention] = await Promise.all([
+  const [data, attention, urgentTasks] = await Promise.all([
     getCabinetDashboard(ctx),
     getClientsNeedingAttention(ctx),
+    ctx.can("task.view") ? getUrgentTasks(ctx) : Promise.resolve([]),
   ]);
 
   const trial =
@@ -70,6 +76,60 @@ export default async function DashboardPage() {
           href="/invoices"
         />
       </section>
+
+      {urgentTasks.length > 0 ? (
+        <Card
+          title="À ne pas oublier"
+          description="Tâches urgentes, en retard, ou à faire sous 48 heures."
+          action={
+            <Link href="/tasks?scope=team" className="text-sm text-accent underline underline-offset-2">
+              Toutes les tâches
+            </Link>
+          }
+        >
+          <ul className="divide-y divide-line">
+            {urgentTasks.map((task) => (
+              <li key={task.id} className="flex items-center justify-between gap-3 py-2.5">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {task.priority === "urgent" ? (
+                      <Badge tone="red">{PRIORITY_LABELS.urgent}</Badge>
+                    ) : null}
+                    <span className="text-sm">{task.title}</span>
+                  </div>
+                  <div className="mt-0.5 text-xs text-muted">
+                    {task.client ? (
+                      <Link
+                        href={`/clients/${task.client.id}`}
+                        className="underline underline-offset-2"
+                      >
+                        {task.client.legalName}
+                      </Link>
+                    ) : (
+                      "Tâche interne"
+                    )}
+                    {task.assignee ? ` · ${task.assignee.name}` : " · non assignée"}
+                  </div>
+                </div>
+                <div className="shrink-0 text-end text-xs">
+                  {task.dueDate ? (
+                    <>
+                      <div className={task.overdue ? "font-medium text-danger" : "text-ink2"}>
+                        {formatDate(task.dueDate)}
+                      </div>
+                      <div className={task.overdue ? "text-danger" : "text-muted"}>
+                        {relativeDays(task.dueDate)}
+                      </div>
+                    </>
+                  ) : (
+                    <span className="text-muted">sans échéance</span>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
 
       <section className="grid gap-4 lg:grid-cols-3">
         <Card title="Dossiers à surveiller" className="lg:col-span-2">

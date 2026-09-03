@@ -63,3 +63,21 @@ export function effectiveDeadlineStatus(deadline: {
   if (deadline.status === "declared") return "declared";
   return deadline.status;
 }
+
+export const PRIORITY_LABELS: Record<string, string> = {
+  low: "Basse",
+  normal: "Normale",
+  high: "Haute",
+  urgent: "Urgente",
+};
+
+/**
+ * Ordre d'affichage des tâches. Le rang est décroissant : une tâche urgente
+ * passe devant, quelle que soit son échéance — c'est tout l'intérêt de la marquer.
+ */
+export const PRIORITY_RANK: Record<string, number> = {
+  urgent: 0,
+  high: 1,
+  normal: 2,
+  low: 3,
+};
