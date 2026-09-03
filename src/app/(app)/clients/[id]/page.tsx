@@ -5,6 +5,7 @@ import { effectiveDeadlineStatus, subtypeLabel, VAT_REGIME_LABELS } from "@/lib/
 import { getClientOverview, ratingsForClients } from "@/server/services/clients";
 import { listClientAssignees, listMembers } from "@/server/services/members";
 import { Alert, Badge, Button, Card, EmptyState, PageHeader, StarRating, StatusPill } from "@/components/ui";
+import { ArchiveClient } from "./ArchiveClient";
 import { Assignees } from "./Assignees";
 import { RequestForm } from "./RequestForm";
 import { UploadForm } from "./UploadForm";
@@ -43,6 +44,9 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
               <Button href={`/clients/${id}/edit`} variant="secondary" size="sm">
                 Modifier
               </Button>
+            ) : null}
+            {ctx.can("client.delete") && client.status !== "archived" ? (
+              <ArchiveClient clientId={id} legalName={client.legalName} />
             ) : null}
           </div>
         }

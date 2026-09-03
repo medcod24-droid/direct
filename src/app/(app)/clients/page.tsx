@@ -74,7 +74,8 @@ export default async function ClientsPage({
           defaultValue={params.status ?? "all"}
           className="rounded-md border border-line bg-surface px-3 py-2 text-sm"
         >
-          <option value="all">Tous les statuts</option>
+          <option value="">Dossiers suivis</option>
+          <option value="all">Tous, archivés compris</option>
           <option value="active">Actifs</option>
           <option value="onboarding">En cours d&apos;intégration</option>
           <option value="prospect">Prospects</option>

@@ -26,7 +26,14 @@ export async function listClients(ctx: AuthContext, input: unknown) {
   const { q, status, page, perPage } = searchSchema.parse(input ?? {});
 
   const where: Record<string, unknown> = {};
-  if (status && status !== "all") where.status = status;
+  if (status && status !== "all") {
+    where.status = status;
+  } else if (!status) {
+    // Un dossier archivé n'est plus suivi : il sort des listes par défaut, sinon
+    // l'archivage n'aurait aucun effet visible. Il reste atteignable par le
+    // filtre « Archivé » ou « Tous les statuts ».
+    where.status = { not: "archived" };
+  }
   if (q) {
     // SQLite ne connaît pas `mode: "insensitive"` : la recherche reste sensible à la casse
     // sur cette base. En production (PostgreSQL), activer un index trigram ou citext.
