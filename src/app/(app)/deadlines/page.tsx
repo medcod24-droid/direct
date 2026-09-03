@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import Link from "next/link";
 import { requireStaff } from "@/lib/authz/guard";
 import { formatDate, relativeDays } from "@/lib/format";
@@ -19,31 +20,94 @@ import {
   TR,
 } from "@/components/ui";
 import { DeadlineActions, GenerateButton } from "./DeadlineActions";
+import { ClientFilter } from "./DeadlineFilters";
 
 export const metadata = { title: "Échéances — Direct Conseil" };
 export const dynamic = "force-dynamic";
 
+const TABS = [
+  { key: "open", label: "Ouvertes" },
+  { key: "overdue", label: "En retard" },
+  { key: "paid", label: "Payées" },
+  { key: "all", label: "Toutes" },
+] as const;
+
+const MONTHS = [
+  "janvier", "février", "mars", "avril", "mai", "juin",
+  "juillet", "août", "septembre", "octobre", "novembre", "décembre",
+];
+
+/** Clé de regroupement : un mois calendaire, dans le fuseau des échéances (UTC). */
+function monthKey(date: Date) {
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth()).padStart(2, "0")}`;
+}
+
+function monthLabel(date: Date) {
+  return `${MONTHS[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
+}
+
 export default async function DeadlinesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; client?: string }>;
 }) {
   const ctx = await requireStaff("deadline.view");
   const params = await searchParams;
   const status = params.status ?? "open";
-  const deadlines = await listDeadlines(ctx, { status });
+  const clientId = params.client || undefined;
+
+  const [deadlines, clients] = await Promise.all([
+    listDeadlines(ctx, { status, clientId }),
+    ctx.db.client.findMany({
+      where: { status: { not: "archived" } },
+      select: { id: true, legalName: true },
+      orderBy: { legalName: "asc" },
+    }),
+  ]);
 
   const now = new Date();
   const overdue = deadlines.filter(
-    (d) => d.managedBy === "cabinet" && deadlineStatus({ status: d.status, dueDate: d.dueDate, now }) === "overdue",
+    (d) =>
+      d.managedBy === "cabinet" &&
+      deadlineStatus({ status: d.status, dueDate: d.dueDate, now }) === "overdue",
   );
+
+  // Le dossier choisi peut ne plus exister (lien ancien) : on ne l'affiche que s'il est
+  // réellement dans la portée du contexte courant.
+  const selected = clientId ? clients.find((c) => c.id === clientId) : undefined;
+
+  // Regroupement par mois. La liste arrive déjà triée par date par le service :
+  // un simple parcours suffit, sans retrier ici.
+  const groups: { key: string; label: string; items: typeof deadlines }[] = [];
+  for (const deadline of deadlines) {
+    const key = monthKey(deadline.dueDate);
+    const last = groups.at(-1);
+    if (last?.key === key) last.items.push(deadline);
+    else groups.push({ key, label: monthLabel(deadline.dueDate), items: [deadline] });
+  }
+
+  const href = (next: { status?: string; client?: string }) => {
+    const query = new URLSearchParams();
+    const nextStatus = next.status ?? status;
+    const nextClient = next.client ?? clientId;
+    if (nextStatus !== "open") query.set("status", nextStatus);
+    if (nextClient) query.set("client", nextClient);
+    const qs = query.toString();
+    return qs ? `/deadlines?${qs}` : "/deadlines";
+  };
 
   return (
     <div className="grid gap-5">
       <PageHeader
         title="Échéances"
-        subtitle={`${deadlines.length} échéance(s) · ${overdue.length} en retard`}
-        actions={ctx.can("deadline.generate") ? <GenerateButton year={now.getUTCFullYear()} /> : null}
+        subtitle={
+          selected
+            ? `${selected.legalName} · ${deadlines.length} échéance(s) · ${overdue.length} en retard`
+            : `${deadlines.length} échéance(s) · ${overdue.length} en retard`
+        }
+        actions={
+          ctx.can("deadline.generate") ? <GenerateButton year={now.getUTCFullYear()} /> : null
+        }
       />
 
       <Card>
@@ -54,39 +118,52 @@ export default async function DeadlinesPage({
         </p>
       </Card>
 
-      <nav className="flex gap-2 text-sm">
-        {[
-          { key: "open", label: "Ouvertes" },
-          { key: "overdue", label: "En retard" },
-          { key: "paid", label: "Payées" },
-          { key: "all", label: "Toutes" },
-        ].map((tab) => (
-          <Link
-            key={tab.key}
-            href={`/deadlines?status=${tab.key}`}
-            className={`px-3 py-1.5 rounded-md border ${
-              status === tab.key
-                ? "border-accent text-accentInk bg-accentSoft"
-                : "border-line text-ink2 hover:bg-surface2"
-            }`}
-          >
-            {tab.label}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <nav className="flex gap-2 text-sm">
+          {TABS.map((tab) => (
+            <Link
+              key={tab.key}
+              href={href({ status: tab.key })}
+              className={`px-3 py-1.5 rounded-md border ${
+                status === tab.key
+                  ? "border-accent text-accentInk bg-accentSoft"
+                  : "border-line text-ink2 hover:bg-surface2"
+              }`}
+            >
+              {tab.label}
+            </Link>
+          ))}
+        </nav>
+        <ClientFilter clients={clients} />
+      </div>
+
+      {selected ? (
+        <div className="flex items-center gap-2 text-sm">
+          <Badge tone="accent">{selected.legalName}</Badge>
+          <Link href={href({ client: "" })} className="text-muted hover:underline underline-offset-2">
+            Retirer le filtre
           </Link>
-        ))}
-      </nav>
+        </div>
+      ) : null}
 
       {deadlines.length === 0 ? (
         <EmptyState
           title="Aucune échéance"
-          description="Générez le calendrier de l'année pour vos dossiers actifs."
-          action={ctx.can("deadline.generate") ? <GenerateButton year={now.getUTCFullYear()} /> : null}
+          description={
+            selected
+              ? `Aucune échéance ne correspond pour ${selected.legalName} dans cet onglet.`
+              : "Générez le calendrier de l'année pour vos dossiers actifs."
+          }
+          action={
+            ctx.can("deadline.generate") ? <GenerateButton year={now.getUTCFullYear()} /> : null
+          }
         />
       ) : (
         <TableWrap>
           <Table>
             <THead>
               <TR>
-                <TH>Dossier</TH>
+                {selected ? null : <TH>Dossier</TH>}
                 <TH>Obligation</TH>
                 <TH>Période</TH>
                 <TH>Échéance</TH>
@@ -97,50 +174,64 @@ export default async function DeadlinesPage({
               </TR>
             </THead>
             <TBody>
-              {deadlines.map((deadline) => (
-                <TR key={deadline.id}>
-                  <TD>
-                    <Link
-                      href={`/clients/${deadline.clientId}`}
-                      className="hover:underline underline-offset-2"
+              {groups.map((group) => (
+                <Fragment key={group.key}>
+                  <TR>
+                    <TD
+                      colSpan={selected ? 7 : 8}
+                      className="bg-surface2 text-xs uppercase tracking-wide text-muted"
                     >
-                      {deadline.client.legalName}
-                    </Link>
-                  </TD>
-                  <TD>{deadline.label}</TD>
-                  <TD>
-                    <span className="text-xs text-muted">{deadline.periodLabel}</span>
-                  </TD>
-                  <TD>
-                    <div className="tabular">{formatDate(deadline.dueDate)}</div>
-                    <div className="text-xs text-muted">{relativeDays(deadline.dueDate)}</div>
-                  </TD>
-                  <TD>
-                    <Badge tone={deadline.managedBy === "cabinet" ? "accent" : "neutral"}>
-                      {MANAGED_BY_LABELS[deadline.managedBy] ?? deadline.managedBy}
-                    </Badge>
-                  </TD>
-                  <TD>
-                    <StatusPill status={effectiveDeadlineStatus(deadline)} />
-                  </TD>
-                  <TD>
-                    {deadline.proof ? (
-                      <a
-                        href={`/api/documents/${deadline.proof.id}/download`}
-                        className="text-xs underline underline-offset-2"
-                      >
-                        {deadline.proof.filename}
-                      </a>
-                    ) : (
-                      <span className="text-xs text-muted">—</span>
-                    )}
-                  </TD>
-                  <TD>
-                    {ctx.can("deadline.update") ? (
-                      <DeadlineActions id={deadline.id} status={deadline.status} />
-                    ) : null}
-                  </TD>
-                </TR>
+                      {group.label} · {group.items.length} échéance(s)
+                    </TD>
+                  </TR>
+                  {group.items.map((deadline) => (
+                    <TR key={deadline.id}>
+                      {selected ? null : (
+                        <TD>
+                          <Link
+                            href={`/clients/${deadline.clientId}`}
+                            className="hover:underline underline-offset-2"
+                          >
+                            {deadline.client.legalName}
+                          </Link>
+                        </TD>
+                      )}
+                      <TD>{deadline.label}</TD>
+                      <TD>
+                        <span className="text-xs text-muted">{deadline.periodLabel}</span>
+                      </TD>
+                      <TD>
+                        <div className="tabular">{formatDate(deadline.dueDate)}</div>
+                        <div className="text-xs text-muted">{relativeDays(deadline.dueDate)}</div>
+                      </TD>
+                      <TD>
+                        <Badge tone={deadline.managedBy === "cabinet" ? "accent" : "neutral"}>
+                          {MANAGED_BY_LABELS[deadline.managedBy] ?? deadline.managedBy}
+                        </Badge>
+                      </TD>
+                      <TD>
+                        <StatusPill status={effectiveDeadlineStatus(deadline)} />
+                      </TD>
+                      <TD>
+                        {deadline.proof ? (
+                          <a
+                            href={`/api/documents/${deadline.proof.id}/download`}
+                            className="text-xs underline underline-offset-2"
+                          >
+                            {deadline.proof.filename}
+                          </a>
+                        ) : (
+                          <span className="text-xs text-muted">—</span>
+                        )}
+                      </TD>
+                      <TD>
+                        {ctx.can("deadline.update") ? (
+                          <DeadlineActions id={deadline.id} status={deadline.status} />
+                        ) : null}
+                      </TD>
+                    </TR>
+                  ))}
+                </Fragment>
               ))}
             </TBody>
           </Table>
