@@ -31,6 +31,10 @@ const csp = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  // Dossier de build paramétrable : permet de produire un build de production
+  // sans écraser le `.next` d'un serveur de développement en cours d'exécution,
+  // les deux se corrompant mutuellement.
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   reactStrictMode: true,
   poweredByHeader: false,
   serverExternalPackages: ["@prisma/client", "bcryptjs"],
