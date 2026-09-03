@@ -105,6 +105,12 @@ export const fr = {
       overdue: "En retard",
       not_applicable: "Non applicable",
     },
+    document: {
+      received: "Reçue",
+      approved: "Validée",
+      rejected: "Refusée",
+      archived: "Archivée",
+    },
     task: {
       todo: "À faire",
       in_progress: "En cours",

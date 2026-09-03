@@ -6,6 +6,7 @@ import {
   Badge, Button, EmptyState, PageHeader, Pagination, StatusPill,
   Table, TableWrap, TBody, TD, TH, THead, TR,
 } from "@/components/ui";
+import { DocumentActions } from "./DocumentActions";
 
 export const metadata = { title: "Documents — Direct Conseil" };
 export const dynamic = "force-dynamic";
@@ -16,6 +17,8 @@ export default async function DocumentsPage({
   searchParams: Promise<{ q?: string; page?: string; status?: string }>;
 }) {
   const ctx = await requireStaff("document.view");
+  const canApprove = ctx.can("document.approve");
+  const canDelete = ctx.can("document.delete");
   const params = await searchParams;
   const result = await listDocuments(ctx, {
     q: params.q,
@@ -54,7 +57,7 @@ export default async function DocumentsPage({
       ) : (
         <>
           <TableWrap>
-            <Table>
+            <Table minWidth={canApprove || canDelete ? 1060 : 760} label="Documents du cabinet">
               <THead>
                 <TR>
                   <TH>Fichier</TH>
@@ -63,6 +66,7 @@ export default async function DocumentsPage({
                   <TH>Date</TH>
                   <TH>État</TH>
                   <TH numeric>Taille</TH>
+                  {canApprove || canDelete ? <TH>Actions</TH> : null}
                 </TR>
               </THead>
               <TBody>
@@ -92,10 +96,21 @@ export default async function DocumentsPage({
                     <TD>
                       <span className="tabular">{formatDate(document.createdAt)}</span>
                     </TD>
-                    <TD><StatusPill status={document.status} /></TD>
+                    <TD><StatusPill kind="document" status={document.status} /></TD>
                     <TD numeric>
                       <Badge>{Math.round(document.size / 1024)} Ko</Badge>
                     </TD>
+                    {canApprove || canDelete ? (
+                      <TD>
+                        <DocumentActions
+                          id={document.id}
+                          filename={document.filename}
+                          status={document.status}
+                          canApprove={canApprove}
+                          canDelete={canDelete}
+                        />
+                      </TD>
+                    ) : null}
                   </TR>
                 ))}
               </TBody>

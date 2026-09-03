@@ -6,7 +6,7 @@ import { Badge, type Tone } from "./Badge";
 /** `INVOICE_STATUSES` n'expose pas de type nommé dans le domaine. */
 export type InvoiceStatus = (typeof INVOICE_STATUSES)[number];
 
-export type StatusKind = "deadline" | "task" | "request" | "invoice" | "health";
+export type StatusKind = "deadline" | "task" | "request" | "invoice" | "health" | "document";
 
 export type DomainStatus = DeadlineStatus | TaskStatus | RequestStatus | InvoiceStatus | Health;
 
@@ -51,6 +51,14 @@ const INVOICE: Record<InvoiceStatus, Entry> = {
   cancelled: { tone: "neutral", key: "status.invoice.cancelled" },
 };
 
+/** Les documents n'avaient pas de table : leurs statuts s'affichaient en anglais. */
+const DOCUMENT: Record<string, Entry> = {
+  received: { tone: "neutral", key: "status.document.received" },
+  approved: { tone: "green", key: "status.document.approved" },
+  rejected: { tone: "red", key: "status.document.rejected" },
+  archived: { tone: "neutral", key: "status.document.archived" },
+};
+
 const HEALTH: Record<Health, Entry> = {
   green: { tone: "green", key: "status.health.green" },
   amber: { tone: "amber", key: "status.health.amber" },
@@ -63,6 +71,7 @@ const BY_KIND: Record<StatusKind, Record<string, Entry>> = {
   request: REQUEST,
   invoice: INVOICE,
   health: HEALTH,
+  document: DOCUMENT,
 };
 
 /**
@@ -72,6 +81,7 @@ const BY_KIND: Record<StatusKind, Record<string, Entry>> = {
  */
 const FALLBACK: Record<string, Entry> = {
   ...INVOICE,
+  ...DOCUMENT,
   ...TASK,
   ...REQUEST,
   ...DEADLINE,

@@ -443,7 +443,8 @@ export async function readNotificationAction(notificationId: string): Promise<Ac
   const ctx = await requirePermission("cabinet.view").catch(() => null);
   if (!ctx) return { error: "Session expirée." };
   await markNotificationRead(ctx.user.id, notificationId);
-  revalidatePath("/notifications");
+  // Le compteur non lu vit dans la coquille de l'application, pas dans la page.
+  revalidatePath("/", "layout");
   return { ok: true };
 }
 
@@ -451,7 +452,7 @@ export async function readAllNotificationsAction(): Promise<ActionState> {
   const ctx = await requirePermission("cabinet.view").catch(() => null);
   if (!ctx) return { error: "Session expirée." };
   await markAllNotificationsRead(ctx.user.id);
-  revalidatePath("/notifications");
+  revalidatePath("/", "layout");
   return { ok: true };
 }
 

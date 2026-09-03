@@ -104,6 +104,12 @@ export const en: Dictionary = {
       overdue: "Overdue",
       not_applicable: "Not applicable",
     },
+    document: {
+      received: "Received",
+      approved: "Approved",
+      rejected: "Rejected",
+      archived: "Archived",
+    },
     task: {
       todo: "To do",
       in_progress: "In progress",

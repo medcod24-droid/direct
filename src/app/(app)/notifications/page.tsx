@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireAuth } from "@/lib/authz/guard";
 import { relativeDays } from "@/lib/format";
 import { Card, EmptyState, PageHeader } from "@/components/ui";
+import { MarkAllRead, MarkRead } from "./NotificationActions";
 
 export const metadata = { title: "Notifications — Direct Conseil" };
 export const dynamic = "force-dynamic";
@@ -14,11 +15,14 @@ export default async function NotificationsPage() {
     take: 100,
   });
 
+  const unread = notifications.filter((n) => !n.readAt).length;
+
   return (
     <div className="grid gap-5">
       <PageHeader
         title="Notifications"
-        subtitle={`${notifications.filter((n) => !n.readAt).length} non lue(s)`}
+        subtitle={`${unread} non lue(s)`}
+        actions={<MarkAllRead unread={unread} />}
       />
       <Card>
         {notifications.length === 0 ? (
@@ -42,9 +46,12 @@ export default async function NotificationsPage() {
                       <div className="text-xs text-muted">{notification.body}</div>
                     ) : null}
                   </div>
-                  <span className="text-xs text-muted shrink-0">
-                    {relativeDays(notification.createdAt)}
-                  </span>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="whitespace-nowrap text-xs text-muted">
+                      {relativeDays(notification.createdAt)}
+                    </span>
+                    {notification.readAt ? null : <MarkRead id={notification.id} />}
+                  </div>
                 </div>
               </li>
             ))}

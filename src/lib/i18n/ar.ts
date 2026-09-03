@@ -111,6 +111,12 @@ export const ar: Dictionary = {
       overdue: "متأخر",
       not_applicable: "غير معني",
     },
+    document: {
+      received: "مستلمة",
+      approved: "مصادق عليها",
+      rejected: "مرفوضة",
+      archived: "مؤرشفة",
+    },
     task: {
       todo: "للإنجاز",
       in_progress: "قيد الإنجاز",
