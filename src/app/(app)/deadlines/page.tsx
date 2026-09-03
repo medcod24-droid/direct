@@ -21,6 +21,7 @@ import {
 } from "@/components/ui";
 import { DeadlineActions, GenerateButton } from "./DeadlineActions";
 import { ClientFilter, DeadlineSearch } from "./DeadlineFilters";
+import { ManagedBySelect } from "./ManagedBySelect";
 
 export const metadata = { title: "Échéances — Direct Conseil" };
 export const dynamic = "force-dynamic";
@@ -209,10 +210,14 @@ export default async function DeadlinesPage({
                         <div className="tabular">{formatDate(deadline.dueDate)}</div>
                         <div className="text-xs text-muted">{relativeDays(deadline.dueDate)}</div>
                       </TD>
-                      <TD>
-                        <Badge tone={deadline.managedBy === "cabinet" ? "accent" : "neutral"}>
-                          {MANAGED_BY_LABELS[deadline.managedBy] ?? deadline.managedBy}
-                        </Badge>
+                      <TD className="whitespace-nowrap">
+                        {ctx.can("deadline.update") ? (
+                          <ManagedBySelect id={deadline.id} managedBy={deadline.managedBy} />
+                        ) : (
+                          <Badge tone={deadline.managedBy === "cabinet" ? "accent" : "neutral"}>
+                            {MANAGED_BY_LABELS[deadline.managedBy] ?? deadline.managedBy}
+                          </Badge>
+                        )}
                       </TD>
                       <TD className="whitespace-nowrap">
                         <StatusPill status={effectiveDeadlineStatus(deadline)} />

@@ -136,6 +136,8 @@ export async function listDeadlines(
     clientId?: string;
     status?: string;
     q?: string;
+    /** Référence temporelle du calcul de retard ; injectable pour les tests. */
+    now?: Date;
     from?: Date;
     to?: Date;
     assigneeId?: string;
@@ -144,8 +146,17 @@ export async function listDeadlines(
   const where: Record<string, unknown> = {};
   if (filters.clientId) where.clientId = filters.clientId;
   if (filters.assigneeId) where.assigneeId = filters.assigneeId;
-  if (filters.status === "open") where.status = { in: ["upcoming", "in_progress", "declared"] };
-  else if (filters.status && filters.status !== "all") where.status = filters.status;
+  if (filters.status === "open") {
+    where.status = { in: ["upcoming", "in_progress", "declared"] };
+  } else if (filters.status === "overdue") {
+    // Le retard n'est pas un statut stocké, il se déduit de la date : filtrer sur
+    // `status = "overdue"` ne renvoyait jamais rien, et l'onglet « En retard »
+    // restait vide alors même que le tableau de bord y renvoyait.
+    where.status = { in: ["upcoming", "in_progress", "declared"] };
+    where.dueDate = { lt: filters.now ?? new Date() };
+  } else if (filters.status && filters.status !== "all") {
+    where.status = filters.status;
+  }
   const q = filters.q?.trim();
   if (q) {
     // Recherche sur le dossier et sur l'intitulé de l'obligation. Comme ailleurs dans le
@@ -161,6 +172,7 @@ export async function listDeadlines(
   }
   if (filters.from || filters.to) {
     where.dueDate = {
+      ...(typeof where.dueDate === "object" ? where.dueDate : {}),
       ...(filters.from ? { gte: filters.from } : {}),
       ...(filters.to ? { lte: filters.to } : {}),
     };
