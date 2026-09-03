@@ -132,13 +132,33 @@ export async function generateForYear(
 
 export async function listDeadlines(
   ctx: AuthContext,
-  filters: { clientId?: string; status?: string; from?: Date; to?: Date; assigneeId?: string } = {},
+  filters: {
+    clientId?: string;
+    status?: string;
+    q?: string;
+    from?: Date;
+    to?: Date;
+    assigneeId?: string;
+  } = {},
 ) {
   const where: Record<string, unknown> = {};
   if (filters.clientId) where.clientId = filters.clientId;
   if (filters.assigneeId) where.assigneeId = filters.assigneeId;
   if (filters.status === "open") where.status = { in: ["upcoming", "in_progress", "declared"] };
   else if (filters.status && filters.status !== "all") where.status = filters.status;
+  const q = filters.q?.trim();
+  if (q) {
+    // Recherche sur le dossier et sur l'intitulé de l'obligation. Comme ailleurs dans le
+    // produit, `contains` reste sensible à la casse sur SQLite (voir README) ; en
+    // PostgreSQL, un index trigram sur `Client.legalName` couvre ce filtre.
+    where.OR = [
+      { client: { legalName: { contains: q } } },
+      { client: { tradeName: { contains: q } } },
+      { client: { ice: { contains: q } } },
+      { label: { contains: q } },
+      { periodLabel: { contains: q } },
+    ];
+  }
   if (filters.from || filters.to) {
     where.dueDate = {
       ...(filters.from ? { gte: filters.from } : {}),
@@ -181,6 +201,13 @@ export async function updateDeadlineStatus(ctx: AuthContext, input: unknown) {
       if (data.proofDocumentId) patch.proofDocumentId = data.proofDocumentId;
       break;
     case "pay":
+      // Une échéance ne passe au vert que si le dépôt est prouvé : c'est la pièce que le
+      // cabinet produira en cas de contrôle. Une preuve déjà jointe à la déclaration suffit.
+      if (!data.proofDocumentId && !deadline.proofDocumentId) {
+        throw new ValidationError(
+          "Joignez la preuve de dépôt (accusé du portail) avant de marquer l'échéance payée.",
+        );
+      }
       patch.status = "paid";
       patch.paidAt = now;
       if (!deadline.declaredAt) patch.declaredAt = now;

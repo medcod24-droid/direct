@@ -275,6 +275,27 @@ export async function setDeadlineManagedByAction(
   }
 }
 
+/**
+ * Pièces du dossier proposables comme preuve de dépôt.
+ * La lecture passe par `ctx.db` : un dossier d'un autre cabinet ne renvoie rien.
+ */
+export async function listProofCandidatesAction(
+  clientId: string,
+): Promise<{ error?: string; items?: { id: string; filename: string }[] }> {
+  try {
+    const ctx = await requireStaff("deadline.update");
+    const items = await ctx.db.document.findMany({
+      where: { clientId },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, filename: true },
+      take: 100,
+    });
+    return { items };
+  } catch (error) {
+    return { error: toPublicError(error).message };
+  }
+}
+
 export async function logOutageAction(
   deadlineId: string,
   portal: string,

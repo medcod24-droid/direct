@@ -20,7 +20,7 @@ import {
   TR,
 } from "@/components/ui";
 import { DeadlineActions, GenerateButton } from "./DeadlineActions";
-import { ClientFilter } from "./DeadlineFilters";
+import { ClientFilter, DeadlineSearch } from "./DeadlineFilters";
 
 export const metadata = { title: "Échéances — Direct Conseil" };
 export const dynamic = "force-dynamic";
@@ -49,15 +49,16 @@ function monthLabel(date: Date) {
 export default async function DeadlinesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; client?: string }>;
+  searchParams: Promise<{ status?: string; client?: string; q?: string }>;
 }) {
   const ctx = await requireStaff("deadline.view");
   const params = await searchParams;
   const status = params.status ?? "open";
   const clientId = params.client || undefined;
+  const q = params.q?.trim() || undefined;
 
   const [deadlines, clients] = await Promise.all([
-    listDeadlines(ctx, { status, clientId }),
+    listDeadlines(ctx, { status, clientId, q }),
     ctx.db.client.findMany({
       where: { status: { not: "archived" } },
       select: { id: true, legalName: true },
@@ -92,6 +93,7 @@ export default async function DeadlinesPage({
     const nextClient = next.client ?? clientId;
     if (nextStatus !== "open") query.set("status", nextStatus);
     if (nextClient) query.set("client", nextClient);
+    if (q) query.set("q", q);
     const qs = query.toString();
     return qs ? `/deadlines?${qs}` : "/deadlines";
   };
@@ -117,6 +119,8 @@ export default async function DeadlinesPage({
           client ou par un tiers n&apos;est jamais compté en retard pour le cabinet.
         </p>
       </Card>
+
+      <DeadlineSearch />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <nav className="flex gap-2 text-sm">
@@ -150,9 +154,11 @@ export default async function DeadlinesPage({
         <EmptyState
           title="Aucune échéance"
           description={
-            selected
-              ? `Aucune échéance ne correspond pour ${selected.legalName} dans cet onglet.`
-              : "Générez le calendrier de l'année pour vos dossiers actifs."
+            q
+              ? `Aucun résultat pour « ${q} » dans cet onglet.`
+              : selected
+                ? `Aucune échéance ne correspond pour ${selected.legalName} dans cet onglet.`
+                : "Générez le calendrier de l'année pour vos dossiers actifs."
           }
           action={
             ctx.can("deadline.generate") ? <GenerateButton year={now.getUTCFullYear()} /> : null
@@ -226,7 +232,12 @@ export default async function DeadlinesPage({
                       </TD>
                       <TD>
                         {ctx.can("deadline.update") ? (
-                          <DeadlineActions id={deadline.id} status={deadline.status} />
+                          <DeadlineActions
+                            id={deadline.id}
+                            clientId={deadline.clientId}
+                            status={deadline.status}
+                            hasProof={Boolean(deadline.proofDocumentId)}
+                          />
                         ) : null}
                       </TD>
                     </TR>

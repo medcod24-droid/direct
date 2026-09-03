@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
-import { Select } from "@/components/ui";
+import { Button, Input, Select } from "@/components/ui";
 
 export type ClientOption = { id: string; legalName: string };
 
@@ -42,5 +42,46 @@ export function ClientFilter({ clients }: { clients: ClientOption[] }) {
         ))}
       </Select>
     </label>
+  );
+}
+
+/**
+ * Recherche texte. Formulaire GET classique : la requête vit dans l'URL, donc la vue
+ * reste partageable et le bouton « précédent » du navigateur fonctionne.
+ * L'onglet d'état et le dossier en cours sont réémis en champs cachés.
+ */
+export function DeadlineSearch() {
+  const params = useSearchParams();
+  const q = params.get("q") ?? "";
+  const status = params.get("status");
+  const client = params.get("client");
+
+  return (
+    <form action="/deadlines" method="get" className="flex items-center gap-2">
+      {status ? <input type="hidden" name="status" value={status} /> : null}
+      {client ? <input type="hidden" name="client" value={client} /> : null}
+      <Input
+        type="search"
+        name="q"
+        defaultValue={q}
+        placeholder="Dossier, ICE, obligation…"
+        aria-label="Rechercher une échéance"
+        className="min-w-64"
+      />
+      <Button type="submit" variant="secondary">
+        Rechercher
+      </Button>
+      {q ? (
+        <a
+          href={`/deadlines${status || client ? "?" : ""}${new URLSearchParams({
+            ...(status ? { status } : {}),
+            ...(client ? { client } : {}),
+          }).toString()}`}
+          className="text-sm text-muted hover:underline underline-offset-2"
+        >
+          Effacer
+        </a>
+      ) : null}
+    </form>
   );
 }
