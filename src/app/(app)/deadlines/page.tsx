@@ -166,12 +166,11 @@ export default async function DeadlinesPage({
         />
       ) : (
         <TableWrap>
-          <Table>
+          <Table minWidth={1000} label="Échéances du cabinet">
             <THead>
               <TR>
                 {selected ? null : <TH>Dossier</TH>}
                 <TH>Obligation</TH>
-                <TH>Période</TH>
                 <TH>Échéance</TH>
                 <TH>Gérée par</TH>
                 <TH>État</TH>
@@ -184,7 +183,7 @@ export default async function DeadlinesPage({
                 <Fragment key={group.key}>
                   <TR>
                     <TD
-                      colSpan={selected ? 7 : 8}
+                      colSpan={selected ? 6 : 7}
                       className="bg-surface2 text-xs uppercase tracking-wide text-muted"
                     >
                       {group.label} · {group.items.length} échéance(s)
@@ -202,11 +201,11 @@ export default async function DeadlinesPage({
                           </Link>
                         </TD>
                       )}
-                      <TD>{deadline.label}</TD>
                       <TD>
-                        <span className="text-xs text-muted">{deadline.periodLabel}</span>
+                        <div>{deadline.label}</div>
+                        <div className="text-xs text-muted">{deadline.periodLabel}</div>
                       </TD>
-                      <TD>
+                      <TD className="whitespace-nowrap">
                         <div className="tabular">{formatDate(deadline.dueDate)}</div>
                         <div className="text-xs text-muted">{relativeDays(deadline.dueDate)}</div>
                       </TD>
@@ -230,7 +229,7 @@ export default async function DeadlinesPage({
                           <span className="text-xs text-muted">—</span>
                         )}
                       </TD>
-                      <TD>
+                      <TD className="whitespace-nowrap">
                         {ctx.can("deadline.update") ? (
                           <DeadlineActions
                             id={deadline.id}

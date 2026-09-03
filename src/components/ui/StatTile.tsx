@@ -74,9 +74,9 @@ export function StatTile({ label, value, hint, delta, tone = "neutral", href, cl
         {value}
       </p>
       {delta || hint ? (
-        <p className="mt-2 flex items-center gap-1.5 text-xs text-muted">
+        <p className="mt-2 flex items-start gap-1.5 text-xs text-muted">
           {delta ? <Delta {...delta} /> : null}
-          {hint ? <span className="truncate">{hint}</span> : null}
+          {hint ? <span className="line-clamp-2">{hint}</span> : null}
         </p>
       ) : null}
     </>
