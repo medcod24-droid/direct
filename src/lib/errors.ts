@@ -1,3 +1,5 @@
+import { ZodError } from "zod";
+
 /**
  * Erreurs applicatives. Le message `publicMessage` est le seul texte montré à
  * l'utilisateur : aucune trace technique ne doit fuiter en production.
@@ -53,11 +55,58 @@ export class RateLimitError extends AppError {
   }
 }
 
+/**
+ * Convertit un échec de validation Zod en `ValidationError`.
+ *
+ * Les schémas portent déjà des messages écrits pour l'utilisateur (« L'ICE doit comporter
+ * 15 chiffres. ») : les perdre au profit d'un message générique rendait toute saisie
+ * invalide indéboguable côté cabinet.
+ */
+export function fromZodError(error: ZodError): ValidationError {
+  const fieldErrors: Record<string, string[]> = {};
+  for (const issue of error.issues) {
+    const key = issue.path.length > 0 ? issue.path.join(".") : "_";
+    (fieldErrors[key] ??= []).push(issue.message);
+  }
+  const messages = [...new Set(error.issues.map((i) => i.message))];
+  const shown = messages.slice(0, 3).join(" ");
+  const rest = messages.length - 3;
+  return new ValidationError(
+    rest > 0 ? `${shown} (+${rest} autre${rest > 1 ? "s" : ""})` : shown || "Données invalides.",
+    fieldErrors,
+  );
+}
+
 /** Convertit n'importe quelle erreur en réponse sûre pour l'utilisateur. */
-export function toPublicError(error: unknown): { status: number; code: string; message: string } {
+export function toPublicError(error: unknown): {
+  status: number;
+  code: string;
+  message: string;
+  fieldErrors?: Record<string, string[]>;
+} {
+  if (error instanceof ZodError) {
+    const validation = fromZodError(error);
+    return {
+      status: validation.status,
+      code: validation.code,
+      message: validation.publicMessage,
+      fieldErrors: validation.fieldErrors,
+    };
+  }
+  if (error instanceof ValidationError) {
+    return {
+      status: error.status,
+      code: error.code,
+      message: error.publicMessage,
+      fieldErrors: error.fieldErrors,
+    };
+  }
   if (error instanceof AppError) {
     return { status: error.status, code: error.code, message: error.publicMessage };
   }
+  // Une erreur non prévue est un défaut du produit : elle ne doit jamais disparaître
+  // en silence. L'utilisateur ne voit qu'un message neutre, le serveur garde la trace.
+  console.error("[erreur inattendue]", error);
   return {
     status: 500,
     code: "internal",

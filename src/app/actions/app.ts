@@ -19,10 +19,16 @@ import { createTask, updateTask } from "@/server/services/tasks";
  * un identifiant reçu du navigateur sans le repasser par le client Prisma du contexte.
  */
 
-export type ActionState = { error?: string; ok?: boolean; message?: string };
+export type ActionState = {
+  error?: string;
+  fieldErrors?: Record<string, string[]>;
+  ok?: boolean;
+  message?: string;
+};
 
 function fail(error: unknown): ActionState {
-  return { error: toPublicError(error).message };
+  const { message, fieldErrors } = toPublicError(error);
+  return { error: message, fieldErrors };
 }
 
 const str = (form: FormData, key: string) => {
