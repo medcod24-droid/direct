@@ -3,7 +3,9 @@ import { requireStaff } from "@/lib/authz/guard";
 import { formatDate, formatMad, relativeDays } from "@/lib/format";
 import { effectiveDeadlineStatus, subtypeLabel, VAT_REGIME_LABELS } from "@/lib/domain/labels";
 import { getClientOverview, ratingsForClients } from "@/server/services/clients";
+import { listClientAssignees, listMembers } from "@/server/services/members";
 import { Alert, Badge, Card, EmptyState, PageHeader, StarRating, StatusPill } from "@/components/ui";
+import { Assignees } from "./Assignees";
 import { RequestForm } from "./RequestForm";
 import { UploadForm } from "./UploadForm";
 
@@ -19,6 +21,14 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   // réservée à qui peut déjà voir les honoraires (report.view exclut l'assistant
   // et n'existe pas pour un compte client du portail).
   const rating = ctx.can("report.view") ? (await ratingsForClients(ctx, [id])).get(id) : undefined;
+
+  // Les assignations conditionnent ce que voit un collaborateur restreint :
+  // elles se gèrent donc depuis le dossier lui-même.
+  const canAssign = ctx.can("client.assign");
+  const [assignees, staff] = await Promise.all([
+    listClientAssignees(ctx, id),
+    canAssign ? listMembers(ctx) : Promise.resolve([]),
+  ]);
 
   return (
     <div className="grid gap-5">
@@ -38,6 +48,20 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           {data.health.reasons.join(" · ")}
         </Alert>
       ) : null}
+
+      <Card
+        title="Collaborateurs du dossier"
+        description="Qui suit ce dossier au cabinet."
+      >
+        <Assignees
+          clientId={id}
+          canAssign={canAssign}
+          assignees={assignees}
+          candidates={staff
+            .filter((member) => member.role !== "client")
+            .map((member) => ({ id: member.userId, label: `${member.name} — ${member.email}` }))}
+        />
+      </Card>
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card title="Identité">

@@ -41,7 +41,12 @@ export type TeamMember = {
 
 /** Collaborateurs du cabinet, comptes clients exclus. */
 export async function listMembers(ctx: AuthContext): Promise<TeamMember[]> {
-  const memberships = await ctx.db.membership.findMany({ orderBy: { createdAt: "asc" } });
+  // Un collaborateur retiré passe en `revoked` : il ne fait plus partie de
+  // l'équipe et ne doit plus figurer dans la liste.
+  const memberships = await ctx.db.membership.findMany({
+    where: { status: "active" },
+    orderBy: { createdAt: "asc" },
+  });
   const users = await platformDb.user.findMany({
     where: { id: { in: memberships.map((m) => m.userId) } },
     select: { id: true, name: true, email: true, lastLoginAt: true },
@@ -293,4 +298,36 @@ export async function acceptInvitation(
   });
 
   return { user: result, cabinetId: invitation.cabinetId, role: invitation.role };
+}
+
+/** Collaborateurs assignés à un dossier, avec leur nom. */
+export async function listClientAssignees(ctx: AuthContext, clientId: string) {
+  const assignments = await ctx.db.clientAssignment.findMany({ where: { clientId } });
+  const users = await platformDb.user.findMany({
+    where: { id: { in: assignments.map((a) => a.userId) } },
+    select: { id: true, name: true, email: true },
+  });
+  const byId = new Map(users.map((user) => [user.id, user]));
+  return assignments.map((assignment) => ({
+    userId: assignment.userId,
+    role: assignment.role,
+    name: byId.get(assignment.userId)?.name ?? "—",
+    email: byId.get(assignment.userId)?.email ?? "—",
+  }));
+}
+
+/** Retire un collaborateur d'un dossier. */
+export async function unassignCollaborator(ctx: AuthContext, clientId: string, userId: string) {
+  const { count } = await ctx.db.clientAssignment.deleteMany({ where: { clientId, userId } });
+  if (count === 0) throw new NotFoundError("Assignation");
+
+  await recordAudit({
+    action: "client.unassigned",
+    cabinetId: ctx.cabinet.id,
+    userId: ctx.user.id,
+    resourceType: "Client",
+    resourceId: clientId,
+    metadata: { unassignedFrom: userId },
+    ip: ctx.ip,
+  });
 }

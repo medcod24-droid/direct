@@ -16,6 +16,7 @@ import {
   inviteMember,
   removeMember,
   revokeInvitation,
+  unassignCollaborator,
   updateMember,
 } from "@/server/services/members";
 
@@ -491,6 +492,17 @@ export async function revokeInvitationAction(invitationId: string): Promise<Acti
     await revokeInvitation(ctx, invitationId);
     revalidatePath("/team");
     return { ok: true, message: "Invitation annulée." };
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+export async function unassignClientAction(clientId: string, userId: string): Promise<ActionState> {
+  try {
+    const ctx = await requireStaff("client.assign");
+    await unassignCollaborator(ctx, clientId, userId);
+    revalidatePath(`/clients/${clientId}`);
+    return { ok: true };
   } catch (error) {
     return fail(error);
   }
