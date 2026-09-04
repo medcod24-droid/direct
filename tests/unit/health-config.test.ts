@@ -37,3 +37,24 @@ describe("sonde de santé", () => {
     expect(invalidEnvNames("pas une erreur")).toEqual([]);
   });
 });
+
+describe("variables d'environnement vides", () => {
+  it("une variable vide retombe sur sa valeur par défaut", async () => {
+    const avant = { storage: process.env.STORAGE_ROOT, upload: process.env.MAX_UPLOAD_MB };
+    process.env.STORAGE_ROOT = "";
+    process.env.MAX_UPLOAD_MB = "  ";
+    try {
+      // Un hébergeur crée facilement une variable sans valeur : elle doit valoir
+      // « non définie », pas invalider toute la configuration.
+      const response = await GET();
+      const body = await response.json();
+      expect(body.config).toBe("ok");
+      expect(body.invalidEnv).toBeUndefined();
+    } finally {
+      if (avant.storage === undefined) delete process.env.STORAGE_ROOT;
+      else process.env.STORAGE_ROOT = avant.storage;
+      if (avant.upload === undefined) delete process.env.MAX_UPLOAD_MB;
+      else process.env.MAX_UPLOAD_MB = avant.upload;
+    }
+  });
+});

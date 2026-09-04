@@ -22,9 +22,25 @@ const schema = z.object({
 
 let cached: z.infer<typeof schema> | null = null;
 
+/**
+ * Une variable définie mais vide vaut « non définie ».
+ *
+ * Les interfaces d'hébergeurs créent facilement une variable sans valeur ; sans
+ * ce nettoyage, `STORAGE_ROOT=""` échoue au lieu de retomber sur sa valeur par
+ * défaut, et c'est toute la configuration qui est rejetée d'un bloc.
+ */
+function withoutEmpty(source: NodeJS.ProcessEnv): Record<string, string | undefined> {
+  const cleaned: Record<string, string | undefined> = {};
+  for (const [key, value] of Object.entries(source)) {
+    if (typeof value === "string" && value.trim() === "") continue;
+    cleaned[key] = value;
+  }
+  return cleaned;
+}
+
 export function env() {
   if (cached) return cached;
-  const parsed = schema.safeParse(process.env);
+  const parsed = schema.safeParse(withoutEmpty(process.env));
   if (!parsed.success) {
     const missing = parsed.error.issues.map((i) => i.path.join(".")).join(", ");
     throw new Error(
