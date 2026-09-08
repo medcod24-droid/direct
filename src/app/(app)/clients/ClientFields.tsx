@@ -1,18 +1,10 @@
 "use client";
 
-import { Card, Field, Input, Select, Textarea } from "@/components/ui";
-
-export const CLIENT_SUBTYPES = [
-  { group: "Personne morale", options: [
-    ["sarl", "SARL"], ["sarl_au", "SARL AU"], ["sa", "SA"], ["sas", "SAS"], ["snc", "SNC"],
-    ["succursale", "Succursale"], ["gie", "GIE"], ["association", "Association"],
-    ["cooperative", "Coopérative"], ["syndic", "Syndic de copropriété"],
-  ] },
-  { group: "Personne physique", options: [
-    ["auto_entrepreneur", "Auto-entrepreneur"], ["cpu", "CPU"], ["rnr", "RNR"], ["rns", "RNS"],
-    ["particulier", "Particulier"],
-  ] },
-] as const;
+import { useState } from "react";
+import { Card, Field, Input, Select } from "@/components/ui";
+import { subtypesFor, type ClientKind } from "@/lib/domain/enums";
+import { subtypeLabel } from "@/lib/domain/labels";
+import { Repeatable } from "./Repeatable";
 
 export type ClientFieldsProps = {
   /** Valeur à afficher pour un champ, avec repli si absente. */
@@ -30,65 +22,355 @@ export type ClientFieldsProps = {
  * Les deux écrans doivent proposer exactement les mêmes champs : les séparer
  * ferait diverger la saisie et la correction, et un champ ajouté à la création
  * resterait non modifiable.
+ *
+ * La fiche se scinde selon le type de personne. Un contribuable individuel et
+ * une société ne se décrivent pas avec les mêmes pièces : l'un a une CIN, une
+ * enseigne et une immatriculation CNSS personnelle, l'autre un certificat
+ * négatif et des associés. Tout afficher côte à côte obligeait à deviner quelles
+ * cases laisser vides ; le formulaire ne montre donc que les champs qui existent
+ * pour le type choisi.
  */
 export function ClientFields({ value, checked, fieldError, cndpMode }: ClientFieldsProps) {
+  const [kind, setKind] = useState<ClientKind>(
+    value("kind", "company") === "individual" ? "individual" : "company",
+  );
+  const individual = kind === "individual";
+  const cinAllowed = cndpMode === "authorization";
+
   return (
     <>
-      <Card title="Identité">
+      <Card
+        title="Identité"
+        description={
+          individual
+            ? "Contribuable individuel : les pièces sont au nom de la personne."
+            : "Personne morale : les pièces sont au nom de la société."
+        }
+      >
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Raison sociale ou nom" htmlFor="legalName" error={fieldError("legalName")}>
-            <Input id="legalName" name="legalName" required autoFocus  defaultValue={value("legalName")} />
-          </Field>
-          <Field label="Nom commercial" htmlFor="tradeName" error={fieldError("tradeName")}>
-            <Input id="tradeName" name="tradeName"  defaultValue={value("tradeName")} />
-          </Field>
           <Field label="Type" htmlFor="kind" error={fieldError("kind")}>
-            <Select key={value("kind", "company")} id="kind" name="kind" defaultValue={value("kind", "company")}>
+            <Select
+              id="kind"
+              name="kind"
+              value={kind}
+              onChange={(event) => setKind(event.target.value as ClientKind)}
+            >
               <option value="company">Personne morale</option>
               <option value="individual">Personne physique</option>
             </Select>
           </Field>
           <Field label="Forme" htmlFor="subtype" error={fieldError("subtype")}>
-            <Select key={value("subtype", "sarl")} id="subtype" name="subtype" defaultValue={value("subtype", "sarl")}>
-              {CLIENT_SUBTYPES.map((group) => (
-                <optgroup key={group.group} label={group.group}>
-                  {group.options.map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </optgroup>
+            {/* Remonté à chaque changement de type : la forme enregistrée peut
+                ne plus figurer dans la liste, et un `defaultValue` orphelin
+                aurait laissé le champ vide sans que rien ne le signale. */}
+            <Select
+              key={`${kind}-${value("subtype")}`}
+              id="subtype"
+              name="subtype"
+              defaultValue={preferredSubtype(kind, value("subtype"))}
+            >
+              {subtypesFor(kind).map((subtype) => (
+                <option key={subtype} value={subtype}>
+                  {subtypeLabel(subtype)}
+                </option>
               ))}
             </Select>
           </Field>
-          <Field label="ICE" htmlFor="ice" hint="15 chiffres" error={fieldError("ice")}>
-            <Input id="ice" name="ice" inputMode="numeric"  defaultValue={value("ice")} />
+
+          <Field
+            label={individual ? "Nom et prénom" : "Raison sociale"}
+            htmlFor="legalName"
+            error={fieldError("legalName")}
+          >
+            <Input id="legalName" name="legalName" required autoFocus defaultValue={value("legalName")} />
           </Field>
+
+          {individual && cinAllowed ? (
+            <Field label="CIN" htmlFor="managerCin" error={fieldError("managerCin")}>
+              <Input id="managerCin" name="managerCin" defaultValue={value("managerCin")} />
+            </Field>
+          ) : null}
+
           <Field label="Identifiant fiscal" htmlFor="if" error={fieldError("if")}>
-            <Input id="if" name="if" inputMode="numeric"  defaultValue={value("if")} />
+            <Input id="if" name="if" inputMode="numeric" defaultValue={value("if")} />
           </Field>
-          <Field label="Registre de commerce" htmlFor="rc" error={fieldError("rc")}>
-            <Input id="rc" name="rc"  defaultValue={value("rc")} />
+          <Field label="ICE" htmlFor="ice" hint="15 chiffres" error={fieldError("ice")}>
+            <Input id="ice" name="ice" inputMode="numeric" defaultValue={value("ice")} />
           </Field>
-          <Field label="Ville" htmlFor="city" error={fieldError("city")}>
-            <Input id="city" name="city"  defaultValue={value("city")} />
-          </Field>
-          <Field label="Téléphone" htmlFor="phone" error={fieldError("phone")}>
-            <Input id="phone" name="phone" type="tel"  defaultValue={value("phone")} />
-          </Field>
-          <Field label="E-mail" htmlFor="email" error={fieldError("email")}>
-            <Input id="email" name="email" type="email"  defaultValue={value("email")} />
-          </Field>
-          <Field label="Activité" htmlFor="activity" error={fieldError("activity")}>
-            <Input id="activity" name="activity"  defaultValue={value("activity")} />
-          </Field>
+
+          {individual ? (
+            <Field
+              label="Délégation"
+              htmlFor="taxDistrict"
+              hint="Subdivision fiscale de rattachement."
+              error={fieldError("taxDistrict")}
+            >
+              <Input id="taxDistrict" name="taxDistrict" defaultValue={value("taxDistrict")} />
+            </Field>
+          ) : null}
         </div>
-        {cndpMode !== "authorization" ? (
+
+        {!cinAllowed ? (
           <p className="text-xs text-muted mt-3">
-            Mode CNDP « déclaration » : le numéro de CIN du gérant n&apos;est pas enregistré.
-            Il pourra l&apos;être après obtention de votre autorisation.
+            Mode CNDP « déclaration » : aucun numéro de CIN n&apos;est enregistré, ni pour le
+            contribuable ni pour les associés. Ces champs réapparaîtront après obtention de votre
+            autorisation.
           </p>
         ) : null}
+      </Card>
+
+      {individual ? (
+        <Card
+          title="Enseigne commerciale"
+          description="الاسم التجاري — nom sous lequel l'activité est exercée."
+        >
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Enseigne" htmlFor="tradeName" error={fieldError("tradeName")}>
+              <Input id="tradeName" name="tradeName" defaultValue={value("tradeName")} />
+            </Field>
+            <Field label="Numéro" htmlFor="signNo" error={fieldError("signNo")}>
+              <Input id="signNo" name="signNo" defaultValue={value("signNo")} />
+            </Field>
+            <Field label="Date de référence" htmlFor="signRefDate" error={fieldError("signRefDate")}>
+              <Input id="signRefDate" name="signRefDate" type="date" defaultValue={value("signRefDate")} />
+            </Field>
+            <Field label="Expiration" htmlFor="signExpiresAt" error={fieldError("signExpiresAt")}>
+              <Input
+                id="signExpiresAt"
+                name="signExpiresAt"
+                type="date"
+                defaultValue={value("signExpiresAt")}
+              />
+            </Field>
+          </div>
+        </Card>
+      ) : (
+        <Card
+          title="Certificat négatif"
+          description="Réservation de la dénomination auprès de l'OMPIC."
+        >
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Numéro" htmlFor="negCertNo" error={fieldError("negCertNo")}>
+              <Input id="negCertNo" name="negCertNo" defaultValue={value("negCertNo")} />
+            </Field>
+            <Field label="Nom commercial" htmlFor="tradeName" error={fieldError("tradeName")}>
+              <Input id="tradeName" name="tradeName" defaultValue={value("tradeName")} />
+            </Field>
+            <Field label="Date" htmlFor="negCertDate" error={fieldError("negCertDate")}>
+              <Input id="negCertDate" name="negCertDate" type="date" defaultValue={value("negCertDate")} />
+            </Field>
+            <Field label="Expiration" htmlFor="negCertExpiresAt" error={fieldError("negCertExpiresAt")}>
+              <Input
+                id="negCertExpiresAt"
+                name="negCertExpiresAt"
+                type="date"
+                defaultValue={value("negCertExpiresAt")}
+              />
+            </Field>
+          </div>
+        </Card>
+      )}
+
+      <Card title="Immatriculations">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Registre de commerce" htmlFor="rc" error={fieldError("rc")}>
+            <Input id="rc" name="rc" defaultValue={value("rc")} />
+          </Field>
+          <Field label="Tribunal" htmlFor="rcCourt" error={fieldError("rcCourt")}>
+            <Input id="rcCourt" name="rcCourt" defaultValue={value("rcCourt")} />
+          </Field>
+          <Field
+            label="Autorisation"
+            htmlFor="authorizationNo"
+            hint="Numéro d'autorisation, si l'activité est réglementée."
+            error={fieldError("authorizationNo")}
+          >
+            <Input id="authorizationNo" name="authorizationNo" defaultValue={value("authorizationNo")} />
+          </Field>
+        </div>
+
+        <div className="mt-4 grid gap-4">
+          <div>
+            <p className="text-[13px] font-medium text-ink2 mb-1.5">Succursales</p>
+            <Repeatable
+              name="branches"
+              value={value}
+              fieldError={fieldError}
+              addLabel="Ajouter une succursale"
+              emptyLabel="Aucun établissement secondaire."
+              columns={[
+                { key: "number", label: "N° de succursale" },
+                { key: "court", label: "Tribunal" },
+              ]}
+            />
+          </div>
+
+          <div>
+            <p className="text-[13px] font-medium text-ink2 mb-1.5">Taxe professionnelle</p>
+            <Repeatable
+              name="taxProfNos"
+              value={value}
+              fieldError={fieldError}
+              addLabel="Ajouter un numéro"
+              emptyLabel="Aucun numéro de taxe professionnelle."
+              columns={[{ key: "value", label: "Numéro", className: "min-w-52 flex-1" }]}
+            />
+          </div>
+        </div>
+      </Card>
+
+      <Card title="Activité">
+        <Repeatable
+          name="activities"
+          value={value}
+          fieldError={fieldError}
+          addLabel={individual ? "Ajouter une activité" : "Ajouter un objet social"}
+          emptyLabel={
+            individual ? "Aucune activité déclarée." : "Aucun objet social déclaré."
+          }
+          columns={[
+            {
+              key: "value",
+              label: individual ? "Activité" : "Objet social",
+              className: "min-w-64 flex-1",
+            },
+          ]}
+        />
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <Field label="Date de début d'activité" htmlFor="startedAt" error={fieldError("startedAt")}>
+            <Input id="startedAt" name="startedAt" type="date" defaultValue={value("startedAt")} />
+          </Field>
+        </div>
+      </Card>
+
+      <Card title="Adresses">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field
+            label={individual ? "Adresse professionnelle" : "Siège social"}
+            htmlFor="address"
+            hint={individual ? "Lieu d'exercice — tient lieu de siège." : undefined}
+            error={fieldError("address")}
+            className="sm:col-span-2"
+          >
+            <Input id="address" name="address" defaultValue={value("address")} />
+          </Field>
+
+          {individual ? (
+            <Field
+              label="Adresse personnelle"
+              htmlFor="personalAddress"
+              error={fieldError("personalAddress")}
+              className="sm:col-span-2"
+            >
+              <Input
+                id="personalAddress"
+                name="personalAddress"
+                defaultValue={value("personalAddress")}
+              />
+            </Field>
+          ) : (
+            <Field label="Domiciliation" htmlFor="isDomiciled" error={fieldError("isDomiciled")}>
+              <label className="flex items-center gap-2 text-sm h-9">
+                <input
+                  id="isDomiciled"
+                  name="isDomiciled"
+                  type="checkbox"
+                  defaultChecked={checked("isDomiciled")}
+                />
+                <span>Siège chez un domiciliataire</span>
+              </label>
+            </Field>
+          )}
+
+          <Field label="Ville" htmlFor="city" error={fieldError("city")}>
+            <Input id="city" name="city" defaultValue={value("city")} />
+          </Field>
+        </div>
+      </Card>
+
+      {individual ? null : (
+        <Card title="Direction et associés">
+          <Repeatable
+            name="partners"
+            value={value}
+            fieldError={fieldError}
+            addLabel="Ajouter un associé"
+            emptyLabel="Aucun gérant ni associé enregistré."
+            columns={[
+              {
+                key: "role",
+                label: "Qualité",
+                className: "min-w-36",
+                options: [
+                  ["gerant", "Gérant"],
+                  ["associe", "Associé"],
+                ],
+              },
+              { key: "name", label: "Nom et prénom" },
+              ...(cinAllowed ? [{ key: "cin", label: "CIN", className: "min-w-32" }] : []),
+              { key: "phone", label: "Téléphone", className: "min-w-36" },
+              { key: "address", label: "Adresse" },
+            ]}
+          />
+        </Card>
+      )}
+
+      <Card title="CNSS">
+        <div className="grid gap-3 sm:grid-cols-2">
+          {individual ? (
+            <Field
+              label="Immatriculation"
+              htmlFor="cnssRegNo"
+              hint="9 chiffres — immatriculation de la personne."
+              error={fieldError("cnssRegNo")}
+            >
+              <Input id="cnssRegNo" name="cnssRegNo" inputMode="numeric" defaultValue={value("cnssRegNo")} />
+            </Field>
+          ) : null}
+          <Field
+            label="N° d'affiliation"
+            htmlFor="cnssNo"
+            hint="Affiliation en tant qu'employeur."
+            error={fieldError("cnssNo")}
+          >
+            <Input id="cnssNo" name="cnssNo" defaultValue={value("cnssNo")} />
+          </Field>
+          <Field
+            label="Date d'affiliation"
+            htmlFor="cnssAffiliatedAt"
+            error={fieldError("cnssAffiliatedAt")}
+          >
+            <Input
+              id="cnssAffiliatedAt"
+              name="cnssAffiliatedAt"
+              type="date"
+              defaultValue={value("cnssAffiliatedAt")}
+            />
+          </Field>
+          <Field label="Nombre de salariés" htmlFor="employeeCount" error={fieldError("employeeCount")}>
+            <Input
+              id="employeeCount"
+              name="employeeCount"
+              type="number"
+              min={0}
+              defaultValue={value("employeeCount")}
+            />
+          </Field>
+        </div>
+      </Card>
+
+      <Card title="Coordonnées">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Téléphone" htmlFor="phone" error={fieldError("phone")}>
+            <Input id="phone" name="phone" type="tel" defaultValue={value("phone")} />
+          </Field>
+          <Field label="E-mail" htmlFor="email" error={fieldError("email")}>
+            <Input id="email" name="email" type="email" defaultValue={value("email")} />
+          </Field>
+          <Field label="Site web" htmlFor="website" error={fieldError("website")}>
+            <Input id="website" name="website" defaultValue={value("website")} />
+          </Field>
+        </div>
       </Card>
 
       <Card title="Régime et échéances">
@@ -158,7 +440,12 @@ export function ClientFields({ value, checked, fieldError, cndpMode }: ClientFie
           </Field>
         </div>
       </Card>
-
     </>
   );
+}
+
+/** Forme à présélectionner : celle enregistrée si elle vaut pour ce type, sinon la première. */
+function preferredSubtype(kind: ClientKind, current: string): string {
+  const allowed = subtypesFor(kind);
+  return allowed.includes(current as (typeof allowed)[number]) ? current : (allowed[0] ?? "");
 }

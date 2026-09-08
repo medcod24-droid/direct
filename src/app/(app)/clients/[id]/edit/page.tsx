@@ -6,13 +6,18 @@ import { EditClientForm } from "./EditClientForm";
 export const metadata = { title: "Modifier le dossier — Direct Conseil" };
 export const dynamic = "force-dynamic";
 
-/** Valeurs du dossier au format attendu par les champs du formulaire. */
+/**
+ * Valeurs du dossier au format attendu par les champs du formulaire.
+ *
+ * Les groupes répétables sont aplatis en `nom.index.champ`, plus un `nom.count` :
+ * `ClientFields` ne reçoit qu'une fonction de lecture par nom de champ, la même
+ * qu'après un refus du serveur. Un seul format à gérer des deux côtés.
+ */
 function toFormValues(client: Record<string, unknown>): Record<string, string> {
   const text = (v: unknown) => (v === null || v === undefined ? "" : String(v));
-  const date = (v: unknown) =>
-    v instanceof Date ? v.toISOString().slice(0, 10) : "";
+  const date = (v: unknown) => (v instanceof Date ? v.toISOString().slice(0, 10) : "");
 
-  return {
+  const values: Record<string, string> = {
     kind: text(client.kind),
     subtype: text(client.subtype),
     legalName: text(client.legalName),
@@ -20,21 +25,87 @@ function toFormValues(client: Record<string, unknown>): Record<string, string> {
     ice: text(client.ice),
     if: text(client.if),
     rc: text(client.rc),
+    rcCourt: text(client.rcCourt),
+    cnssNo: text(client.cnssNo),
+    managerCin: text(client.managerCin),
+    address: text(client.address),
     city: text(client.city),
     phone: text(client.phone),
     email: text(client.email),
-    activity: text(client.activity),
+    website: text(client.website),
     taxRegime: text(client.taxRegime),
     vatRegime: text(client.vatRegime),
     fiscalYearEndMonth: text(client.fiscalYearEndMonth),
     fiscalYearEndDay: text(client.fiscalYearEndDay),
     takeoverDate: date(client.takeoverDate),
     isEmployer: client.isEmployer ? "on" : "",
+
+    authorizationNo: text(client.authorizationNo),
+    employeeCount: text(client.employeeCount),
+    startedAt: date(client.startedAt),
+
+    taxDistrict: text(client.taxDistrict),
+    signNo: text(client.signNo),
+    signRefDate: date(client.signRefDate),
+    signExpiresAt: date(client.signExpiresAt),
+    personalAddress: text(client.personalAddress),
+    cnssRegNo: text(client.cnssRegNo),
+    cnssAffiliatedAt: date(client.cnssAffiliatedAt),
+
+    negCertNo: text(client.negCertNo),
+    negCertDate: date(client.negCertDate),
+    negCertExpiresAt: date(client.negCertExpiresAt),
+    isDomiciled: client.isDomiciled ? "on" : "",
+
     // Les montants sont stockés en centimes ; le formulaire travaille en dirhams.
     feeAmount:
       typeof client.feeAmount === "number" ? String(client.feeAmount / 100) : "",
     feeFrequency: text(client.feeFrequency) || "monthly",
   };
+
+  // Repli sur la colonne courte pour les dossiers antérieurs aux listes : sans
+  // lui, leur fiche s'ouvrirait avec zéro ligne et le premier enregistrement
+  // effacerait l'activité déjà saisie, sans que rien ne le signale.
+  flatten(values, "activities", withFallback(client.declaredActivities, client.activity));
+  flatten(values, "taxProfNos", withFallback(client.taxProfNos, client.taxProfNo));
+  flatten(values, "branches", parseList(client.branches));
+  flatten(values, "partners", parseList(client.partners));
+
+  return values;
+}
+
+function withFallback(raw: unknown, legacy: unknown): { value: unknown }[] {
+  const items = parseList(raw).map((item) => ({ value: item.value }));
+  if (items.length > 0) return items;
+  return legacy ? [{ value: legacy }] : [];
+}
+
+/** Colonne JSON illisible : la fiche s'ouvre sur une liste vide plutôt que sur une erreur. */
+function parseList(raw: unknown): Record<string, unknown>[] {
+  if (typeof raw !== "string" || raw.length === 0) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map((item) =>
+      item !== null && typeof item === "object" ? (item as Record<string, unknown>) : { value: item },
+    );
+  } catch {
+    return [];
+  }
+}
+
+function flatten(
+  values: Record<string, string>,
+  name: string,
+  items: Record<string, unknown>[],
+) {
+  values[`${name}.count`] = String(items.length);
+  items.forEach((item, index) => {
+    for (const [key, value] of Object.entries(item)) {
+      if (value === null || value === undefined) continue;
+      values[`${name}.${index}.${key}`] = String(value);
+    }
+  });
 }
 
 export default async function EditClientPage({

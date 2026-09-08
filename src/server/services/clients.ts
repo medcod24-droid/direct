@@ -6,7 +6,7 @@ import { assertWithinLimit } from "@/lib/billing/entitlements";
 import { computeHealth, type HealthResult } from "@/lib/domain/health";
 import { ForbiddenError } from "@/lib/errors";
 import { rateClient, volumePercentile, type Rating } from "@/lib/clients/rating";
-import { clientSchema, searchSchema } from "@/lib/validation/schemas";
+import { clientCreateSchema, clientUpdateSchema, searchSchema } from "@/lib/validation/schemas";
 
 const DAY = 86400000;
 
@@ -279,21 +279,76 @@ export async function ratingsForClients(
   return result;
 }
 
-export async function createClient(ctx: AuthContext, input: unknown) {
-  const data = clientSchema.parse(input);
-  await assertWithinLimit(ctx.cabinet.id, "clients");
+/**
+ * Colonnes de listes, sérialisées en JSON comme `tags`.
+ *
+ * Deux colonnes restent tenues à jour en parallèle : `activity` et `taxProfNo`
+ * gardent le premier élément de leur liste. Elles servent l'affichage court et
+ * les écrans qui n'ont pas besoin du détail ; les dupliquer ici évite d'aller
+ * décoder du JSON à chaque ligne de tableau.
+ *
+ * Les CIN des associés obéissent au même mode CNDP que celle du gérant : sans ce
+ * filtrage, la liste des associés serait devenue la faille par laquelle des
+ * numéros de CIN entraient malgré le mode « déclaration ».
+ */
+function listColumns(
+  data: Partial<{
+    activities: string[];
+    taxProfNos: string[];
+    branches: { number: string; court?: string }[];
+    partners: { role: string; name: string; cin?: string; address?: string; phone?: string }[];
+  }>,
+  cndpMode: string,
+) {
+  const columns: Record<string, string> = {};
+  if (data.activities) {
+    columns.declaredActivities = JSON.stringify(data.activities);
+    columns.activity = data.activities[0] ?? "";
+  }
+  if (data.taxProfNos) {
+    columns.taxProfNos = JSON.stringify(data.taxProfNos);
+    columns.taxProfNo = data.taxProfNos[0] ?? "";
+  }
+  if (data.branches) columns.branches = JSON.stringify(data.branches);
+  if (data.partners) {
+    columns.partners = JSON.stringify(
+      data.partners.map((partner) =>
+        cndpMode === "authorization" ? partner : { ...partner, cin: undefined },
+      ),
+    );
+  }
+  return columns;
+}
 
-  // Le numéro de CIN n'est stocké que si le cabinet a l'autorisation CNDP correspondante.
-  const managerCin = ctx.cabinet.cndpMode === "authorization" ? data.managerCin : undefined;
-  if (data.managerCin && ctx.cabinet.cndpMode !== "authorization") {
+/** Rejette une CIN saisie alors que le cabinet n'a pas l'autorisation CNDP. */
+function assertCinAllowed(data: { managerCin?: string; partners?: { cin?: string }[] }, cndpMode: string) {
+  if (cndpMode === "authorization") return;
+  const submitted = Boolean(data.managerCin) || Boolean(data.partners?.some((p) => p.cin));
+  if (submitted) {
     throw new ForbiddenError(
       "CIN refusée en mode déclaration",
       "Votre cabinet est en mode « déclaration » : le numéro de CIN ne peut pas être enregistré. Activez le mode « autorisation » dans les paramètres après votre autorisation CNDP.",
     );
   }
+}
 
+export async function createClient(ctx: AuthContext, input: unknown) {
+  const data = clientCreateSchema.parse(input);
+  await assertWithinLimit(ctx.cabinet.id, "clients");
+
+  // Le numéro de CIN n'est stocké que si le cabinet a l'autorisation CNDP correspondante.
+  assertCinAllowed(data, ctx.cabinet.cndpMode);
+  const managerCin = ctx.cabinet.cndpMode === "authorization" ? data.managerCin : undefined;
+
+  const { activities, taxProfNos, branches, partners, ...scalars } = data;
   const created = await ctx.db.client.create({
-    data: { ...data, cabinetId: ctx.cabinet.id, managerCin, tags: "[]" },
+    data: {
+      ...scalars,
+      ...listColumns({ activities, taxProfNos, branches, partners }, ctx.cabinet.cndpMode),
+      cabinetId: ctx.cabinet.id,
+      managerCin,
+      tags: "[]",
+    },
   });
 
   await Promise.all([
@@ -323,16 +378,18 @@ export async function createClient(ctx: AuthContext, input: unknown) {
 
 export async function updateClient(ctx: AuthContext, clientId: string, input: unknown) {
   await requireClient(ctx, clientId);
-  const data = clientSchema.partial().parse(input);
+  const data = clientUpdateSchema.parse(input);
 
-  if (data.managerCin && ctx.cabinet.cndpMode !== "authorization") {
-    throw new ForbiddenError(
-      "CIN refusée en mode déclaration",
-      "Votre cabinet est en mode « déclaration » : le numéro de CIN ne peut pas être enregistré.",
-    );
-  }
+  assertCinAllowed(data, ctx.cabinet.cndpMode);
 
-  const updated = await ctx.db.client.update({ where: { id: clientId }, data });
+  const { activities, taxProfNos, branches, partners, ...scalars } = data;
+  const updated = await ctx.db.client.update({
+    where: { id: clientId },
+    data: {
+      ...scalars,
+      ...listColumns({ activities, taxProfNos, branches, partners }, ctx.cabinet.cndpMode),
+    },
+  });
 
   await recordAudit({
     action: "client.updated",

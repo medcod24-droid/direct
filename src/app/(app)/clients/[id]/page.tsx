@@ -18,6 +18,15 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   const data = await getClientOverview(ctx, id);
   const { client } = data;
 
+  // La fiche ne montre pas les mêmes pièces selon le type de personne : une
+  // société n'a ni CIN ni immatriculation CNSS personnelle, un contribuable
+  // individuel n'a ni certificat négatif ni associés.
+  const individual = client.kind === "individual";
+  const activities = jsonList<string>(client.declaredActivities);
+  const taxProfNos = jsonList<string>(client.taxProfNos);
+  const branches = jsonList<{ number?: string; court?: string }>(client.branches);
+  const partners = jsonList<{ role?: string; name?: string }>(client.partners);
+
   // La note résume un comportement de paiement : c'est une information financière,
   // réservée à qui peut déjà voir les honoraires (report.view exclut l'assistant
   // et n'existe pas pour un compte client du portail).
@@ -77,18 +86,63 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1.5 text-sm">
             <dt className="text-muted">Forme</dt>
             <dd>{subtypeLabel(client.subtype)}</dd>
+            {individual && client.managerCin ? (
+              <>
+                <dt className="text-muted">CIN</dt>
+                <dd className="tabular">{client.managerCin}</dd>
+              </>
+            ) : null}
             <dt className="text-muted">ICE</dt>
             <dd className="tabular">{client.ice ?? "—"}</dd>
             <dt className="text-muted">IF</dt>
             <dd className="tabular">{client.if ?? "—"}</dd>
+            {individual ? (
+              <>
+                <dt className="text-muted">Délégation</dt>
+                <dd>{client.taxDistrict ?? "—"}</dd>
+              </>
+            ) : (
+              <>
+                <dt className="text-muted">Certificat nég.</dt>
+                <dd className="tabular">
+                  {client.negCertNo ?? "—"}
+                  {client.negCertExpiresAt ? ` — expire le ${formatDate(client.negCertExpiresAt)}` : ""}
+                </dd>
+              </>
+            )}
             <dt className="text-muted">RC</dt>
             <dd className="tabular">
               {client.rc ?? "—"} {client.rcCourt ? `(${client.rcCourt})` : ""}
             </dd>
+            {branches.length > 0 ? (
+              <>
+                <dt className="text-muted">Succursales</dt>
+                <dd className="tabular">
+                  {branches
+                    .map((branch) => [branch.number, branch.court].filter(Boolean).join(" — "))
+                    .join(", ")}
+                </dd>
+              </>
+            ) : null}
             <dt className="text-muted">Taxe prof.</dt>
-            <dd className="tabular">{client.taxProfNo ?? "—"}</dd>
-            <dt className="text-muted">CNSS</dt>
-            <dd className="tabular">{client.cnssNo ?? "—"}</dd>
+            <dd className="tabular">{taxProfNos.join(", ") || client.taxProfNo || "—"}</dd>
+            {client.authorizationNo ? (
+              <>
+                <dt className="text-muted">Autorisation</dt>
+                <dd className="tabular">{client.authorizationNo}</dd>
+              </>
+            ) : null}
+            {individual && client.cnssRegNo ? (
+              <>
+                <dt className="text-muted">CNSS (immat.)</dt>
+                <dd className="tabular">{client.cnssRegNo}</dd>
+              </>
+            ) : null}
+            <dt className="text-muted">CNSS (affil.)</dt>
+            <dd className="tabular">
+              {client.cnssNo ?? "—"}
+              {typeof client.employeeCount === "number" ? ` — ${client.employeeCount} salarié(s)` : ""}
+            </dd>
             <dt className="text-muted">Régime TVA</dt>
             <dd>{VAT_REGIME_LABELS[client.vatRegime] ?? client.vatRegime}</dd>
             <dt className="text-muted">Régime</dt>
@@ -100,6 +154,35 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
             </dd>
             <dt className="text-muted">Prise en charge</dt>
             <dd className="tabular">{formatDate(client.takeoverDate)}</dd>
+            {individual ? (
+              <>
+                <dt className="text-muted">Adresse pers.</dt>
+                <dd>{client.personalAddress ?? "—"}</dd>
+              </>
+            ) : null}
+            <dt className="text-muted">{individual ? "Adresse prof." : "Siège"}</dt>
+            <dd>
+              {client.address ?? "—"}
+              {!individual && client.isDomiciled ? " (domiciliation)" : ""}
+            </dd>
+            {activities.length > 0 ? (
+              <>
+                <dt className="text-muted">{individual ? "Activités" : "Objet social"}</dt>
+                <dd>{activities.join(" · ")}</dd>
+              </>
+            ) : null}
+            {!individual && partners.length > 0 ? (
+              <>
+                <dt className="text-muted">Associés</dt>
+                <dd>
+                  {partners
+                    .map((partner) =>
+                      `${partner.name}${partner.role === "gerant" ? " (gérant)" : ""}`,
+                    )
+                    .join(", ")}
+                </dd>
+              </>
+            ) : null}
           </dl>
         </Card>
 
@@ -242,4 +325,15 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
       </p>
     </div>
   );
+}
+
+/** Colonne JSON illisible : la fiche s'affiche sans la liste plutôt qu'en erreur. */
+function jsonList<T>(raw: unknown): T[] {
+  if (typeof raw !== "string" || raw.length === 0) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as T[]) : [];
+  } catch {
+    return [];
+  }
 }

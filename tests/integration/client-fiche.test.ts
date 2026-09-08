@@ -1,0 +1,155 @@
+import { beforeAll, describe, expect, it } from "vitest";
+import type { AuthContext } from "@/lib/authz/guard";
+import { can } from "@/lib/authz/permissions";
+import { tenantDb } from "@/lib/db/tenant";
+import { createClient, updateClient } from "@/server/services/clients";
+import { makeCabinet, makeUser } from "../factories";
+
+/**
+ * La fiche client est scindée : personne physique et personne morale ne portent
+ * pas les mêmes pièces. Ces essais couvrent ce que l'écran seul ne garantit pas —
+ * la cohérence type / forme, la sérialisation des listes, et le fait que les CIN
+ * des associés obéissent au même mode CNDP que celle du gérant.
+ */
+function contextFor(
+  cabinetId: string,
+  userId: string,
+  cndpMode: "declaration" | "authorization",
+): AuthContext {
+  const scope = { cabinetId, clientIds: null };
+  return {
+    sessionId: "test",
+    user: { id: userId, email: "t@directconseil.ma", name: "Test", locale: "fr" },
+    cabinet: { id: cabinetId, name: "Cabinet", slug: "c", cndpMode },
+    membership: { id: "m", role: "owner", restrictedToAssigned: false, clientId: null },
+    scope,
+    db: tenantDb(scope),
+    ip: null,
+    userAgent: "vitest",
+    can: (p) => can("owner", p),
+  };
+}
+
+const BASE = {
+  legalName: "Dossier d'essai",
+  vatRegime: "quarterly",
+  taxRegime: "is",
+  takeoverDate: "2026-01-01",
+};
+
+describe("fiche client scindée", () => {
+  let declaring: AuthContext;
+  let authorized: AuthContext;
+
+  beforeAll(async () => {
+    const [cabinetA, cabinetB, user] = await Promise.all([
+      makeCabinet("Fiche declaration"),
+      makeCabinet("Fiche autorisation"),
+      makeUser(),
+    ]);
+    declaring = contextFor(cabinetA.id, user.id, "declaration");
+    authorized = contextFor(cabinetB.id, user.id, "authorization");
+  });
+
+  it("refuse une forme de société sur une personne physique", async () => {
+    await expect(
+      createClient(declaring, { ...BASE, kind: "individual", subtype: "sarl" }),
+    ).rejects.toThrow();
+  });
+
+  it("refuse une forme de personne physique sur une société", async () => {
+    await expect(
+      createClient(declaring, { ...BASE, kind: "company", subtype: "cpu" }),
+    ).rejects.toThrow();
+  });
+
+  it("enregistre les listes en JSON et reflète le premier élément", async () => {
+    const created = await createClient(declaring, {
+      ...BASE,
+      kind: "individual",
+      subtype: "rnr",
+      legalName: "Kamal Ouazzani",
+      taxDistrict: "Fès-Ville nouvelle",
+      cnssRegNo: "123456789",
+      activities: ["Conseil", "Formation"],
+      taxProfNos: ["TP-1", "TP-2"],
+      branches: [{ number: "SUC-9", court: "Fès" }],
+    });
+
+    expect(JSON.parse(created.declaredActivities)).toEqual(["Conseil", "Formation"]);
+    expect(JSON.parse(created.taxProfNos)).toEqual(["TP-1", "TP-2"]);
+    expect(JSON.parse(created.branches)).toEqual([{ number: "SUC-9", court: "Fès" }]);
+
+    // Colonnes courtes tenues à jour pour les écrans qui n'ouvrent pas le JSON.
+    expect(created.activity).toBe("Conseil");
+    expect(created.taxProfNo).toBe("TP-1");
+    expect(created.taxDistrict).toBe("Fès-Ville nouvelle");
+  });
+
+  it("refuse une immatriculation CNSS qui n'a pas neuf chiffres", async () => {
+    await expect(
+      createClient(declaring, { ...BASE, kind: "individual", subtype: "rnr", cnssRegNo: "1234" }),
+    ).rejects.toThrow();
+  });
+
+  it("refuse la CIN d'un associé en mode déclaration", async () => {
+    await expect(
+      createClient(declaring, {
+        ...BASE,
+        kind: "company",
+        subtype: "sarl",
+        partners: [{ role: "gerant", name: "Nadia Alaoui", cin: "BK123456" }],
+      }),
+    ).rejects.toThrow(/déclaration/);
+  });
+
+  it("conserve la CIN d'un associé en mode autorisation", async () => {
+    const created = await createClient(authorized, {
+      ...BASE,
+      kind: "company",
+      subtype: "sarl",
+      partners: [
+        { role: "gerant", name: "Nadia Alaoui", cin: "BK123456" },
+        { role: "associe", name: "Omar Bennani" },
+      ],
+    });
+
+    const partners = JSON.parse(created.partners) as { name: string; cin?: string }[];
+    expect(partners).toHaveLength(2);
+    expect(partners[0]?.cin).toBe("BK123456");
+    expect(partners[1]?.cin).toBeUndefined();
+  });
+
+  it("remplace la liste entière à la modification", async () => {
+    const created = await createClient(authorized, {
+      ...BASE,
+      kind: "company",
+      subtype: "sarl",
+      activities: ["Négoce", "Import"],
+    });
+
+    const updated = await updateClient(authorized, created.id, {
+      kind: "company",
+      subtype: "sarl",
+      activities: ["Négoce"],
+    });
+
+    expect(JSON.parse(updated.declaredActivities)).toEqual(["Négoce"]);
+    expect(updated.activity).toBe("Négoce");
+  });
+
+  it("laisse les listes intactes quand elles ne sont pas envoyées", async () => {
+    const created = await createClient(authorized, {
+      ...BASE,
+      kind: "company",
+      subtype: "sarl",
+      taxProfNos: ["TP-7"],
+    });
+
+    const updated = await updateClient(authorized, created.id, { city: "Agadir" });
+
+    expect(JSON.parse(updated.taxProfNos)).toEqual(["TP-7"]);
+    expect(updated.city).toBe("Agadir");
+  });
+
+});

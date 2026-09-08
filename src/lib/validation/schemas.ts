@@ -5,6 +5,7 @@ import {
   CLIENT_STATUSES,
   CLIENT_SUBTYPES,
   MANAGED_BY,
+  subtypesFor,
   PRIORITIES,
   ROLES,
   TASK_STATUSES,
@@ -61,6 +62,44 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Mot de passe requis."),
 });
 
+/** Une date absente arrive comme `undefined` : le champ vide n'est pas une date. */
+const optionalDate = () => z.coerce.date().optional();
+
+/**
+ * Immatriculation CNSS de la personne : neuf chiffres.
+ * L'affiliation employeur (`cnssNo`) suit une autre forme et reste libre.
+ */
+export const cnssRegSchema = z
+  .string()
+  .trim()
+  .regex(/^[0-9]{9}$/, "L'immatriculation CNSS comporte 9 chiffres.")
+  .optional()
+  .or(z.literal("").transform(() => undefined));
+
+/** Une liste vide et une liste absente sont équivalentes : le défaut suffit. */
+const list = <T extends z.ZodTypeAny>(item: T, max = 20) => z.array(item).max(max).default([]);
+
+/** Établissement secondaire : son propre numéro de registre et son tribunal. */
+export const branchSchema = z.object({
+  number: trimmed(40).min(1, "Numéro de succursale requis."),
+  court: optionalText(80),
+});
+
+/**
+ * Associé ou gérant.
+ *
+ * `cin` identifie une personne physique : il n'est conservé qu'en mode
+ * « autorisation » CNDP, exactement comme la CIN du gérant. Le filtrage est
+ * appliqué côté service, pas ici, pour que la règle vive à un seul endroit.
+ */
+export const partnerSchema = z.object({
+  role: z.enum(["gerant", "associe"]).default("associe"),
+  name: trimmed(120).min(2, "Nom de l'associé requis."),
+  cin: optionalText(20),
+  address: optionalText(300),
+  phone: optionalText(40),
+});
+
 export const clientSchema = z.object({
   kind: z.enum(CLIENT_KINDS),
   subtype: z.enum(CLIENT_SUBTYPES),
@@ -94,7 +133,61 @@ export const clientSchema = z.object({
   notes: optionalText(4000),
   feeAmount: z.coerce.number().int().min(0).optional(),
   feeFrequency: z.enum(["monthly", "quarterly", "yearly", "none"]).optional(),
+
+  authorizationNo: optionalText(40),
+  employeeCount: z.coerce.number().int().min(0).max(100000).optional(),
+
+  // Personne physique
+  taxDistrict: optionalText(80),
+  signNo: optionalText(40),
+  signRefDate: optionalDate(),
+  signExpiresAt: optionalDate(),
+  personalAddress: optionalText(300),
+  cnssRegNo: cnssRegSchema,
+  cnssAffiliatedAt: optionalDate(),
+  startedAt: optionalDate(),
+
+  // Personne morale
+  negCertNo: optionalText(40),
+  negCertDate: optionalDate(),
+  negCertExpiresAt: optionalDate(),
+  isDomiciled: z.coerce.boolean().default(false),
+
+  // Listes
+  activities: list(trimmed(200).min(1, "Activité vide.")),
+  taxProfNos: list(trimmed(40).min(1, "Numéro de taxe professionnelle vide.")),
+  branches: list(branchSchema),
+  partners: list(partnerSchema),
 });
+
+/**
+ * Cohérence entre le type de personne et la forme juridique.
+ *
+ * La règle est posée ici plutôt que dans le formulaire : l'écran filtre déjà la
+ * liste des formes, mais rien n'empêche d'envoyer la requête à la main, et la
+ * fiche affichée dépend de `kind`. Portée séparément pour que `clientSchema`
+ * reste un objet et garde `.partial()`.
+ */
+function checkSubtype(
+  data: { kind?: string; subtype?: string },
+  ctx: z.RefinementCtx,
+) {
+  if (!data.kind || !data.subtype) return;
+  const allowed = subtypesFor(data.kind as "company" | "individual");
+  if (!allowed.includes(data.subtype as (typeof allowed)[number])) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["subtype"],
+      message:
+        data.kind === "individual"
+          ? "Cette forme est réservée aux personnes morales."
+          : "Cette forme est réservée aux personnes physiques.",
+    });
+  }
+}
+
+export const clientCreateSchema = clientSchema.superRefine(checkSubtype);
+export const clientUpdateSchema = clientSchema.partial().superRefine(checkSubtype);
 
 export const contactSchema = z.object({
   clientId: z.string().min(1),

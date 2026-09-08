@@ -229,6 +229,43 @@ model Client {
   website  String?
   activity String?
 
+  /// Numéro d'autorisation d'exercer, quand l'activité est réglementée.
+  authorizationNo String?
+  /// Nombre de salariés déclarés (le détail nominatif reste hors de la plateforme).
+  employeeCount   Int?
+
+  /// --- Personne physique -----------------------------------------------------
+  /// Délégation (subdivision fiscale de rattachement).
+  taxDistrict String?
+  /// Enseigne commerciale (الاسم التجاري) : le nom est dans `tradeName`.
+  signNo         String?
+  signRefDate    DateTime?
+  signExpiresAt  DateTime?
+  /// Domicile du contribuable, distinct de `address` qui est le lieu d'exercice.
+  personalAddress String?
+  /// Immatriculation CNSS de la personne (9 chiffres) ; `cnssNo` est l'affiliation employeur.
+  cnssRegNo        String?
+  cnssAffiliatedAt DateTime?
+
+  /// --- Personne morale -------------------------------------------------------
+  /// Certificat négatif : réservation de la dénomination avant immatriculation.
+  negCertNo        String?
+  negCertDate      DateTime?
+  negCertExpiresAt DateTime?
+  /// Siège chez un domiciliataire plutôt qu'en local propre.
+  isDomiciled Boolean @default(false)
+
+  /// --- Listes -----------------------------------------------------------------
+  /// Le schéma reste compatible SQLite : ces listes sont du JSON, comme `tags`.
+  /// `activity` et `taxProfNo` conservent le premier élément pour l'affichage court.
+  /// `activities` est déjà la relation vers le journal : le nom est donc explicite.
+  declaredActivities String @default("[]") // JSON: string[]
+  taxProfNos  String @default("[]") // JSON: string[]
+  /// JSON: { number, court }[] — un établissement secondaire a son propre RC.
+  branches    String @default("[]")
+  /// JSON: { role, name, cin, address, phone }[] — `cin` obéit au mode CNDP.
+  partners    String @default("[]")
+
   /// Régime et attributs qui pilotent le moteur d'échéances
   fiscalYearEndMonth Int     @default(12)
   fiscalYearEndDay   Int     @default(31)

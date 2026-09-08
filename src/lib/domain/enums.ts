@@ -17,6 +17,21 @@ export const COMPANY_SUBTYPES: ClientSubtype[] = [
   "sarl", "sarl_au", "sa", "sas", "snc", "succursale", "gie", "association", "cooperative", "syndic",
 ];
 
+export const INDIVIDUAL_SUBTYPES: ClientSubtype[] = [
+  "auto_entrepreneur", "cpu", "rnr", "rns", "particulier",
+];
+
+/**
+ * Formes juridiques admises pour un type de personne.
+ *
+ * La fiche client se scinde selon `kind` : sans cette contrainte, un dossier
+ * pouvait être enregistré en « personne physique » avec la forme « SARL », et
+ * l'écran aurait affiché les champs d'une société pour une personne.
+ */
+export function subtypesFor(kind: ClientKind): ClientSubtype[] {
+  return kind === "individual" ? INDIVIDUAL_SUBTYPES : COMPANY_SUBTYPES;
+}
+
 export const VAT_REGIMES = ["monthly", "quarterly", "exempt"] as const;
 export type VatRegime = (typeof VAT_REGIMES)[number];
 

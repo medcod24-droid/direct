@@ -64,30 +64,103 @@ const str = (form: FormData, key: string) => {
 
 // --- clients -----------------------------------------------------------------
 
+/**
+ * Lignes d'un groupe répétable (`branches.0.number`, `partners.1.cin`…).
+ *
+ * Le nombre de lignes est envoyé par le formulaire ; il est borné ici pour
+ * qu'un compteur forgé ne fasse pas tourner la boucle indéfiniment. Le maximum
+ * réel est celui du schéma, qui refusera au-delà.
+ */
+const MAX_ROWS = 20;
+
+function rows(form: FormData, name: string, keys: readonly string[]) {
+  const declared = Number(form.get(`${name}.count`) ?? 0);
+  const count = Number.isFinite(declared) ? Math.min(Math.max(declared, 0), MAX_ROWS) : 0;
+  return Array.from({ length: count }, (_, index) =>
+    Object.fromEntries(keys.map((key) => [key, str(form, `${name}.${index}.${key}`)])),
+  );
+}
+
+/** Liste de valeurs simples : les lignes vidées à l'écran sont ignorées. */
+function textList(form: FormData, name: string): string[] {
+  return rows(form, name, ["value"])
+    .map((row) => row.value)
+    .filter((value): value is string => Boolean(value));
+}
+
+/**
+ * Saisie d'un dossier, lue depuis le formulaire.
+ *
+ * Champs listés explicitement plutôt que `Object.fromEntries` : une case
+ * décochée n'est pas envoyée par le navigateur, et un schéma partiel
+ * l'ignorerait — « employeur » n'aurait jamais pu être retiré. La lecture est
+ * commune à la création et à la modification, faute de quoi un champ ajouté à
+ * l'une resterait absent de l'autre.
+ */
+function clientInput(form: FormData) {
+  return {
+    kind: str(form, "kind"),
+    subtype: str(form, "subtype"),
+    legalName: str(form, "legalName"),
+    tradeName: str(form, "tradeName"),
+    ice: str(form, "ice"),
+    if: str(form, "if"),
+    rc: str(form, "rc"),
+    rcCourt: str(form, "rcCourt"),
+    cnssNo: str(form, "cnssNo"),
+    managerCin: str(form, "managerCin"),
+    address: str(form, "address"),
+    city: str(form, "city"),
+    phone: str(form, "phone"),
+    email: str(form, "email"),
+    website: str(form, "website"),
+    vatRegime: str(form, "vatRegime"),
+    taxRegime: str(form, "taxRegime"),
+    isEmployer: form.get("isEmployer") === "on",
+    fiscalYearEndMonth: str(form, "fiscalYearEndMonth"),
+    fiscalYearEndDay: str(form, "fiscalYearEndDay"),
+    takeoverDate: str(form, "takeoverDate"),
+    feeAmount: str(form, "feeAmount") ? Number(str(form, "feeAmount")) * 100 : undefined,
+    feeFrequency: str(form, "feeFrequency"),
+
+    authorizationNo: str(form, "authorizationNo"),
+    employeeCount: str(form, "employeeCount"),
+    startedAt: str(form, "startedAt"),
+
+    taxDistrict: str(form, "taxDistrict"),
+    signNo: str(form, "signNo"),
+    signRefDate: str(form, "signRefDate"),
+    signExpiresAt: str(form, "signExpiresAt"),
+    personalAddress: str(form, "personalAddress"),
+    cnssRegNo: str(form, "cnssRegNo"),
+    cnssAffiliatedAt: str(form, "cnssAffiliatedAt"),
+
+    negCertNo: str(form, "negCertNo"),
+    negCertDate: str(form, "negCertDate"),
+    negCertExpiresAt: str(form, "negCertExpiresAt"),
+    isDomiciled: form.get("isDomiciled") === "on",
+
+    activities: textList(form, "activities"),
+    taxProfNos: textList(form, "taxProfNos"),
+    // Une ligne sans son champ identifiant est une ligne ajoutée puis laissée
+    // vide : elle est écartée plutôt que refusée, la corriger n'apporterait rien.
+    branches: rows(form, "branches", ["number", "court"]).filter((row) => row.number),
+    partners: rows(form, "partners", ["role", "name", "cin", "phone", "address"]).filter(
+      (row) => row.name,
+    ),
+  };
+}
+
 export async function createClientAction(_prev: ActionState, form: FormData): Promise<ActionState> {
   let id: string;
   try {
     const ctx = await requireStaff("client.create");
+    const input = clientInput(form);
     const client = await createClient(ctx, {
-      kind: str(form, "kind"),
-      subtype: str(form, "subtype"),
-      legalName: str(form, "legalName"),
-      tradeName: str(form, "tradeName"),
-      ice: str(form, "ice"),
-      if: str(form, "if"),
-      rc: str(form, "rc"),
-      city: str(form, "city"),
-      phone: str(form, "phone"),
-      email: str(form, "email"),
-      activity: str(form, "activity"),
-      vatRegime: str(form, "vatRegime"),
-      taxRegime: str(form, "taxRegime"),
-      isEmployer: form.get("isEmployer") === "on",
-      fiscalYearEndMonth: str(form, "fiscalYearEndMonth") ?? 12,
-      fiscalYearEndDay: str(form, "fiscalYearEndDay") ?? 31,
-      takeoverDate: str(form, "takeoverDate") ?? new Date().toISOString(),
-      feeAmount: str(form, "feeAmount") ? Number(str(form, "feeAmount")) * 100 : undefined,
-      feeFrequency: str(form, "feeFrequency"),
+      ...input,
+      fiscalYearEndMonth: input.fiscalYearEndMonth ?? 12,
+      fiscalYearEndDay: input.fiscalYearEndDay ?? 31,
+      takeoverDate: input.takeoverDate ?? new Date().toISOString(),
     });
     id = client.id;
   } catch (error) {
@@ -104,30 +177,7 @@ export async function updateClientAction(
 ): Promise<ActionState> {
   try {
     const ctx = await requireStaff("client.update");
-    // Champs listés explicitement plutôt que `Object.fromEntries` : une case
-    // décochée n'est pas envoyée par le navigateur, et un schéma partiel
-    // l'ignorerait — « employeur » n'aurait jamais pu être retiré.
-    await updateClient(ctx, clientId, {
-      kind: str(form, "kind"),
-      subtype: str(form, "subtype"),
-      legalName: str(form, "legalName"),
-      tradeName: str(form, "tradeName"),
-      ice: str(form, "ice"),
-      if: str(form, "if"),
-      rc: str(form, "rc"),
-      city: str(form, "city"),
-      phone: str(form, "phone"),
-      email: str(form, "email"),
-      activity: str(form, "activity"),
-      vatRegime: str(form, "vatRegime"),
-      taxRegime: str(form, "taxRegime"),
-      isEmployer: form.get("isEmployer") === "on",
-      fiscalYearEndMonth: str(form, "fiscalYearEndMonth"),
-      fiscalYearEndDay: str(form, "fiscalYearEndDay"),
-      takeoverDate: str(form, "takeoverDate"),
-      feeAmount: str(form, "feeAmount") ? Number(str(form, "feeAmount")) * 100 : undefined,
-      feeFrequency: str(form, "feeFrequency"),
-    });
+    await updateClient(ctx, clientId, clientInput(form));
     revalidatePath(`/clients/${clientId}`);
     revalidatePath("/clients");
     return { ok: true, message: "Dossier mis à jour." };

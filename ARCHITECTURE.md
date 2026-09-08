@@ -58,6 +58,24 @@ soit rouge à tort :
 
 Tous les montants sont des entiers en **centimes de dirham**. Aucun flottant pour l'argent.
 
+### Fiche client : deux formes
+
+`Client.kind` sépare la personne physique de la personne morale, et la fiche ne montre que les
+pièces qui existent pour le type choisi — CIN, délégation, enseigne commerciale et
+immatriculation CNSS personnelle d'un côté ; certificat négatif, domiciliation et associés de
+l'autre. `subtypesFor(kind)` (dans `lib/domain/enums.ts`) restreint les formes juridiques
+proposées, et la même règle est revérifiée côté serveur : l'écran filtre, il ne protège pas.
+
+Quatre champs sont des **listes**, sérialisées en JSON comme `tags`, faute d'un type tableau en
+SQLite : `declaredActivities`, `taxProfNos`, `branches` et `partners`. Les colonnes courtes
+`activity` et `taxProfNo` conservent le premier élément, pour les écrans qui n'ont pas besoin du
+détail. `Client.activities` est déjà la relation vers le journal, d'où le nom
+`declaredActivities`.
+
+Les CIN des associés suivent la même règle que celle du gérant : elles ne sont enregistrées
+qu'en mode CNDP « autorisation » (loi 09-08, art. 12-1-e). Le filtrage est appliqué dans
+`server/services/clients.ts`, à un seul endroit, et non dans le formulaire.
+
 ## Moteur d'échéances
 
 `src/lib/deadlines/engine.ts` est un module pur, sans base de données, couvert par 75 tests.
