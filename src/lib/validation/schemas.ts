@@ -335,9 +335,20 @@ export const paymentSchema = z.object({
   paymentMode: z.enum(["cash", "cheque", "transfer", "card"]),
 });
 
-export const inviteSchema = z.object({
+/**
+ * Ajout direct d'un collaborateur par l'administration.
+ *
+ * Il n'y a plus d'invitation par lien : sans envoi de courriel, elle revenait à
+ * recopier une adresse à la main pour le même résultat. Le mot de passe initial
+ * suit la même politique que les autres — il ouvre les dossiers du cabinet.
+ */
+export const addMemberSchema = z.object({
+  name: trimmed(120).min(2, "Nom du collaborateur requis."),
   email: z.string().trim().toLowerCase().email("Adresse e-mail invalide."),
-  role: z.enum(ROLES).refine((r) => r !== "owner", "Le rôle propriétaire ne s'invite pas."),
+  password: z.string().min(12, "Au moins 12 caractères."),
+  role: z.enum(["admin", "accountant", "assistant"], {
+    errorMap: () => ({ message: "Rôle invalide." }),
+  }),
   restrictedToAssigned: z.coerce.boolean().default(false),
 });
 

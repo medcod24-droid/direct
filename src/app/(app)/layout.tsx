@@ -15,6 +15,7 @@ const NAV = [
   { href: "/todos", label: "To-do équipe", permission: "todo.view" },
   { href: "/tasks", label: "Tâches", permission: "task.view" },
   { href: "/invoices", label: "Honoraires", permission: "invoice.view" },
+  { href: "/resultats", label: "Résultat", permission: "finance.view" },
   { href: "/team", label: "Équipe", permission: "member.view" },
   { href: "/settings", label: "Paramètres", permission: "cabinet.view" },
 ] as const;

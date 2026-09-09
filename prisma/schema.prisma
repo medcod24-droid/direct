@@ -81,6 +81,7 @@ model Cabinet {
   interventions Intervention[]
   appointments Appointment[]
   todos        Todo[]
+  results      MonthlyResult[]
   invitations  Invitation[]
   categories   DocumentCategory[]
 
@@ -483,6 +484,35 @@ model Todo {
 
   @@index([cabinetId, assigneeId, status])
   @@index([cabinetId, status, dueDate])
+}
+
+/// Résultat mensuel du cabinet, saisi à la main.
+///
+/// Ce n'est pas la comptabilité des clients : c'est celle du cabinet lui-même.
+/// Elle reste manuelle par choix — les honoraires facturés ne disent ni ce qui a
+/// été encaissé ni ce qui a été dépensé, et un chiffre déduit à moitié serait
+/// pire qu'un chiffre assumé.
+///
+/// Montants en **centimes de dirham**, comme partout ailleurs.
+model MonthlyResult {
+  id        String @id @default(cuid())
+  cabinetId String
+
+  /// Premier jour du mois, à minuit UTC : la clé du mois, pas une date de saisie.
+  month    DateTime
+  revenue  Int      @default(0)
+  expenses Int      @default(0)
+  notes    String?
+
+  recordedById String?
+
+  cabinet Cabinet @relation(fields: [cabinetId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([cabinetId, month])
+  @@index([cabinetId, month])
 }
 
 model Contact {

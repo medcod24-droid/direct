@@ -25,6 +25,7 @@ export const PERMISSIONS = [
   "intervention.view", "intervention.manage",
   "appointment.view", "appointment.manage",
   "todo.view", "todo.manage",
+  "finance.view", "finance.manage",
   "billing.view", "billing.manage",
   "portal.access",
 ] as const;

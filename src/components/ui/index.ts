@@ -14,6 +14,7 @@ export { Field, type FieldControlProps, type FieldProps } from "./Field";
 export { Input, type InputProps } from "./Input";
 export { Logo, type LogoProps } from "./Logo";
 export { Modal, type ModalProps, type ModalSize } from "./Modal";
+export { MonthlyBars, type MonthlyBar, type MonthlyBarsProps } from "./MonthlyBars";
 export { PageHeader, type PageHeaderProps } from "./PageHeader";
 export { Pagination, type PaginationProps } from "./Pagination";
 export { SearchPicker, type PickerOption, type SearchPickerProps } from "./SearchPicker";

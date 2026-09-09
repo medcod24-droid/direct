@@ -40,6 +40,7 @@ const TENANT_MODELS = new Set([
   "Intervention",
   "Appointment",
   "Todo",
+  "MonthlyResult",
   "AuditLog",
   "Membership",
   "Subscription",

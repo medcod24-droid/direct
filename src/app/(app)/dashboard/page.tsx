@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { requireStaff } from "@/lib/authz/guard";
-import { daysUntil, formatDate, relativeDays } from "@/lib/format";
+import { daysUntil, formatDate, formatMad, relativeDays } from "@/lib/format";
 import { PRIORITY_LABELS } from "@/lib/domain/labels";
 import { dayKey, endOf, wallTime } from "@/lib/calendar/month";
 import { listAppointments } from "@/server/services/appointments";
 import { listMyTodos, listTodos } from "@/server/services/todos";
 import { listStaffOptions } from "@/server/services/members";
 import { listClientOptions } from "@/server/services/clients";
+import { getYearResults } from "@/server/services/finances";
 import { TodoCard } from "../todos/TodoCard";
 import {
   getCabinetDashboard,
@@ -14,7 +15,7 @@ import {
   getOverdueThisMonth,
   getUrgentTasks,
 } from "@/server/services/dashboard";
-import { Alert, Badge, Card, EmptyState, PageHeader } from "@/components/ui";
+import { Alert, Badge, Card, EmptyState, MonthlyBars, PageHeader } from "@/components/ui";
 
 export const metadata = { title: "Tableau de bord — Direct Conseil" };
 export const dynamic = "force-dynamic";
@@ -37,6 +38,7 @@ export default async function DashboardPage() {
     teamTodos,
     staff,
     todoClients,
+    results,
   ] = await Promise.all([
       getCabinetDashboard(ctx),
       getOverdueThisMonth(ctx, now),
@@ -53,6 +55,9 @@ export default async function DashboardPage() {
       // listes de choix.
       ctx.can("todo.manage") ? listStaffOptions(ctx) : Promise.resolve([]),
       ctx.can("todo.manage") ? listClientOptions(ctx) : Promise.resolve([]),
+      ctx.can("finance.view")
+        ? getYearResults(ctx, now.getUTCFullYear())
+        : Promise.resolve(null),
     ]);
 
   const canManageTodos = ctx.can("todo.manage");
@@ -403,6 +408,24 @@ export default async function DashboardPage() {
           )}
         </Card>
       </section>
+
+      {results ? (
+        <Card
+          title={`Résultat du cabinet — ${results.year}`}
+          description={
+            results.totals.monthsFilled === 0
+              ? "Aucun mois saisi. Renseignez vos revenus et vos charges pour suivre où va le cabinet."
+              : `${results.totals.monthsFilled} mois saisi(s) · cumul ${formatMad(results.totals.result)}`
+          }
+          action={
+            <Link href="/resultats" className="text-sm text-accent underline underline-offset-2">
+              Saisir un mois
+            </Link>
+          }
+        >
+          <MonthlyBars months={results.months} />
+        </Card>
+      ) : null}
 
       <Card title="Le cabinet en chiffres" padded={false}>
         <dl className="grid grid-cols-2 divide-line sm:grid-cols-4 sm:divide-x">

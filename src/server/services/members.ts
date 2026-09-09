@@ -1,17 +1,16 @@
 import { z } from "zod";
 import { recordAudit } from "@/lib/audit";
 import { assertPasswordPolicy, hashPassword } from "@/lib/auth/password";
-import { hashToken, newToken } from "@/lib/auth/session";
 import type { AuthContext } from "@/lib/authz/guard";
 import { assertWithinLimit } from "@/lib/billing/entitlements";
 import { platformDb } from "@/lib/db/tenant";
 import type { Role } from "@/lib/domain/enums";
 import { ForbiddenError, NotFoundError, ValidationError } from "@/lib/errors";
 import { buildSearchKey } from "@/lib/search";
-import { cabinetSettingsSchema, inviteSchema } from "@/lib/validation/schemas";
+import { addMemberSchema, cabinetSettingsSchema } from "@/lib/validation/schemas";
 
 /**
- * Équipe du cabinet : invitations et droits des collaborateurs.
+ * Équipe du cabinet : collaborateurs, droits et portée d'accès.
  *
  * Deux règles tiennent tout le fichier :
  * - le rôle « propriétaire » ne s'invite pas et ne se retire jamais au dernier
@@ -20,7 +19,6 @@ import { cabinetSettingsSchema, inviteSchema } from "@/lib/validation/schemas";
  *   verrouiller ou s'élever seul.
  */
 
-const INVITATION_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 jours
 
 const memberUpdateSchema = z.object({
   role: z
@@ -69,78 +67,62 @@ export async function listMembers(ctx: AuthContext): Promise<TeamMember[]> {
   });
 }
 
-/** Invitations encore ouvertes, la plus récente d'abord. */
-export async function listPendingInvitations(ctx: AuthContext) {
-  return platformDb.invitation.findMany({
-    where: { cabinetId: ctx.cabinet.id, acceptedAt: null, expiresAt: { gt: new Date() } },
-    orderBy: { createdAt: "desc" },
-    select: { id: true, email: true, role: true, expiresAt: true, createdAt: true },
-  });
-}
-
-/**
- * Invite un collaborateur.
- *
- * Le jeton en clair n'est renvoyé qu'ici, une seule fois : la base n'en garde
- * que l'empreinte, comme pour les sessions. L'appelant en compose le lien.
- */
-export async function inviteMember(ctx: AuthContext, input: unknown) {
-  const data = inviteSchema.parse(input);
+export async function addMember(ctx: AuthContext, input: unknown) {
+  const data = addMemberSchema.parse(input);
   await assertWithinLimit(ctx.cabinet.id, "users");
+  assertPasswordPolicy(data.password, data.email);
 
   const existing = await platformDb.user.findUnique({ where: { email: data.email } });
   if (existing) {
     const already = await platformDb.membership.findFirst({
       where: { cabinetId: ctx.cabinet.id, userId: existing.id },
     });
-    if (already) throw new ValidationError("Cette personne fait déjà partie du cabinet.");
+    if (already) {
+      // Un collaborateur retiré revient : on réactive plutôt que de créer un doublon.
+      if (already.status !== "active") {
+        await platformDb.membership.update({
+          where: { id: already.id },
+          data: { status: "active", role: data.role, restrictedToAssigned: data.restrictedToAssigned },
+        });
+        return { user: existing, created: false };
+      }
+      throw new ValidationError("Cette personne fait déjà partie du cabinet.");
+    }
   }
 
-  // Une invitation en cours sur la même adresse est remplacée : sinon deux liens
-  // valides circuleraient pour la même personne.
-  await platformDb.invitation.deleteMany({
-    where: { cabinetId: ctx.cabinet.id, email: data.email, acceptedAt: null },
-  });
+  // Un compte existant garde son mot de passe : il appartient à la personne, pas
+  // au cabinet, et une adresse peut servir dans plusieurs cabinets.
+  const user =
+    existing ??
+    (await platformDb.user.create({
+      data: {
+        email: data.email,
+        name: data.name,
+        passwordHash: await hashPassword(data.password),
+      },
+    }));
 
-  const token = newToken();
-  const invitation = await platformDb.invitation.create({
+  await platformDb.membership.create({
     data: {
+      userId: user.id,
       cabinetId: ctx.cabinet.id,
-      email: data.email,
       role: data.role,
-      tokenHash: hashToken(token),
-      expiresAt: new Date(Date.now() + INVITATION_TTL_MS),
-      invitedBy: ctx.user.id,
+      restrictedToAssigned: data.restrictedToAssigned,
     },
   });
 
   await recordAudit({
-    action: "member.invited",
+    action: "member.added",
     cabinetId: ctx.cabinet.id,
     userId: ctx.user.id,
-    resourceType: "Invitation",
-    resourceId: invitation.id,
-    metadata: { email: data.email, role: data.role },
+    resourceType: "User",
+    resourceId: user.id,
+    metadata: { email: data.email, role: data.role, reusedAccount: Boolean(existing) },
     ip: ctx.ip,
+    userAgent: ctx.userAgent,
   });
 
-  return { invitation, token };
-}
-
-export async function revokeInvitation(ctx: AuthContext, invitationId: string) {
-  const { count } = await platformDb.invitation.deleteMany({
-    where: { id: invitationId, cabinetId: ctx.cabinet.id, acceptedAt: null },
-  });
-  if (count === 0) throw new NotFoundError("Invitation");
-
-  await recordAudit({
-    action: "member.invitation_revoked",
-    cabinetId: ctx.cabinet.id,
-    userId: ctx.user.id,
-    resourceType: "Invitation",
-    resourceId: invitationId,
-    ip: ctx.ip,
-  });
+  return { user, created: !existing };
 }
 
 /** Modifie le rôle et la portée d'un collaborateur. */
@@ -221,87 +203,6 @@ export async function removeMember(ctx: AuthContext, membershipId: string) {
   });
 }
 
-/** Invitation lisible depuis son jeton, pour l'écran d'acceptation. */
-export async function readInvitation(token: string) {
-  const invitation = await platformDb.invitation.findUnique({
-    where: { tokenHash: hashToken(token) },
-    include: { cabinet: { select: { name: true } } },
-  });
-  if (!invitation) return null;
-  if (invitation.acceptedAt) return null;
-  if (invitation.expiresAt.getTime() < Date.now()) return null;
-  return invitation;
-}
-
-const acceptSchema = z.object({
-  name: z.string().trim().min(2, "Nom requis."),
-  password: z.string().min(1, "Mot de passe requis."),
-});
-
-/**
- * Accepte une invitation : crée le compte s'il n'existe pas, puis le rattache au
- * cabinet avec le rôle prévu. Non authentifiée par nature — le jeton fait foi,
- * et il est consommé, donc un lien ne sert qu'une fois.
- */
-export async function acceptInvitation(
-  token: string,
-  input: unknown,
-  meta: { ip?: string | null; userAgent?: string | null } = {},
-) {
-  const data = acceptSchema.parse(input);
-  const invitation = await readInvitation(token);
-  if (!invitation) {
-    throw new ValidationError("Cette invitation n'est plus valable. Demandez-en une nouvelle.");
-  }
-
-  assertPasswordPolicy(data.password);
-  const passwordHash = await hashPassword(data.password);
-
-  const result = await platformDb.$transaction(async (tx) => {
-    let user = await tx.user.findUnique({ where: { email: invitation.email } });
-    if (!user) {
-      user = await tx.user.create({
-        data: { email: invitation.email, name: data.name, passwordHash },
-      });
-    }
-
-    const existing = await tx.membership.findFirst({
-      where: { cabinetId: invitation.cabinetId, userId: user.id },
-    });
-    if (existing) {
-      await tx.membership.update({
-        where: { id: existing.id },
-        data: { role: invitation.role, status: "active" },
-      });
-    } else {
-      await tx.membership.create({
-        data: { userId: user.id, cabinetId: invitation.cabinetId, role: invitation.role },
-      });
-    }
-
-    // Le jeton est consommé : le lien ne peut pas resservir.
-    await tx.invitation.update({
-      where: { id: invitation.id },
-      data: { acceptedAt: new Date() },
-    });
-
-    return user;
-  });
-
-  await recordAudit({
-    action: "member.joined",
-    cabinetId: invitation.cabinetId,
-    userId: result.id,
-    resourceType: "Membership",
-    metadata: { role: invitation.role },
-    ip: meta.ip ?? null,
-    userAgent: meta.userAgent ?? null,
-  });
-
-  return { user: result, cabinetId: invitation.cabinetId, role: invitation.role };
-}
-
-/** Collaborateurs assignés à un dossier, avec leur nom. */
 export async function listClientAssignees(ctx: AuthContext, clientId: string) {
   const assignments = await ctx.db.clientAssignment.findMany({ where: { clientId } });
   const users = await platformDb.user.findMany({

@@ -113,6 +113,24 @@ y a à faire, et un compteur qu'on ne peut pas ramener à zéro cesse d'être lu
 Les tâches de l'équipe s'y confirment sans quitter la page — c'est le geste le plus fréquent de
 l'administration.
 
+### Résultat du cabinet
+
+`MonthlyResult` porte, mois par mois, ce que le cabinet gagne et ce qu'il dépense. C'est sa
+comptabilité à lui, pas celle de ses clients, et elle est **saisie à la main** : les honoraires
+facturés ne disent ni ce qui a été encaissé ni ce qui a été dépensé, et un chiffre déduit à
+moitié serait pire qu'un chiffre assumé. Le montant facturé du mois est tout de même rappelé
+sous le champ « revenus », comme repère.
+
+Le graphique (`components/ui/MonthlyBars`) est du SVG rendu côté serveur : aucune bibliothèque,
+donc rien à charger depuis un CDN que la politique de sécurité bloquerait, et il s'imprime avec
+la page. Une barre par mois autour d'une ligne de zéro — verte au-dessus, rouge en dessous —
+répond à la seule question qu'on lui pose. Les mois non saisis sont dessinés en creux : un trou
+dans la série veut dire « à remplir », pas « zéro ». Les chiffres, eux, sont dans le tableau, avec
+le **cumul depuis janvier**, qui est la façon dont un comptable lit son exercice.
+
+`finance.view` / `finance.manage` sont réservées à l'administration : ce que gagne le cabinet ne
+regarde pas ses collaborateurs.
+
 ### To-do de l'équipe
 
 `Todo` est le travail que l'administration confie à un collaborateur, distinct de `Task` qui
@@ -126,6 +144,12 @@ terminé : sans lui, l'administrateur n'aurait d'autre choix que de clore une t�
 `todo.manage` (administration) distribue et confirme ; `todo.view` (tout collaborateur) ne voit
 que ce qui lui est confié — le service applique cette restriction quoi qu'affiche la page, la
 répartition du travail des autres n'étant pas une information d'équipe.
+
+**Un collaborateur s'ajoute directement**, avec un mot de passe initial que l'administration
+communique. Le lien d'invitation a été retiré : sans envoi de courriel, il fallait de toute façon
+le recopier à la main pour le même résultat, et la personne est en général dans le bureau d'à
+côté. Un compte qui existe déjà garde son mot de passe et rejoint simplement le cabinet ; un
+collaborateur retiré puis réajouté retrouve son accès.
 
 **La section Équipe est réservée à l'administration** (`member.view`) : elle porte l'invitation,
 les rôles et l'historique de chacun. Savoir qui compose son cabinet n'en dépend pas — les

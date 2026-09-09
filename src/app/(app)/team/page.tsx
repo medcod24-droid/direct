@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireStaff } from "@/lib/authz/guard";
 import { formatDate } from "@/lib/format";
 import { ROLE_LABELS } from "@/lib/domain/labels";
-import { listMembers, listPendingInvitations } from "@/server/services/members";
+import { listMembers } from "@/server/services/members";
 import {
   Badge,
   Card,
@@ -16,7 +16,7 @@ import {
   THead,
   TR,
 } from "@/components/ui";
-import { InviteMember, MemberControls, RevokeInvitation } from "./TeamControls";
+import { AddMember, MemberControls } from "./TeamControls";
 
 export const metadata = { title: "Équipe — Direct Conseil" };
 export const dynamic = "force-dynamic";
@@ -26,10 +26,7 @@ export default async function TeamPage() {
   const canManage = ctx.can("member.manage");
   const canInvite = ctx.can("member.invite");
 
-  const [members, invitations] = await Promise.all([
-    listMembers(ctx),
-    canInvite ? listPendingInvitations(ctx) : Promise.resolve([]),
-  ]);
+  const members = await listMembers(ctx);
 
   const staff = members.filter((member) => member.role !== "client");
 
@@ -38,7 +35,7 @@ export default async function TeamPage() {
       <PageHeader
         title="Équipe"
         subtitle={`${staff.length} collaborateur(s) · ouvrez une fiche pour voir ses tâches et son historique`}
-        actions={canInvite ? <InviteMember /> : null}
+        actions={canInvite ? <AddMember /> : null}
       />
 
       <Card padded={false}>
@@ -114,38 +111,6 @@ export default async function TeamPage() {
           </Table>
         </TableWrap>
       </Card>
-
-      {canInvite ? (
-        <Card
-          title="Invitations en attente"
-          description="Un lien reste valable 7 jours et ne sert qu'une fois."
-        >
-          {invitations.length === 0 ? (
-            <EmptyState
-              title="Aucune invitation en attente"
-              description="Les collaborateurs invités apparaîtront ici jusqu'à leur première connexion."
-            />
-          ) : (
-            <ul className="divide-y divide-line">
-              {invitations.map((invitation) => (
-                <li
-                  key={invitation.id}
-                  className="flex flex-wrap items-center justify-between gap-3 py-2.5"
-                >
-                  <div className="min-w-0">
-                    <div className="text-sm">{invitation.email}</div>
-                    <div className="text-xs text-muted">
-                      {ROLE_LABELS[invitation.role] ?? invitation.role} · expire le{" "}
-                      {formatDate(invitation.expiresAt)}
-                    </div>
-                  </div>
-                  <RevokeInvitation id={invitation.id} />
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
-      ) : null}
     </div>
   );
 }

@@ -2,9 +2,8 @@
 
 import { useActionState, useState, useTransition } from "react";
 import {
-  inviteMemberAction,
+  addMemberAction,
   removeMemberAction,
-  revokeInvitationAction,
   updateMemberAction,
   type ActionState,
 } from "@/app/actions/app";
@@ -13,102 +12,85 @@ import { Alert, Button, Card, Field, Input, Modal, Select } from "@/components/u
 const initial: ActionState & { inviteUrl?: string } = {};
 
 /**
- * Invitation d'un collaborateur.
+ * Ajout d'un collaborateur, directement.
  *
- * L'envoi par courriel n'étant pas branché, le lien est affiché une fois pour
- * que l'administrateur le transmette lui-même. Il n'est plus récupérable ensuite :
- * la base ne garde que l'empreinte du jeton.
+ * L'administration crée le compte et choisit un mot de passe initial qu'elle
+ * communique de vive voix. Le lien d'invitation a disparu : sans envoi de
+ * courriel, il fallait de toute façon le recopier à la main pour le même
+ * résultat, et la personne est en général dans le bureau d'à côté.
  */
-export function InviteMember() {
-  const [state, action, pending] = useActionState(inviteMemberAction, initial);
+export function AddMember() {
+  const [state, action, pending] = useActionState(addMemberAction, initial);
   const [open, setOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const expanded = open || Boolean(state.error) || Boolean(state.inviteUrl);
-
-  if (!expanded) {
-    return <Button onClick={() => setOpen(true)}>Ajouter un collaborateur</Button>;
-  }
 
   return (
-    <Card title="Ajouter un collaborateur" className="w-full">
-      {state.inviteUrl ? (
-        <div className="grid gap-3">
-          <Alert tone="success">{state.message}</Alert>
-          <Field
-            label="Lien d'invitation"
-            htmlFor="inviteUrl"
-            hint="Valable 7 jours, utilisable une seule fois. Il ne sera plus affiché."
-          >
-            <div className="flex gap-2">
-              <Input id="inviteUrl" readOnly value={state.inviteUrl} className="font-mono text-xs" />
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => {
-                  navigator.clipboard?.writeText(state.inviteUrl!).then(
-                    () => setCopied(true),
-                    () => setCopied(false),
-                  );
-                }}
-              >
-                {copied ? "Copié" : "Copier"}
-              </Button>
-            </div>
-          </Field>
-          <div className="flex justify-end">
-            <Button variant="ghost" onClick={() => setOpen(false)}>
-              Terminé
-            </Button>
-          </div>
-        </div>
-      ) : (
+    <>
+      <Button onClick={() => setOpen(true)}>Ajouter un collaborateur</Button>
+
+      <Modal open={open} onClose={() => setOpen(false)} title="Ajouter un collaborateur" size="lg">
         <form action={action} className="grid gap-3">
           {state.error ? <Alert tone="danger">{state.error}</Alert> : null}
+          {state.ok ? <Alert tone="success">{state.message}</Alert> : null}
 
           <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Nom et prénom" htmlFor="name" error={state.fieldErrors?.name?.[0]}>
+              <Input
+                id="name"
+                name="name"
+                required
+                autoFocus
+                defaultValue={state.values?.name ?? ""}
+              />
+            </Field>
             <Field label="Adresse e-mail" htmlFor="email" error={state.fieldErrors?.email?.[0]}>
               <Input
                 id="email"
                 name="email"
                 type="email"
                 required
-                autoFocus
                 defaultValue={state.values?.email ?? ""}
               />
             </Field>
+          </div>
+
+          <Field
+            label="Mot de passe initial"
+            htmlFor="password"
+            hint="Au moins 12 caractères. Communiquez-le au collaborateur : il pourra le changer."
+            error={state.fieldErrors?.password?.[0]}
+          >
+            <Input id="password" name="password" type="text" required />
+          </Field>
+
+          <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Rôle" htmlFor="role" error={state.fieldErrors?.role?.[0]}>
-              <Select key={state.values?.role ?? "accountant"} id="role" name="role" defaultValue={state.values?.role ?? "accountant"}>
-                <option value="admin">Administrateur</option>
+              <Select id="role" name="role" defaultValue={state.values?.role ?? "accountant"}>
                 <option value="accountant">Comptable</option>
                 <option value="assistant">Assistant</option>
+                <option value="admin">Administrateur</option>
               </Select>
+            </Field>
+            <Field label="Portée" htmlFor="restrictedToAssigned">
+              <label className="flex h-9 items-center gap-2 text-sm">
+                <input id="restrictedToAssigned" name="restrictedToAssigned" type="checkbox" />
+                <span>Dossiers assignés seulement</span>
+              </label>
             </Field>
           </div>
 
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              name="restrictedToAssigned"
-              defaultChecked={state.values?.restrictedToAssigned === "on"}
-            />
-            <span>Limiter aux dossiers qui lui sont assignés</span>
-          </label>
-
           <div className="flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-              Annuler
+              {state.ok ? "Fermer" : "Annuler"}
             </Button>
             <Button type="submit" variant="primary" disabled={pending}>
-              {pending ? "Création…" : "Créer l'invitation"}
+              {pending ? "Création…" : "Créer le compte"}
             </Button>
           </div>
         </form>
-      )}
-    </Card>
+      </Modal>
+    </>
   );
 }
-
-/** Rôle et portée d'un collaborateur, modifiables en place. */
 export function MemberControls({
   membershipId,
   name,
@@ -165,8 +147,8 @@ export function MemberControls({
           Dossiers assignés seulement
         </label>
 
-        {/* Retirer coupe l'accès et ne se défait pas depuis l'application :
-            il faut une nouvelle invitation. La confirmation est donc obligatoire. */}
+        {/* Retirer coupe l'accès immédiatement : la confirmation est obligatoire,
+            un clic malheureux mettrait un collaborateur dehors en pleine journée. */}
         <Button size="sm" variant="ghost" disabled={pending} onClick={() => setConfirming(true)}>
           Retirer
         </Button>
@@ -206,25 +188,11 @@ export function MemberControls({
         </p>
         <p className="mt-2 text-xs text-muted">
           Son compte n&apos;est pas supprimé, et le travail déjà effectué reste attribué à son
-          nom dans l&apos;historique. Pour le réintégrer, il faudra lui envoyer une nouvelle
-          invitation.
+          nom dans l&apos;historique. Pour le réintégrer, ajoutez-le de nouveau : il retrouvera
+          son mot de passe et ses dossiers.
         </p>
       </Modal>
     </div>
   );
 }
 
-/** Annulation d'une invitation encore ouverte. */
-export function RevokeInvitation({ id }: { id: string }) {
-  const [pending, start] = useTransition();
-  return (
-    <Button
-      size="sm"
-      variant="ghost"
-      disabled={pending}
-      onClick={() => start(() => revokeInvitationAction(id).then(() => undefined))}
-    >
-      Annuler
-    </Button>
-  );
-}

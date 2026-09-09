@@ -7,7 +7,6 @@ import { getAuthContext } from "@/lib/authz/guard";
 import { recordAudit } from "@/lib/audit";
 import { toPublicError } from "@/lib/errors";
 import { login, signupCabinet } from "@/server/services/auth";
-import { acceptInvitation } from "@/server/services/members";
 
 export type ActionState = { error?: string; fieldErrors?: Record<string, string[]> };
 
@@ -77,33 +76,3 @@ export async function logoutAction() {
   redirect("/login");
 }
 
-/**
- * Acceptation d'une invitation. Non authentifiée : c'est le jeton du lien qui
- * fait foi. La session est ouverte dans la foulée, comme après une inscription.
- */
-export async function acceptInvitationAction(
-  token: string,
-  _prev: ActionState,
-  formData: FormData,
-): Promise<ActionState> {
-  try {
-    const meta = await requestMeta();
-    const { user, cabinetId } = await acceptInvitation(
-      token,
-      { name: formData.get("name"), password: formData.get("password") },
-      meta,
-    );
-    const { token: sessionToken } = await createSession({
-      userId: user.id,
-      cabinetId,
-      ip: meta.ip,
-      userAgent: meta.userAgent,
-    });
-    const store = await cookies();
-    store.set(SESSION_COOKIE, sessionToken, sessionCookieOptions());
-  } catch (error) {
-    const { message, fieldErrors } = toPublicError(error);
-    return { error: message, fieldErrors };
-  }
-  redirect("/dashboard");
-}

@@ -94,6 +94,14 @@ describe("comptable", () => {
     expect(can("accountant", "member.view")).toBe(false);
   });
 
+  it("ne voit pas le résultat du cabinet", () => {
+    // Ce que gagne le cabinet ne regarde pas ses collaborateurs.
+    expect(can("accountant", "finance.view")).toBe(false);
+    expect(can("assistant", "finance.view")).toBe(false);
+    expect(can("owner", "finance.view")).toBe(true);
+    expect(can("admin", "finance.manage")).toBe(true);
+  });
+
   it("tient sa propre liste de tâches sans distribuer celle des autres", () => {
     expect(can("accountant", "todo.view")).toBe(true);
     expect(can("accountant", "todo.manage")).toBe(false);

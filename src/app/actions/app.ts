@@ -23,6 +23,7 @@ import {
   deleteIntervention,
   updateIntervention,
 } from "@/server/services/interventions";
+import { deleteMonthlyResult, saveMonthlyResult } from "@/server/services/finances";
 import { createTask, updateTask } from "@/server/services/tasks";
 import {
   approveTodo,
@@ -34,9 +35,8 @@ import {
 } from "@/server/services/todos";
 import {
   updateCabinetSettings,
-  inviteMember,
+  addMember,
   removeMember,
-  revokeInvitation,
   unassignCollaborator,
   updateMember,
 } from "@/server/services/members";
@@ -340,6 +340,49 @@ export async function uploadFieldScanAction(
       message: "Justificatif enregistré.",
       document: { id: document.id, filename: document.filename },
     };
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+// --- résultat du cabinet -------------------------------------------------------
+
+/**
+ * Saisie du résultat d'un mois.
+ *
+ * Les montants sont tapés en dirhams et stockés en centimes, comme partout
+ * ailleurs : la conversion se fait ici, au bord, jamais dans le service.
+ */
+const toCentimes = (value: string | undefined) =>
+  value ? Math.round(Number(value.replace(",", ".")) * 100) : 0;
+
+export async function saveMonthlyResultAction(
+  _prev: ActionState,
+  form: FormData,
+): Promise<ActionState> {
+  try {
+    const ctx = await requirePermission("finance.manage");
+    await saveMonthlyResult(ctx, {
+      month: str(form, "month"),
+      revenue: toCentimes(str(form, "revenue")),
+      expenses: toCentimes(str(form, "expenses")),
+      notes: str(form, "notes"),
+    });
+    revalidatePath("/resultats");
+    revalidatePath("/dashboard");
+    return { ok: true, message: "Mois enregistré." };
+  } catch (error) {
+    return { ...fail(error), values: formValues(form) };
+  }
+}
+
+export async function deleteMonthlyResultAction(resultId: string): Promise<ActionState> {
+  try {
+    const ctx = await requirePermission("finance.manage");
+    await deleteMonthlyResult(ctx, resultId);
+    revalidatePath("/resultats");
+    revalidatePath("/dashboard");
+    return { ok: true, message: "Mois effacé." };
   } catch (error) {
     return fail(error);
   }
@@ -869,28 +912,28 @@ export async function readAllNotificationsAction(): Promise<ActionState> {
 // --- équipe ------------------------------------------------------------------
 
 /**
- * Invite un collaborateur et renvoie le lien d'acceptation.
+ * Ajout direct d'un collaborateur.
  *
- * Le lien n'est affiché qu'une fois : la base ne garde que l'empreinte du jeton.
- * L'envoi par courriel n'est pas branché (`EMAIL_PROVIDER=console` en
- * développement), l'administrateur transmet donc le lien lui-même.
+ * Le mot de passe initial est choisi par l'administration et communiqué de vive
+ * voix. Il n'y a plus d'invitation par lien : sans envoi de courriel, elle
+ * revenait à recopier une adresse à la main pour le même résultat.
  */
-export async function inviteMemberAction(
-  _prev: ActionState & { inviteUrl?: string },
-  form: FormData,
-): Promise<ActionState & { inviteUrl?: string }> {
+export async function addMemberAction(_prev: ActionState, form: FormData): Promise<ActionState> {
   try {
     const ctx = await requireStaff("member.invite");
-    const { token } = await inviteMember(ctx, {
+    const { user, created } = await addMember(ctx, {
+      name: str(form, "name"),
       email: str(form, "email"),
+      password: str(form, "password"),
       role: str(form, "role"),
       restrictedToAssigned: form.get("restrictedToAssigned") === "on",
     });
     revalidatePath("/team");
     return {
       ok: true,
-      message: "Invitation créée. Transmettez le lien ci-dessous.",
-      inviteUrl: `${env().APP_URL}/invitation/${token}`,
+      message: created
+        ? `${user.name} peut se connecter avec ${user.email} et le mot de passe que vous venez de choisir.`
+        : `${user.name} avait déjà un compte : il garde son mot de passe et rejoint le cabinet.`,
     };
   } catch (error) {
     return { ...fail(error), values: formValues(form) };
@@ -918,17 +961,6 @@ export async function removeMemberAction(membershipId: string): Promise<ActionSt
     await removeMember(ctx, membershipId);
     revalidatePath("/team");
     return { ok: true, message: "Collaborateur retiré." };
-  } catch (error) {
-    return fail(error);
-  }
-}
-
-export async function revokeInvitationAction(invitationId: string): Promise<ActionState> {
-  try {
-    const ctx = await requireStaff("member.invite");
-    await revokeInvitation(ctx, invitationId);
-    revalidatePath("/team");
-    return { ok: true, message: "Invitation annulée." };
   } catch (error) {
     return fail(error);
   }
