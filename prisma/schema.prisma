@@ -257,14 +257,32 @@ model Client {
 
   /// --- Listes -----------------------------------------------------------------
   /// Le schéma reste compatible SQLite : ces listes sont du JSON, comme `tags`.
-  /// `activity` et `taxProfNo` conservent le premier élément pour l'affichage court.
   /// `activities` est déjà la relation vers le journal : le nom est donc explicite.
   declaredActivities String @default("[]") // JSON: string[]
+
+  /// Immatriculations au registre de commerce, arborescentes.
+  /// JSON: { number, court, taxProfNos: string[], branches: { number, court, taxProfNos: string[] }[] }[]
+  ///
+  /// Un commerçant n'a qu'une immatriculation **principale** (art. 39 du code de
+  /// commerce), mais autant d'immatriculations **secondaires** que de tribunaux
+  /// où il exploite (art. 38 et 41) ; un établissement ouvert dans le ressort du
+  /// même tribunal reste rattaché à l'immatriculation existante — d'où
+  /// l'imbrication. La taxe professionnelle, elle, est établie au lieu de chaque
+  /// établissement (art. 8 de la loi 47-06) et son numéro d'identification doit
+  /// être affiché dans chacun d'eux (art. 14) : elle se rattache donc à
+  /// l'établissement, principal comme secondaire.
+  registrations String @default("[]")
+
+  /// Projections plates de `registrations`, reconstruites à chaque écriture :
+  /// la recherche et les listes n'ont pas à parcourir l'arbre. `rc`, `rcCourt` et
+  /// `taxProfNo` gardent de même la première immatriculation.
   taxProfNos  String @default("[]") // JSON: string[]
-  /// JSON: { number, court }[] — un établissement secondaire a son propre RC.
-  branches    String @default("[]")
+  branches    String @default("[]") // JSON: { number, court }[]
+
   /// JSON: { role, name, cin, address, phone }[] — `cin` obéit au mode CNDP.
   partners    String @default("[]")
+  /// JSON: { name, cin, cnssNo }[] — données de tiers : `cin` obéit au mode CNDP.
+  employees   String @default("[]")
 
   /// Régime et attributs qui pilotent le moteur d'échéances
   fiscalYearEndMonth Int     @default(12)

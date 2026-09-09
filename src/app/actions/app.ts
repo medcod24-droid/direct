@@ -71,7 +71,7 @@ const str = (form: FormData, key: string) => {
  * qu'un compteur forgé ne fasse pas tourner la boucle indéfiniment. Le maximum
  * réel est celui du schéma, qui refusera au-delà.
  */
-const MAX_ROWS = 20;
+const MAX_ROWS = 200;
 
 function rows(form: FormData, name: string, keys: readonly string[]) {
   const declared = Number(form.get(`${name}.count`) ?? 0);
@@ -86,6 +86,33 @@ function textList(form: FormData, name: string): string[] {
   return rows(form, name, ["value"])
     .map((row) => row.value)
     .filter((value): value is string => Boolean(value));
+}
+
+/**
+ * Immatriculations, avec leurs établissements et leurs numéros de taxe.
+ *
+ * Le formulaire aplatit l'arbre (`registrations.0.branches.1.taxProfNos.0.value`)
+ * et porte un compteur à chaque niveau : `FormData` ne connaît que des paires
+ * plates, et une convention explicite vaut mieux qu'un balayage de clés.
+ */
+function registrationList(form: FormData) {
+  return rows(form, "registrations", ["number", "court"])
+    .map((registration, index) => ({
+      number: registration.number,
+      court: registration.court,
+      taxProfNos: textList(form, `registrations.${index}.taxProfNos`),
+      branches: rows(form, `registrations.${index}.branches`, ["number", "court"])
+        .map((branch, branchIndex) => ({
+          number: branch.number,
+          court: branch.court,
+          taxProfNos: textList(
+            form,
+            `registrations.${index}.branches.${branchIndex}.taxProfNos`,
+          ),
+        }))
+        .filter((branch) => branch.number),
+    }))
+    .filter((registration) => registration.number);
 }
 
 /**
@@ -141,13 +168,13 @@ function clientInput(form: FormData) {
     isDomiciled: form.get("isDomiciled") === "on",
 
     activities: textList(form, "activities"),
-    taxProfNos: textList(form, "taxProfNos"),
     // Une ligne sans son champ identifiant est une ligne ajoutée puis laissée
     // vide : elle est écartée plutôt que refusée, la corriger n'apporterait rien.
-    branches: rows(form, "branches", ["number", "court"]).filter((row) => row.number),
+    registrations: registrationList(form),
     partners: rows(form, "partners", ["role", "name", "cin", "phone", "address"]).filter(
       (row) => row.name,
     ),
+    employees: rows(form, "employees", ["name", "cin", "cnssNo"]).filter((row) => row.name),
   };
 }
 

@@ -43,6 +43,10 @@ export async function listClients(ctx: AuthContext, input: unknown) {
       { ice: { contains: q } },
       { if: { contains: q } },
       { rc: { contains: q } },
+      // Les projections plates existent pour cela : retrouver un dossier par le
+      // numéro d'une succursale ou d'une taxe professionnelle, sans ouvrir l'arbre.
+      { branches: { contains: q } },
+      { taxProfNos: { contains: q } },
       { email: { contains: q } },
       { phone: { contains: q } },
     ];
@@ -279,51 +283,89 @@ export async function ratingsForClients(
   return result;
 }
 
+type Registration = {
+  number: string;
+  court?: string;
+  taxProfNos: string[];
+  branches: { number: string; court?: string; taxProfNos: string[] }[];
+};
+
+type ClientLists = Partial<{
+  activities: string[];
+  registrations: Registration[];
+  partners: { role: string; name: string; cin?: string; address?: string; phone?: string }[];
+  employees: { name: string; cin?: string; cnssNo?: string }[];
+}>;
+
 /**
  * Colonnes de listes, sérialisées en JSON comme `tags`.
  *
- * Deux colonnes restent tenues à jour en parallèle : `activity` et `taxProfNo`
- * gardent le premier élément de leur liste. Elles servent l'affichage court et
- * les écrans qui n'ont pas besoin du détail ; les dupliquer ici évite d'aller
- * décoder du JSON à chaque ligne de tableau.
+ * Les immatriculations sont arborescentes — registre, établissements, numéros de
+ * taxe professionnelle — mais les listes et la recherche n'ont pas à parcourir
+ * l'arbre : `rc`, `rcCourt`, `taxProfNo`, `taxProfNos` et `branches` en sont des
+ * projections plates, reconstruites à chaque écriture. Même principe pour
+ * `activity`, premier élément de sa liste, et pour `employeeCount`, déduit du
+ * nombre de salariés dès que le cabinet les nomme.
  *
- * Les CIN des associés obéissent au même mode CNDP que celle du gérant : sans ce
- * filtrage, la liste des associés serait devenue la faille par laquelle des
- * numéros de CIN entraient malgré le mode « déclaration ».
+ * Les CIN des associés et des salariés obéissent au mode CNDP au même titre que
+ * celle du gérant : sans ce filtrage, ces listes seraient devenues la voie par
+ * laquelle des numéros de CIN entraient malgré le mode « déclaration ».
  */
-function listColumns(
-  data: Partial<{
-    activities: string[];
-    taxProfNos: string[];
-    branches: { number: string; court?: string }[];
-    partners: { role: string; name: string; cin?: string; address?: string; phone?: string }[];
-  }>,
-  cndpMode: string,
-) {
-  const columns: Record<string, string> = {};
+function listColumns(data: ClientLists, cndpMode: string) {
+  const columns: Record<string, unknown> = {};
+
   if (data.activities) {
     columns.declaredActivities = JSON.stringify(data.activities);
     columns.activity = data.activities[0] ?? "";
   }
-  if (data.taxProfNos) {
-    columns.taxProfNos = JSON.stringify(data.taxProfNos);
-    columns.taxProfNo = data.taxProfNos[0] ?? "";
-  }
-  if (data.branches) columns.branches = JSON.stringify(data.branches);
-  if (data.partners) {
-    columns.partners = JSON.stringify(
-      data.partners.map((partner) =>
-        cndpMode === "authorization" ? partner : { ...partner, cin: undefined },
-      ),
+
+  if (data.registrations) {
+    const registrations = data.registrations;
+    columns.registrations = JSON.stringify(registrations);
+    columns.rc = registrations[0]?.number ?? "";
+    columns.rcCourt = registrations[0]?.court ?? "";
+
+    const establishments = registrations.flatMap((registration) => registration.branches);
+    columns.branches = JSON.stringify(
+      establishments.map(({ number, court }) => ({ number, court })),
     );
+
+    const taxProfNos = registrations.flatMap((registration) => [
+      ...registration.taxProfNos,
+      ...registration.branches.flatMap((branch) => branch.taxProfNos),
+    ]);
+    columns.taxProfNos = JSON.stringify(taxProfNos);
+    columns.taxProfNo = taxProfNos[0] ?? "";
   }
+
+  if (data.partners) {
+    columns.partners = JSON.stringify(data.partners.map((partner) => stripCin(partner, cndpMode)));
+  }
+
+  if (data.employees) {
+    const employees = data.employees.map((employee) => stripCin(employee, cndpMode));
+    columns.employees = JSON.stringify(employees);
+    // Le compte saisi à la main ne sert que tant que les salariés ne sont pas nommés.
+    if (employees.length > 0) columns.employeeCount = employees.length;
+  }
+
   return columns;
 }
 
+function stripCin<T extends { cin?: string }>(row: T, cndpMode: string): T {
+  return cndpMode === "authorization" ? row : { ...row, cin: undefined };
+}
+
 /** Rejette une CIN saisie alors que le cabinet n'a pas l'autorisation CNDP. */
-function assertCinAllowed(data: { managerCin?: string; partners?: { cin?: string }[] }, cndpMode: string) {
+function assertCinAllowed(
+  data: { managerCin?: string; partners?: { cin?: string }[]; employees?: { cin?: string }[] },
+  cndpMode: string,
+) {
   if (cndpMode === "authorization") return;
-  const submitted = Boolean(data.managerCin) || Boolean(data.partners?.some((p) => p.cin));
+  const submitted =
+    Boolean(data.managerCin) ||
+    Boolean(data.partners?.some((row) => row.cin)) ||
+    Boolean(data.employees?.some((row) => row.cin));
   if (submitted) {
     throw new ForbiddenError(
       "CIN refusée en mode déclaration",
@@ -340,11 +382,11 @@ export async function createClient(ctx: AuthContext, input: unknown) {
   assertCinAllowed(data, ctx.cabinet.cndpMode);
   const managerCin = ctx.cabinet.cndpMode === "authorization" ? data.managerCin : undefined;
 
-  const { activities, taxProfNos, branches, partners, ...scalars } = data;
+  const { activities, registrations, partners, employees, ...scalars } = data;
   const created = await ctx.db.client.create({
     data: {
       ...scalars,
-      ...listColumns({ activities, taxProfNos, branches, partners }, ctx.cabinet.cndpMode),
+      ...listColumns({ activities, registrations, partners, employees }, ctx.cabinet.cndpMode),
       cabinetId: ctx.cabinet.id,
       managerCin,
       tags: "[]",
@@ -382,12 +424,12 @@ export async function updateClient(ctx: AuthContext, clientId: string, input: un
 
   assertCinAllowed(data, ctx.cabinet.cndpMode);
 
-  const { activities, taxProfNos, branches, partners, ...scalars } = data;
+  const { activities, registrations, partners, employees, ...scalars } = data;
   const updated = await ctx.db.client.update({
     where: { id: clientId },
     data: {
       ...scalars,
-      ...listColumns({ activities, taxProfNos, branches, partners }, ctx.cabinet.cndpMode),
+      ...listColumns({ activities, registrations, partners, employees }, ctx.cabinet.cndpMode),
     },
   });
 

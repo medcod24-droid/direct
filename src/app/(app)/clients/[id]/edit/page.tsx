@@ -67,11 +67,58 @@ function toFormValues(client: Record<string, unknown>): Record<string, string> {
   // lui, leur fiche s'ouvrirait avec zéro ligne et le premier enregistrement
   // effacerait l'activité déjà saisie, sans que rien ne le signale.
   flatten(values, "activities", withFallback(client.declaredActivities, client.activity));
-  flatten(values, "taxProfNos", withFallback(client.taxProfNos, client.taxProfNo));
-  flatten(values, "branches", parseList(client.branches));
   flatten(values, "partners", parseList(client.partners));
+  flatten(values, "employees", parseList(client.employees));
+  flattenRegistrations(values, client);
 
   return values;
+}
+
+/**
+ * Aplatit l'arbre des immatriculations selon la même convention que le
+ * formulaire, compteur par niveau compris.
+ *
+ * Repli sur `rc` / `rcCourt` / `taxProfNo` pour les dossiers saisis avant
+ * l'arborescence : sans lui, leur fiche s'ouvrirait sans aucune immatriculation
+ * et le premier enregistrement effacerait le numéro déjà saisi.
+ */
+function flattenRegistrations(values: Record<string, string>, client: Record<string, unknown>) {
+  let registrations = parseList(client.registrations);
+  if (registrations.length === 0 && client.rc) {
+    registrations = [
+      {
+        number: client.rc,
+        court: client.rcCourt,
+        taxProfNos: client.taxProfNo ? [client.taxProfNo] : [],
+        branches: [],
+      },
+    ];
+  }
+
+  values["registrations.count"] = String(registrations.length);
+  registrations.forEach((registration, index) => {
+    const prefix = `registrations.${index}`;
+    values[`${prefix}.number`] = String(registration.number ?? "");
+    values[`${prefix}.court`] = String(registration.court ?? "");
+    flattenTaxes(values, prefix, registration.taxProfNos);
+
+    const branches = Array.isArray(registration.branches) ? registration.branches : [];
+    values[`${prefix}.branches.count`] = String(branches.length);
+    branches.forEach((branch: Record<string, unknown>, branchIndex: number) => {
+      const branchPrefix = `${prefix}.branches.${branchIndex}`;
+      values[`${branchPrefix}.number`] = String(branch.number ?? "");
+      values[`${branchPrefix}.court`] = String(branch.court ?? "");
+      flattenTaxes(values, branchPrefix, branch.taxProfNos);
+    });
+  });
+}
+
+function flattenTaxes(values: Record<string, string>, prefix: string, raw: unknown) {
+  const taxes = Array.isArray(raw) ? raw : [];
+  values[`${prefix}.taxProfNos.count`] = String(taxes.length);
+  taxes.forEach((tax, index) => {
+    values[`${prefix}.taxProfNos.${index}.value`] = String(tax ?? "");
+  });
 }
 
 function withFallback(raw: unknown, legacy: unknown): { value: unknown }[] {

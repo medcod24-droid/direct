@@ -72,18 +72,84 @@ describe("fiche client scindée", () => {
       taxDistrict: "Fès-Ville nouvelle",
       cnssRegNo: "123456789",
       activities: ["Conseil", "Formation"],
-      taxProfNos: ["TP-1", "TP-2"],
-      branches: [{ number: "SUC-9", court: "Fès" }],
     });
 
     expect(JSON.parse(created.declaredActivities)).toEqual(["Conseil", "Formation"]);
-    expect(JSON.parse(created.taxProfNos)).toEqual(["TP-1", "TP-2"]);
-    expect(JSON.parse(created.branches)).toEqual([{ number: "SUC-9", court: "Fès" }]);
-
-    // Colonnes courtes tenues à jour pour les écrans qui n'ouvrent pas le JSON.
     expect(created.activity).toBe("Conseil");
-    expect(created.taxProfNo).toBe("TP-1");
     expect(created.taxDistrict).toBe("Fès-Ville nouvelle");
+  });
+
+  it("aplatit l'arbre des immatriculations pour la recherche et l'affichage", async () => {
+    const created = await createClient(declaring, {
+      ...BASE,
+      kind: "individual",
+      subtype: "rnr",
+      legalName: "Immatriculations imbriquées",
+      registrations: [
+        {
+          number: "RC-100",
+          court: "Fès",
+          taxProfNos: ["TP-PRINCIPAL"],
+          branches: [
+            { number: "SUC-9", court: "Fès", taxProfNos: ["TP-A", "TP-B"] },
+            { number: "SUC-10", court: "Fès", taxProfNos: [] },
+          ],
+        },
+        { number: "RC-200", court: "Meknès", taxProfNos: [], branches: [] },
+      ],
+    });
+
+    // L'arbre est la source ; le reste en est déduit à l'écriture.
+    const tree = JSON.parse(created.registrations) as { branches: unknown[] }[];
+    expect(tree).toHaveLength(2);
+    expect(tree[0]?.branches).toHaveLength(2);
+
+    expect(created.rc).toBe("RC-100");
+    expect(created.rcCourt).toBe("Fès");
+    expect(JSON.parse(created.branches)).toEqual([
+      { number: "SUC-9", court: "Fès" },
+      { number: "SUC-10", court: "Fès" },
+    ]);
+    expect(JSON.parse(created.taxProfNos)).toEqual(["TP-PRINCIPAL", "TP-A", "TP-B"]);
+    expect(created.taxProfNo).toBe("TP-PRINCIPAL");
+  });
+
+  it("refuse une immatriculation sans numéro", async () => {
+    await expect(
+      createClient(declaring, {
+        ...BASE,
+        kind: "company",
+        subtype: "sarl",
+        registrations: [{ number: "", court: "Fès" }],
+      }),
+    ).rejects.toThrow();
+  });
+
+  it("déduit le nombre de salariés dès qu'ils sont nommés", async () => {
+    const created = await createClient(declaring, {
+      ...BASE,
+      kind: "company",
+      subtype: "sarl",
+      employeeCount: 99,
+      employees: [
+        { name: "Salma Idrissi", cnssNo: "123456789" },
+        { name: "Youssef Tazi" },
+      ],
+    });
+
+    expect(created.employeeCount).toBe(2);
+    expect(JSON.parse(created.employees)).toHaveLength(2);
+  });
+
+  it("refuse la CIN d'un salarié en mode déclaration", async () => {
+    await expect(
+      createClient(declaring, {
+        ...BASE,
+        kind: "company",
+        subtype: "sarl",
+        employees: [{ name: "Salma Idrissi", cin: "BK998877" }],
+      }),
+    ).rejects.toThrow(/déclaration/);
   });
 
   it("refuse une immatriculation CNSS qui n'a pas neuf chiffres", async () => {
@@ -143,12 +209,13 @@ describe("fiche client scindée", () => {
       ...BASE,
       kind: "company",
       subtype: "sarl",
-      taxProfNos: ["TP-7"],
+      registrations: [{ number: "RC-7", court: "Rabat", taxProfNos: ["TP-7"] }],
     });
 
     const updated = await updateClient(authorized, created.id, { city: "Agadir" });
 
     expect(JSON.parse(updated.taxProfNos)).toEqual(["TP-7"]);
+    expect(updated.rc).toBe("RC-7");
     expect(updated.city).toBe("Agadir");
   });
 

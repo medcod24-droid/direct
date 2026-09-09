@@ -79,10 +79,48 @@ export const cnssRegSchema = z
 /** Une liste vide et une liste absente sont équivalentes : le défaut suffit. */
 const list = <T extends z.ZodTypeAny>(item: T, max = 20) => z.array(item).max(max).default([]);
 
-/** Établissement secondaire : son propre numéro de registre et son tribunal. */
+/**
+ * Immatriculation au registre de commerce, avec ce qui en dépend.
+ *
+ * L'imbrication suit le droit : une immatriculation (principale ou secondaire)
+ * relève d'un tribunal ; les établissements ouverts dans le même ressort lui
+ * restent rattachés ; et la taxe professionnelle se rattache à l'établissement,
+ * puisqu'elle est établie au lieu de chacun d'eux et que son numéro doit y être
+ * affiché (loi 47-06, art. 8 et 14). L'établissement principal porte donc lui
+ * aussi ses numéros de taxe — sans quoi le dossier le plus courant, un local
+ * unique sans succursale, n'aurait nulle part où les inscrire.
+ */
+const taxProfList = z.array(trimmed(40).min(1, "Numéro de taxe professionnelle vide.")).max(20).default([]);
+
 export const branchSchema = z.object({
   number: trimmed(40).min(1, "Numéro de succursale requis."),
   court: optionalText(80),
+  taxProfNos: taxProfList,
+});
+
+export const registrationSchema = z.object({
+  number: trimmed(40).min(1, "Numéro de registre de commerce requis."),
+  court: optionalText(80),
+  taxProfNos: taxProfList,
+  branches: z.array(branchSchema).max(20).default([]),
+});
+
+/**
+ * Salarié déclaré à la CNSS.
+ *
+ * Ce sont des données personnelles de tiers, que le client confie au cabinet :
+ * la CIN suit le même mode CNDP que celle du gérant, et rien d'autre n'est
+ * demandé que ce qui sert la déclaration.
+ */
+export const employeeSchema = z.object({
+  name: trimmed(120).min(2, "Nom du salarié requis."),
+  cin: optionalText(20),
+  cnssNo: z
+    .string()
+    .trim()
+    .regex(/^[0-9]{9}$/, "L'immatriculation CNSS comporte 9 chiffres.")
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
 });
 
 /**
@@ -155,9 +193,9 @@ export const clientSchema = z.object({
 
   // Listes
   activities: list(trimmed(200).min(1, "Activité vide.")),
-  taxProfNos: list(trimmed(40).min(1, "Numéro de taxe professionnelle vide.")),
-  branches: list(branchSchema),
+  registrations: list(registrationSchema),
   partners: list(partnerSchema),
+  employees: list(employeeSchema, 200),
 });
 
 /**

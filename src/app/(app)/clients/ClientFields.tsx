@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Card, Field, Input, Select } from "@/components/ui";
 import { subtypesFor, type ClientKind } from "@/lib/domain/enums";
 import { subtypeLabel } from "@/lib/domain/labels";
+import { Registrations } from "./Registrations";
 import { Repeatable } from "./Repeatable";
 
 export type ClientFieldsProps = {
@@ -78,12 +79,24 @@ export function ClientFields({ value, checked, fieldError, cndpMode }: ClientFie
           </Field>
 
           <Field
-            label={individual ? "Nom et prénom" : "Raison sociale"}
+            label="Raison sociale"
             htmlFor="legalName"
             error={fieldError("legalName")}
+            className={individual ? "sm:col-span-2" : undefined}
           >
             <Input id="legalName" name="legalName" required autoFocus defaultValue={value("legalName")} />
           </Field>
+
+          {individual ? (
+            <Field
+              label="Adresse personnelle"
+              htmlFor="personalAddress"
+              error={fieldError("personalAddress")}
+              className="sm:col-span-2"
+            >
+              <Input id="personalAddress" name="personalAddress" defaultValue={value("personalAddress")} />
+            </Field>
+          ) : null}
 
           {individual && cinAllowed ? (
             <Field label="CIN" htmlFor="managerCin" error={fieldError("managerCin")}>
@@ -108,6 +121,15 @@ export function ClientFields({ value, checked, fieldError, cndpMode }: ClientFie
               <Input id="taxDistrict" name="taxDistrict" defaultValue={value("taxDistrict")} />
             </Field>
           ) : null}
+
+          <Field
+            label="N° d'autorisation"
+            htmlFor="authorizationNo"
+            hint="Si l'activité est réglementée."
+            error={fieldError("authorizationNo")}
+          >
+            <Input id="authorizationNo" name="authorizationNo" defaultValue={value("authorizationNo")} />
+          </Field>
         </div>
 
         {!cinAllowed ? (
@@ -171,52 +193,11 @@ export function ClientFields({ value, checked, fieldError, cndpMode }: ClientFie
         </Card>
       )}
 
-      <Card title="Immatriculations">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Registre de commerce" htmlFor="rc" error={fieldError("rc")}>
-            <Input id="rc" name="rc" defaultValue={value("rc")} />
-          </Field>
-          <Field label="Tribunal" htmlFor="rcCourt" error={fieldError("rcCourt")}>
-            <Input id="rcCourt" name="rcCourt" defaultValue={value("rcCourt")} />
-          </Field>
-          <Field
-            label="Autorisation"
-            htmlFor="authorizationNo"
-            hint="Numéro d'autorisation, si l'activité est réglementée."
-            error={fieldError("authorizationNo")}
-          >
-            <Input id="authorizationNo" name="authorizationNo" defaultValue={value("authorizationNo")} />
-          </Field>
-        </div>
-
-        <div className="mt-4 grid gap-4">
-          <div>
-            <p className="text-[13px] font-medium text-ink2 mb-1.5">Succursales</p>
-            <Repeatable
-              name="branches"
-              value={value}
-              fieldError={fieldError}
-              addLabel="Ajouter une succursale"
-              emptyLabel="Aucun établissement secondaire."
-              columns={[
-                { key: "number", label: "N° de succursale" },
-                { key: "court", label: "Tribunal" },
-              ]}
-            />
-          </div>
-
-          <div>
-            <p className="text-[13px] font-medium text-ink2 mb-1.5">Taxe professionnelle</p>
-            <Repeatable
-              name="taxProfNos"
-              value={value}
-              fieldError={fieldError}
-              addLabel="Ajouter un numéro"
-              emptyLabel="Aucun numéro de taxe professionnelle."
-              columns={[{ key: "value", label: "Numéro", className: "min-w-52 flex-1" }]}
-            />
-          </div>
-        </div>
+      <Card
+        title="Registre de commerce"
+        description="Une immatriculation principale, plus une immatriculation secondaire par ressort où le client exploite. La taxe professionnelle se rattache à l'établissement."
+      >
+        <Registrations value={value} fieldError={fieldError} />
       </Card>
 
       <Card title="Activité">
@@ -255,20 +236,7 @@ export function ClientFields({ value, checked, fieldError, cndpMode }: ClientFie
             <Input id="address" name="address" defaultValue={value("address")} />
           </Field>
 
-          {individual ? (
-            <Field
-              label="Adresse personnelle"
-              htmlFor="personalAddress"
-              error={fieldError("personalAddress")}
-              className="sm:col-span-2"
-            >
-              <Input
-                id="personalAddress"
-                name="personalAddress"
-                defaultValue={value("personalAddress")}
-              />
-            </Field>
-          ) : (
+          {individual ? null : (
             <Field label="Domiciliation" htmlFor="isDomiciled" error={fieldError("isDomiciled")}>
               <label className="flex items-center gap-2 text-sm h-9">
                 <input
@@ -347,7 +315,12 @@ export function ClientFields({ value, checked, fieldError, cndpMode }: ClientFie
               defaultValue={value("cnssAffiliatedAt")}
             />
           </Field>
-          <Field label="Nombre de salariés" htmlFor="employeeCount" error={fieldError("employeeCount")}>
+          <Field
+            label="Nombre de salariés"
+            htmlFor="employeeCount"
+            hint="Ignoré dès que les salariés sont nommés ci-dessous."
+            error={fieldError("employeeCount")}
+          >
             <Input
               id="employeeCount"
               name="employeeCount"
@@ -356,6 +329,27 @@ export function ClientFields({ value, checked, fieldError, cndpMode }: ClientFie
               defaultValue={value("employeeCount")}
             />
           </Field>
+        </div>
+
+        <div className="mt-4 border-t border-line pt-3">
+          <p className="text-[13px] font-medium text-ink2 mb-1.5">Salariés déclarés</p>
+          <Repeatable
+            name="employees"
+            max={200}
+            value={value}
+            fieldError={fieldError}
+            addLabel="Ajouter un salarié"
+            emptyLabel="Aucun salarié nommé."
+            columns={[
+              { key: "name", label: "Nom et prénom" },
+              ...(cinAllowed ? [{ key: "cin", label: "CIN", className: "min-w-32" }] : []),
+              { key: "cnssNo", label: "N° CNSS", className: "min-w-36" },
+            ]}
+          />
+          <p className="text-xs text-muted mt-2">
+            Données personnelles de tiers : elles n&apos;ont leur place ici que pour les
+            déclarations du cabinet.
+          </p>
         </div>
       </Card>
 

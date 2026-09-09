@@ -23,9 +23,14 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   // individuel n'a ni certificat négatif ni associés.
   const individual = client.kind === "individual";
   const activities = jsonList<string>(client.declaredActivities);
-  const taxProfNos = jsonList<string>(client.taxProfNos);
-  const branches = jsonList<{ number?: string; court?: string }>(client.branches);
   const partners = jsonList<{ role?: string; name?: string }>(client.partners);
+  const employees = jsonList<{ name?: string; cin?: string; cnssNo?: string }>(client.employees);
+  const registrations = jsonList<{
+    number?: string;
+    court?: string;
+    taxProfNos?: string[];
+    branches?: { number?: string; court?: string; taxProfNos?: string[] }[];
+  }>(client.registrations);
 
   // La note résume un comportement de paiement : c'est une information financière,
   // réservée à qui peut déjà voir les honoraires (report.view exclut l'assistant
@@ -110,22 +115,6 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
                 </dd>
               </>
             )}
-            <dt className="text-muted">RC</dt>
-            <dd className="tabular">
-              {client.rc ?? "—"} {client.rcCourt ? `(${client.rcCourt})` : ""}
-            </dd>
-            {branches.length > 0 ? (
-              <>
-                <dt className="text-muted">Succursales</dt>
-                <dd className="tabular">
-                  {branches
-                    .map((branch) => [branch.number, branch.court].filter(Boolean).join(" — "))
-                    .join(", ")}
-                </dd>
-              </>
-            ) : null}
-            <dt className="text-muted">Taxe prof.</dt>
-            <dd className="tabular">{taxProfNos.join(", ") || client.taxProfNo || "—"}</dd>
             {client.authorizationNo ? (
               <>
                 <dt className="text-muted">Autorisation</dt>
@@ -171,6 +160,18 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
                 <dd>{activities.join(" · ")}</dd>
               </>
             ) : null}
+            {employees.length > 0 ? (
+              <>
+                <dt className="text-muted">Salariés</dt>
+                <dd>
+                  {employees
+                    .map((employee) =>
+                      [employee.name, employee.cnssNo].filter(Boolean).join(" — "),
+                    )
+                    .join(", ")}
+                </dd>
+              </>
+            ) : null}
             {!individual && partners.length > 0 ? (
               <>
                 <dt className="text-muted">Associés</dt>
@@ -184,6 +185,50 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
               </>
             ) : null}
           </dl>
+        </Card>
+
+        <Card title="Registre de commerce">
+          {registrations.length === 0 ? (
+            <p className="text-sm text-muted">
+              {client.rc
+                ? `${client.rc}${client.rcCourt ? ` (${client.rcCourt})` : ""}`
+                : "Aucune immatriculation enregistrée."}
+            </p>
+          ) : (
+            <ul className="grid gap-3 text-sm">
+              {registrations.map((registration, index) => (
+                <li key={`${registration.number}-${index}`} className="grid gap-1">
+                  <div>
+                    <span className="tabular">{registration.number}</span>
+                    {registration.court ? (
+                      <span className="text-muted"> — {registration.court}</span>
+                    ) : null}
+                    {index === 0 ? (
+                      <span className="text-muted"> · principale</span>
+                    ) : null}
+                  </div>
+                  {registration.taxProfNos?.length ? (
+                    <div className="text-xs text-muted ps-3">
+                      Taxe prof. : <span className="tabular">{registration.taxProfNos.join(", ")}</span>
+                    </div>
+                  ) : null}
+                  {registration.branches?.map((branch, branchIndex) => (
+                    <div key={`${branch.number}-${branchIndex}`} className="text-xs ps-3">
+                      <span className="text-muted">Succursale </span>
+                      <span className="tabular">{branch.number}</span>
+                      {branch.court ? <span className="text-muted"> — {branch.court}</span> : null}
+                      {branch.taxProfNos?.length ? (
+                        <span className="text-muted">
+                          {" "}
+                          · taxe prof. <span className="tabular">{branch.taxProfNos.join(", ")}</span>
+                        </span>
+                      ) : null}
+                    </div>
+                  ))}
+                </li>
+              ))}
+            </ul>
+          )}
         </Card>
 
         <Card title="Échéances ouvertes" className="lg:col-span-2">

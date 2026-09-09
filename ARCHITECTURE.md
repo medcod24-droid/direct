@@ -66,15 +66,32 @@ immatriculation CNSS personnelle d'un côté ; certificat négatif, domiciliatio
 l'autre. `subtypesFor(kind)` (dans `lib/domain/enums.ts`) restreint les formes juridiques
 proposées, et la même règle est revérifiée côté serveur : l'écran filtre, il ne protège pas.
 
-Quatre champs sont des **listes**, sérialisées en JSON comme `tags`, faute d'un type tableau en
-SQLite : `declaredActivities`, `taxProfNos`, `branches` et `partners`. Les colonnes courtes
-`activity` et `taxProfNo` conservent le premier élément, pour les écrans qui n'ont pas besoin du
-détail. `Client.activities` est déjà la relation vers le journal, d'où le nom
-`declaredActivities`.
+Plusieurs champs sont des **listes**, sérialisées en JSON comme `tags`, faute d'un type tableau
+en SQLite : `declaredActivities`, `registrations`, `partners` et `employees`.
+`Client.activities` est déjà la relation vers le journal, d'où le nom `declaredActivities`.
 
-Les CIN des associés suivent la même règle que celle du gérant : elles ne sont enregistrées
-qu'en mode CNDP « autorisation » (loi 09-08, art. 12-1-e). Le filtrage est appliqué dans
-`server/services/clients.ts`, à un seul endroit, et non dans le formulaire.
+**Les immatriculations sont un arbre**, et cette forme vient du droit, pas de l'écran :
+
+- un commerçant n'a qu'une immatriculation **principale** (code de commerce, art. 39), mais il
+  en prend une **secondaire** dans chaque ressort où il exploite (art. 38 et 41) — d'où une
+  liste de registres, chacun avec son tribunal ;
+- un établissement ouvert dans le ressort du **même** tribunal reste rattaché à
+  l'immatriculation existante — d'où les succursales à l'intérieur d'un registre ;
+- la taxe professionnelle est établie au lieu de **chaque établissement** et son numéro
+  d'identification doit y être affiché (loi 47-06, art. 8 et 14) — d'où des numéros de taxe par
+  établissement, **y compris le principal**, sans quoi le dossier le plus courant, un local
+  unique sans succursale, n'aurait nulle part où inscrire le sien.
+
+`rc`, `rcCourt`, `taxProfNo`, `taxProfNos` et `branches` sont des **projections plates** de cet
+arbre, reconstruites à chaque écriture : la recherche et les listes n'ont ainsi pas à le
+parcourir, et un dossier se retrouve par le numéro d'une succursale ou d'une taxe. De même,
+`activity` garde la première activité et `employeeCount` est déduit du nombre de salariés dès
+que le cabinet les nomme.
+
+Les CIN des associés et des salariés suivent la même règle que celle du gérant : elles ne sont
+enregistrées qu'en mode CNDP « autorisation » (loi 09-08, art. 12-1-e). Le filtrage est appliqué
+dans `server/services/clients.ts`, à un seul endroit, et non dans le formulaire — une liste non
+filtrée serait devenue la voie par laquelle des numéros entrent malgré le mode « déclaration ».
 
 ## Moteur d'échéances
 
