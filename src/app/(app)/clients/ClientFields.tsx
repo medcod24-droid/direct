@@ -6,6 +6,7 @@ import { subtypesFor, type ClientKind } from "@/lib/domain/enums";
 import { subtypeLabel } from "@/lib/domain/labels";
 import { Articles } from "./Articles";
 import { FieldScan, type ScanInfo } from "./FieldScan";
+import { Partners } from "./Partners";
 import { Registrations } from "./Registrations";
 import { Repeatable } from "./Repeatable";
 
@@ -26,6 +27,8 @@ export type ClientFieldsProps = {
   clientId?: string | null;
   /** Justificatif déjà déposé, par champ. */
   scans?: Record<string, ScanInfo>;
+  /** Autres dossiers du cabinet, pour désigner celui qui a apporté celui-ci. */
+  referrers?: { id: string; legalName: string }[];
 };
 
 /**
@@ -49,6 +52,7 @@ export function ClientFields({
   cndpMode,
   clientId = null,
   scans = {},
+  referrers = [],
 }: ClientFieldsProps) {
   const [kind, setKind] = useState<ClientKind>(
     value("kind", "company") === "individual" ? "individual" : "company",
@@ -131,6 +135,7 @@ export function ClientFields({
             className={individual ? "sm:col-span-2" : undefined}
           >
             <Input id="legalName" name="legalName" required autoFocus defaultValue={value("legalName")} />
+            {scan("statuts")}
           </Field>
 
           {individual ? (
@@ -220,7 +225,7 @@ export function ClientFields({
       ) : (
         <Card
           title="Certificat négatif"
-          description="Réservation de la dénomination auprès de l'OMPIC."
+          description="Réservation de la dénomination auprès de l'OMPIC. Elle ouvre 90 jours pour immatriculer la société au registre de commerce (code de commerce, art. 74)."
         >
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Numéro" htmlFor="negCertNo" error={fieldError("negCertNo")}>
@@ -288,13 +293,18 @@ export function ClientFields({
       <Card title="Adresses">
         <div className="grid gap-3 sm:grid-cols-2">
           <Field
-            label={individual ? "Adresse professionnelle" : "Siège social"}
+            label={individual ? "Adresse professionnelle" : "Siège social ou domiciliation"}
             htmlFor="address"
-            hint={individual ? "Lieu d'exercice — tient lieu de siège." : undefined}
+            hint={
+              individual
+                ? "Lieu d'exercice — tient lieu de siège."
+                : "Justificatif attendu : contrat de bail, titre de propriété, ou contrat de domiciliation (loi 89-17)."
+            }
             error={fieldError("address")}
             className="sm:col-span-2"
           >
             <Input id="address" name="address" defaultValue={value("address")} />
+            {scan("siege")}
           </Field>
 
           {individual ? null : (
@@ -318,28 +328,16 @@ export function ClientFields({
       </Card>
 
       {individual ? null : (
-        <Card title="Direction et associés">
-          <Repeatable
-            name="partners"
+        <Card
+          title="Direction et associés"
+          description="Chaque gérant ou associé porte son propre justificatif : copie de CIN, procès-verbal de nomination."
+        >
+          <Partners
             value={value}
             fieldError={fieldError}
-            addLabel="Ajouter un associé"
-            emptyLabel="Aucun gérant ni associé enregistré."
-            columns={[
-              {
-                key: "role",
-                label: "Qualité",
-                className: "min-w-36",
-                options: [
-                  ["gerant", "Gérant"],
-                  ["associe", "Associé"],
-                ],
-              },
-              { key: "name", label: "Nom et prénom" },
-              ...(cinAllowed ? [{ key: "cin", label: "CIN", className: "min-w-32" }] : []),
-              { key: "phone", label: "Téléphone", className: "min-w-36" },
-              { key: "address", label: "Adresse" },
-            ]}
+            clientId={clientId}
+            scans={scans}
+            cinAllowed={cinAllowed}
           />
         </Card>
       )}
@@ -477,6 +475,39 @@ export function ClientFields({
               />
               <span>Le client a des salariés déclarés</span>
             </label>
+          </Field>
+        </div>
+      </Card>
+
+      <Card
+        title="Origine du dossier"
+        description="Sert à savoir à qui l'on doit ce client."
+      >
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field
+            label="Apporté par"
+            htmlFor="referredById"
+            hint={
+              referrers.length === 0
+                ? "Aucun autre dossier au cabinet pour l'instant."
+                : "Un autre dossier du cabinet."
+            }
+            error={fieldError("referredById")}
+          >
+            <Select
+              key={value("referredById")}
+              id="referredById"
+              name="referredById"
+              defaultValue={value("referredById")}
+              disabled={referrers.length === 0}
+            >
+              <option value="">—</option>
+              {referrers.map((referrer) => (
+                <option key={referrer.id} value={referrer.id}>
+                  {referrer.legalName}
+                </option>
+              ))}
+            </Select>
           </Field>
         </div>
       </Card>

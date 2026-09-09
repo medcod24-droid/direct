@@ -7,7 +7,13 @@ import { ClientFields } from "../ClientFields";
 
 const initial: ActionState = {};
 
-export function NewClientForm({ cndpMode }: { cndpMode: string }) {
+export function NewClientForm({
+  cndpMode,
+  referrers,
+}: {
+  cndpMode: string;
+  referrers: { id: string; legalName: string }[];
+}) {
   const [state, action, pending] = useActionState(createClientAction, initial);
 
   // Après un refus, on réaffiche ce qui avait été saisi : sur une vingtaine de
@@ -25,6 +31,7 @@ export function NewClientForm({ cndpMode }: { cndpMode: string }) {
         checked={checked}
         fieldError={fieldError}
         cndpMode={cndpMode}
+        referrers={referrers}
       />
 
       <div className="flex justify-end gap-2">

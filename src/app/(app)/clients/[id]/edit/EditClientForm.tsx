@@ -21,11 +21,13 @@ export function EditClientForm({
   cndpMode,
   current,
   scans,
+  referrers,
 }: {
   clientId: string;
   cndpMode: string;
   current: Record<string, string>;
   scans: Record<string, ScanInfo>;
+  referrers: { id: string; legalName: string }[];
 }) {
   const action = updateClientAction.bind(null, clientId);
   const [state, formAction, pending] = useActionState(action, initial);
@@ -48,6 +50,7 @@ export function EditClientForm({
         cndpMode={cndpMode}
         clientId={clientId}
         scans={scans}
+        referrers={referrers}
       />
 
       <div className="flex justify-end gap-2">

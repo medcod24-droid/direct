@@ -99,6 +99,10 @@ Deux cas propres à la personne physique élargissent la fiche :
   un bien donné en location n'y est pas soumis mais produit des revenus fonciers imposables à
   l'IR, et le secondaire ne bénéficie d'aucun abattement.
 
+`Client.referredById` désigne le dossier du cabinet qui a apporté celui-ci. La relation est
+vérifiée côté service, à travers le client Prisma du contexte : un dossier d'un autre cabinet est
+introuvable, et un dossier ne peut pas être son propre apporteur.
+
 ### Justificatifs rattachés aux champs
 
 `Document.fieldKey` désigne le champ de la fiche qu'une pièce justifie :

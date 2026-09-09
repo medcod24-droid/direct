@@ -5,7 +5,7 @@ import type { AuthContext } from "@/lib/authz/guard";
 import { requireClient } from "@/lib/authz/guard";
 import { assertWithinLimit } from "@/lib/billing/entitlements";
 import { computeHealth, type HealthResult } from "@/lib/domain/health";
-import { ForbiddenError } from "@/lib/errors";
+import { ForbiddenError, ValidationError } from "@/lib/errors";
 import { rateClient, volumePercentile, type Rating } from "@/lib/clients/rating";
 import { clientCreateSchema, clientUpdateSchema, searchSchema } from "@/lib/validation/schemas";
 
@@ -164,8 +164,16 @@ export async function getClientOverview(ctx: AuthContext, clientId: string) {
   const client = await requireClient(ctx, clientId);
   const now = new Date();
 
-  const [contacts, deadlines, requests, documents, tasks, invoices, activities, health] =
+  const [referrer, contacts, deadlines, requests, documents, tasks, invoices, activities, health] =
     await Promise.all([
+      // Relu par le client Prisma du contexte : un apporteur hors du cabinet,
+      // ou hors de la portée de l'utilisateur, est simplement introuvable.
+      client.referredById
+        ? ctx.db.client.findFirst({
+            where: { id: client.referredById },
+            select: { id: true, legalName: true },
+          })
+        : Promise.resolve(null),
       ctx.db.contact.findMany({ where: { clientId }, orderBy: { isPrimary: "desc" } }),
       ctx.db.deadline.findMany({
         where: { clientId, status: { notIn: ["paid", "not_applicable"] } },
@@ -204,6 +212,7 @@ export async function getClientOverview(ctx: AuthContext, clientId: string) {
 
   return {
     client,
+    referrer,
     contacts,
     deadlines,
     requests,
@@ -416,12 +425,46 @@ function assertCinAllowed(
   }
 }
 
+/**
+ * Dossiers pouvant figurer comme apporteurs, hors le dossier en cours.
+ *
+ * Le client Prisma du contexte borne déjà la liste au cabinet ; l'exclusion du
+ * dossier lui-même évite de proposer une boucle que le service refuserait.
+ */
+export async function listReferrers(ctx: AuthContext, excludeId?: string) {
+  return ctx.db.client.findMany({
+    where: excludeId ? { id: { not: excludeId } } : {},
+    orderBy: { legalName: "asc" },
+    select: { id: true, legalName: true },
+  });
+}
+
+/**
+ * Vérifie l'apporteur d'un dossier.
+ *
+ * L'identifiant vient du navigateur : il est relu à travers le client Prisma du
+ * contexte, donc un dossier d'un autre cabinet est simplement introuvable. Un
+ * dossier ne s'apporte pas lui-même — la fiche afficherait une boucle sans fin.
+ */
+async function assertReferrer(ctx: AuthContext, referredById?: string, selfId?: string) {
+  if (!referredById) return;
+  if (referredById === selfId) {
+    throw new ValidationError("Un dossier ne peut pas être son propre apporteur.");
+  }
+  const referrer = await ctx.db.client.findFirst({
+    where: { id: referredById },
+    select: { id: true },
+  });
+  if (!referrer) throw new ValidationError("Apporteur introuvable dans le cabinet.");
+}
+
 export async function createClient(ctx: AuthContext, input: unknown) {
   const data = clientCreateSchema.parse(input);
   await assertWithinLimit(ctx.cabinet.id, "clients");
 
   // Le numéro de CIN n'est stocké que si le cabinet a l'autorisation CNDP correspondante.
   assertCinAllowed(data, ctx.cabinet.cndpMode);
+  await assertReferrer(ctx, data.referredById);
   const managerCin = ctx.cabinet.cndpMode === "authorization" ? data.managerCin : undefined;
 
   const { activities, registrations, partners, employees, articles, ...scalars } = data;
@@ -468,6 +511,7 @@ export async function updateClient(ctx: AuthContext, clientId: string, input: un
   const data = clientUpdateSchema.parse(input);
 
   assertCinAllowed(data, ctx.cabinet.cndpMode);
+  await assertReferrer(ctx, data.referredById, clientId);
 
   const { activities, registrations, partners, employees, articles, ...scalars } = data;
   const updated = await ctx.db.client.update({

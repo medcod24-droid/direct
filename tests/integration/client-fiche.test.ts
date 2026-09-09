@@ -295,4 +295,73 @@ describe("fiche client scindée", () => {
 
     expect((JSON.parse(created.articles) as { usage: string }[])[0]?.usage).toBe("principale");
   });
+
+  it("rattache un dossier à l'apporteur qui l'a amené", async () => {
+    const apporteur = await createClient(authorized, {
+      ...BASE,
+      kind: "company",
+      subtype: "sarl",
+      legalName: "Cabinet apporteur SARL",
+    });
+
+    const amené = await createClient(authorized, {
+      ...BASE,
+      kind: "company",
+      subtype: "sarl",
+      legalName: "Dossier apporté SARL",
+      referredById: apporteur.id,
+    });
+
+    expect(amené.referredById).toBe(apporteur.id);
+  });
+
+  it("refuse un apporteur qui n'est pas du cabinet", async () => {
+    const étranger = await createClient(declaring, {
+      ...BASE,
+      kind: "company",
+      subtype: "sarl",
+      legalName: "Dossier d'un autre cabinet",
+    });
+
+    await expect(
+      createClient(authorized, {
+        ...BASE,
+        kind: "company",
+        subtype: "sarl",
+        legalName: "Apporteur hors cabinet",
+        referredById: étranger.id,
+      }),
+    ).rejects.toThrow(/Apporteur introuvable/);
+  });
+
+  it("refuse qu'un dossier soit son propre apporteur", async () => {
+    const created = await createClient(authorized, {
+      ...BASE,
+      kind: "company",
+      subtype: "sarl",
+      legalName: "Auto-apporteur SARL",
+    });
+
+    await expect(
+      updateClient(authorized, created.id, { referredById: created.id }),
+    ).rejects.toThrow(/propre apporteur/);
+  });
+
+  it("garde un identifiant par associé, pour son justificatif", async () => {
+    const created = await createClient(authorized, {
+      ...BASE,
+      kind: "company",
+      subtype: "sarl",
+      legalName: "Associés identifiés SARL",
+      partners: [
+        { role: "gerant", name: "Nadia Alaoui", cin: "BK123456", address: "Casablanca" },
+        { role: "associe", name: "Omar Bennani", phone: "0661000000" },
+      ],
+    });
+
+    const partners = JSON.parse(created.partners) as { id: string; address?: string }[];
+    expect(partners.every((p) => p.id)).toBe(true);
+    expect(new Set(partners.map((p) => p.id)).size).toBe(2);
+    expect(partners[0]?.address).toBe("Casablanca");
+  });
 });

@@ -206,6 +206,8 @@ export const clientSchema = z.object({
   isEmployer: z.coerce.boolean().default(false),
   referenceRevenue: z.coerce.number().int().min(0).optional(),
   takeoverDate: z.coerce.date(),
+  /** Dossier apporté par un autre client du cabinet. Vérifié côté service. */
+  referredById: optionalText(40),
   status: z.enum(CLIENT_STATUSES).default("active"),
   activityState: z.enum(ACTIVITY_STATES).default("running"),
   priority: z.enum(PRIORITIES).default("normal"),

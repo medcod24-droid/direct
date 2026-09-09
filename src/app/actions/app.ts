@@ -154,6 +154,7 @@ function clientInput(form: FormData) {
     takeoverDate: str(form, "takeoverDate"),
     feeAmount: str(form, "feeAmount") ? Number(str(form, "feeAmount")) * 100 : undefined,
     feeFrequency: str(form, "feeFrequency"),
+    referredById: str(form, "referredById"),
 
     authorizationNo: str(form, "authorizationNo"),
     employeeCount: str(form, "employeeCount"),

@@ -1,5 +1,5 @@
 import { requireStaff } from "@/lib/authz/guard";
-import { getClientOverview } from "@/server/services/clients";
+import { getClientOverview, listReferrers } from "@/server/services/clients";
 import { fieldScans } from "@/server/services/documents";
 import { PageHeader } from "@/components/ui";
 import { EditClientForm } from "./EditClientForm";
@@ -40,6 +40,7 @@ function toFormValues(client: Record<string, unknown>): Record<string, string> {
     fiscalYearEndMonth: text(client.fiscalYearEndMonth),
     fiscalYearEndDay: text(client.fiscalYearEndDay),
     takeoverDate: date(client.takeoverDate),
+    referredById: text(client.referredById),
     isEmployer: client.isEmployer ? "on" : "",
 
     authorizationNo: text(client.authorizationNo),
@@ -171,9 +172,10 @@ export default async function EditClientPage({
 }) {
   const ctx = await requireStaff("client.update");
   const { id } = await params;
-  const [{ client }, scans] = await Promise.all([
+  const [{ client }, scans, referrers] = await Promise.all([
     getClientOverview(ctx, id),
     fieldScans(ctx, id),
+    listReferrers(ctx, id),
   ]);
 
   return (
@@ -185,6 +187,7 @@ export default async function EditClientPage({
       <EditClientForm
         clientId={id}
         cndpMode={ctx.cabinet.cndpMode}
+        referrers={referrers}
         scans={Object.fromEntries(
           [...scans].map(([key, document]) => [
             key,

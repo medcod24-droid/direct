@@ -52,7 +52,7 @@ export default async function ClientFichePage({
 }) {
   const ctx = await requireStaff("client.view");
   const { id } = await params;
-  const { client, contacts } = await getClientOverview(ctx, id);
+  const { client, contacts, referrer } = await getClientOverview(ctx, id);
 
   const individual = client.kind === "individual";
   const activities = parse<string>(client.declaredActivities);
@@ -113,6 +113,7 @@ export default async function ClientFichePage({
       "Honoraires",
       typeof client.feeAmount === "number" ? `${formatMad(client.feeAmount)} HT` : "",
     ],
+    ["Apporté par", referrer?.legalName],
   ]);
 
   const cnss = filled([
@@ -206,12 +207,13 @@ export default async function ClientFichePage({
         {partners.length > 0 ? (
           <Listing
             title="Direction et associés"
-            head={["Qualité", "Nom", "CIN", "Téléphone"]}
+            head={["Qualité", "Nom", "CIN", "Téléphone", "Adresse"]}
             rows={partners.map((partner) => [
               partner.role === "gerant" ? "Gérant" : "Associé",
               partner.name ?? "",
               partner.cin ?? "",
               partner.phone ?? "",
+              partner.address ?? "",
             ])}
           />
         ) : null}

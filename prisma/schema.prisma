@@ -307,6 +307,10 @@ model Client {
   takeoverDate DateTime
   startedAt    DateTime?
 
+  /// Dossier apporté par un autre client du cabinet, s'il y a lieu.
+  /// La relation reste dans le cabinet : c'est le client Prisma étendu qui le garantit.
+  referredById String?
+
   status       String  @default("active") // prospect | onboarding | active | suspended | terminated | archived
   activityState String @default("running") // running | dormant | liquidation | struck_off
   priority     String  @default("normal") // low | normal | high
@@ -319,6 +323,8 @@ model Client {
   feeFrequency String? // monthly | quarterly | yearly | none
 
   cabinet     Cabinet            @relation(fields: [cabinetId], references: [id], onDelete: Cascade)
+  referredBy  Client?            @relation("ClientReferral", fields: [referredById], references: [id], onDelete: SetNull)
+  referrals   Client[]           @relation("ClientReferral")
   contacts    Contact[]
   assignments ClientAssignment[]
   documents   Document[]
@@ -334,6 +340,7 @@ model Client {
   updatedAt DateTime @updatedAt
 
   @@index([cabinetId, status])
+  @@index([cabinetId, referredById])
   @@index([cabinetId, legalName])
   @@index([cabinetId, ice])
   @@index([cabinetId, if])

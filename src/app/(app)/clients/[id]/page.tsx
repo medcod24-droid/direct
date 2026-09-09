@@ -30,6 +30,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   const individual = client.kind === "individual";
   const activities = jsonList<string>(client.declaredActivities);
   const partners = jsonList<{ role?: string; name?: string }>(client.partners);
+  const referrer = data.referrer;
   const employees = jsonList<{ name?: string; cin?: string; cnssNo?: string }>(client.employees);
   const articles = jsonList<{
     number?: string;
@@ -158,6 +159,16 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
             </dd>
             <dt className="text-muted">Prise en charge</dt>
             <dd className="tabular">{formatDate(client.takeoverDate)}</dd>
+            {referrer ? (
+              <>
+                <dt className="text-muted">Apporté par</dt>
+                <dd>
+                  <Link href={`/clients/${referrer.id}`} className="underline underline-offset-2">
+                    {referrer.legalName}
+                  </Link>
+                </dd>
+              </>
+            ) : null}
             {individual ? (
               <>
                 <dt className="text-muted">Adresse pers.</dt>
