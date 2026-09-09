@@ -7,6 +7,7 @@ import { assertWithinLimit } from "@/lib/billing/entitlements";
 import { computeHealth, type HealthResult } from "@/lib/domain/health";
 import { ForbiddenError, ValidationError } from "@/lib/errors";
 import { rateClient, volumePercentile, type Rating } from "@/lib/clients/rating";
+import { clientSearchKey, normalizeSearch } from "@/lib/search";
 import { clientCreateSchema, clientUpdateSchema, searchSchema } from "@/lib/validation/schemas";
 
 const DAY = 86400000;
@@ -37,21 +38,14 @@ export async function listClients(ctx: AuthContext, input: unknown) {
     where.status = { not: "archived" };
   }
   if (q) {
-    // SQLite ne connaît pas `mode: "insensitive"` : la recherche reste sensible à la casse
-    // sur cette base. En production (PostgreSQL), activer un index trigram ou citext.
-    where.OR = [
-      { legalName: { contains: q } },
-      { tradeName: { contains: q } },
-      { ice: { contains: q } },
-      { if: { contains: q } },
-      { rc: { contains: q } },
-      // Les projections plates existent pour cela : retrouver un dossier par le
-      // numéro d'une succursale ou d'une taxe professionnelle, sans ouvrir l'arbre.
-      { branches: { contains: q } },
-      { taxProfNos: { contains: q } },
-      { email: { contains: q } },
-      { phone: { contains: q } },
-    ];
+    // Un seul champ cherché, normalisé à l'écriture : nom, ICE, IF, RC,
+    // succursales, taxes professionnelles, CIN, téléphone, e-mail et ville s'y
+    // trouvent déjà. Chercher chaque colonne séparément laissait la casse
+    // décider du résultat — « atlas » ne trouvait pas « Atlas ».
+    where.AND = normalizeSearch(q)
+      .split(" ")
+      .filter(Boolean)
+      .map((term) => ({ searchKey: { contains: term } }));
   }
 
   const [total, rows] = await Promise.all([
@@ -440,6 +434,28 @@ export async function listReferrers(ctx: AuthContext, excludeId?: string) {
 }
 
 /**
+ * Dossiers du cabinet au format attendu par le champ de recherche.
+ *
+ * La clé de recherche est renvoyée telle qu'elle est stockée : le filtrage se
+ * fait alors dans le navigateur, sur les mêmes termes que côté serveur, sans
+ * aller-retour à chaque touche.
+ */
+export async function listClientOptions(ctx: AuthContext, excludeId?: string) {
+  const rows = await ctx.db.client.findMany({
+    where: excludeId ? { id: { not: excludeId } } : {},
+    orderBy: { legalName: "asc" },
+    select: { id: true, legalName: true, ice: true, city: true, searchKey: true },
+  });
+
+  return rows.map((row) => ({
+    id: row.id,
+    label: row.legalName,
+    hint: [row.ice, row.city].filter(Boolean).join(" · ") || undefined,
+    searchKey: row.searchKey,
+  }));
+}
+
+/**
  * Vérifie l'apporteur d'un dossier.
  *
  * L'identifiant vient du navigateur : il est relu à travers le client Prisma du
@@ -468,15 +484,16 @@ export async function createClient(ctx: AuthContext, input: unknown) {
   const managerCin = ctx.cabinet.cndpMode === "authorization" ? data.managerCin : undefined;
 
   const { activities, registrations, partners, employees, articles, ...scalars } = data;
+  const columns = {
+    ...scalars,
+    ...listColumns({ activities, registrations, partners, employees, articles }, ctx.cabinet.cndpMode),
+    managerCin,
+  };
   const created = await ctx.db.client.create({
     data: {
-      ...scalars,
-      ...listColumns(
-        { activities, registrations, partners, employees, articles },
-        ctx.cabinet.cndpMode,
-      ),
+      ...columns,
+      searchKey: clientSearchKey(columns),
       cabinetId: ctx.cabinet.id,
-      managerCin,
       tags: "[]",
     },
   });
@@ -514,15 +531,18 @@ export async function updateClient(ctx: AuthContext, clientId: string, input: un
   await assertReferrer(ctx, data.referredById, clientId);
 
   const { activities, registrations, partners, employees, articles, ...scalars } = data;
+  const columns = {
+    ...scalars,
+    ...listColumns({ activities, registrations, partners, employees, articles }, ctx.cabinet.cndpMode),
+  };
+
+  // La clé est reconstruite sur la ligne telle qu'elle sera, valeurs conservées
+  // comprises : la recomposer sur les seuls champs envoyés l'aurait vidée de
+  // tout ce que la modification ne touchait pas.
+  const before = await ctx.db.client.findFirst({ where: { id: clientId } });
   const updated = await ctx.db.client.update({
     where: { id: clientId },
-    data: {
-      ...scalars,
-      ...listColumns(
-        { activities, registrations, partners, employees, articles },
-        ctx.cabinet.cndpMode,
-      ),
-    },
+    data: { ...columns, searchKey: clientSearchKey({ ...before, ...columns }) },
   });
 
   await recordAudit({

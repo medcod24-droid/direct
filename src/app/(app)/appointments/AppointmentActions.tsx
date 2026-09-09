@@ -65,7 +65,7 @@ export function AppointmentCard({
         (overdue ? "border-warn bg-surface2" : "border-line bg-surface")
       }
     >
-      <div className="flex flex-wrap items-start justify-between gap-2">
+      <div className="grid gap-2">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <span className="tabular text-sm font-medium">
@@ -99,8 +99,10 @@ export function AppointmentCard({
           ) : null}
         </div>
 
+        {/* Les actions occupent leur propre ligne et débordent en dessous : dans le
+            panneau latéral, cinq boutons ne tiennent pas à côté du texte. */}
         {canManage ? (
-          <div className="flex shrink-0 flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1 border-t border-line pt-2">
             {appointment.status === "scheduled" ? (
               <Button variant="primary" size="sm" onClick={() => setCompleting(true)}>
                 Valider

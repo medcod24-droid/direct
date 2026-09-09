@@ -13,9 +13,11 @@ import {
   WEEKDAY_LABELS,
 } from "@/lib/calendar/month";
 import { listAppointments, listAwaitingReview } from "@/server/services/appointments";
-import { listReferrers } from "@/server/services/clients";
+import { buildSearchKey } from "@/lib/search";
+import { listClientOptions } from "@/server/services/clients";
 import { listMembers } from "@/server/services/members";
-import { Alert, Button, Card, EmptyState, Field, PageHeader, Select } from "@/components/ui";
+import { Alert, Button, Card, EmptyState, Field, PageHeader, SearchPicker, Select } from "@/components/ui";
+import type { PickerOption } from "@/components/ui";
 import { AppointmentCard, type AppointmentItem } from "./AppointmentActions";
 import { AppointmentForm } from "./AppointmentForm";
 
@@ -60,16 +62,20 @@ export default async function AppointmentsPage({ searchParams }: { searchParams:
   const [appointments, awaiting, clientRows, members] = await Promise.all([
     listAppointments(ctx, { from, to, clientId, assignedToId, status }),
     listAwaitingReview(ctx, now),
-    // Liste nue des dossiers : le sélecteur n'a besoin que du nom, et `listClients`
-    // calculerait la santé de chacun pour rien.
-    listReferrers(ctx),
+    // Le champ de recherche filtre dans le navigateur : il reçoit la clé de
+    // recherche de chaque dossier, pas seulement son nom.
+    listClientOptions(ctx),
     ctx.can("member.view") ? listMembers(ctx) : Promise.resolve([]),
   ]);
 
-  const clients = clientRows.map((client) => ({ id: client.id, label: client.legalName }));
+  const clients = clientRows;
   const staff = members
     .filter((member) => member.role !== "client")
-    .map((member) => ({ id: member.userId, label: member.name }));
+    .map((member) => ({
+      id: member.userId,
+      label: member.name,
+      searchKey: buildSearchKey(member.name, member.email),
+    }));
 
   const byDay = new Map<string, AppointmentItem[]>();
   for (const appointment of appointments) {
@@ -135,14 +141,14 @@ export default async function AppointmentsPage({ searchParams }: { searchParams:
         <form className="grid gap-3 sm:grid-cols-4">
           <input type="hidden" name="month" value={formatMonth(selected.year, selected.month)} />
           <Field label="Client" htmlFor="client">
-            <Select id="client" name="client" defaultValue={clientId ?? ""}>
-              <option value="">Tous les dossiers</option>
-              {clients.map((client) => (
-                <option key={client.id} value={client.id}>
-                  {client.label}
-                </option>
-              ))}
-            </Select>
+            <SearchPicker
+              id="client"
+              name="client"
+              options={clients}
+              defaultValue={clientId ?? ""}
+              emptyLabel="Tous les dossiers"
+              placeholder="Tous les dossiers"
+            />
           </Field>
           <Field label="Collaborateur" htmlFor="staff">
             <Select id="staff" name="staff" defaultValue={assignedToId ?? ""}>
@@ -304,8 +310,8 @@ function AppointmentList({
   empty,
 }: {
   items: AppointmentItem[];
-  clients: { id: string; label: string }[];
-  staff: { id: string; label: string }[];
+  clients: PickerOption[];
+  staff: PickerOption[];
   canManage: boolean;
   now: number;
   empty: string;

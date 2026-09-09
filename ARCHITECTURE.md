@@ -99,6 +99,34 @@ Deux cas propres à la personne physique élargissent la fiche :
   un bien donné en location n'y est pas soumis mais produit des revenus fonciers imposables à
   l'IR, et le secondaire ne bénéficie d'aucun abattement.
 
+### Recherche
+
+`contains` de Prisma est sensible à la casse sur SQLite, et `mode: "insensitive"` n'existe que
+sur PostgreSQL : chercher « atlas » ne trouvait pas « Atlas Distribution », et le comptable en
+concluait que la recherche ne marchait pas. Faire dépendre le comportement du moteur aurait
+donné un produit qui se comporte autrement en test qu'en production.
+
+Chaque table cherchable porte donc une colonne **`searchKey`** : le texte de ses champs utiles,
+normalisé une fois à l'écriture — minuscules, accents retirés, espaces resserrés. La requête
+subit la même normalisation, et un simple `contains` suffit alors partout, à l'identique. Chaque
+mot de la saisie doit se retrouver, dans n'importe quel ordre.
+
+Pour un dossier, la clé couvre le nom, l'ICE, l'IF, le RC et son tribunal, les numéros de taxe
+professionnelle et de succursale, la CIN, la CNSS, le téléphone, l'e-mail, la ville — et le
+contenu des listes JSON, si bien qu'un dossier se retrouve par le nom d'un gérant ou la CIN d'un
+associé.
+
+**Les clés sont définies dans `lib/search.ts`, et nulle part ailleurs** : le service et le
+remplissage de la graine s'en servent tous les deux, et deux définitions produisaient deux clés
+— c'est ce qui rendait une CIN d'associé introuvable après remplissage alors qu'elle l'était
+après modification. La graine recalcule les clés à chaque déploiement et n'écrit que celles qui
+ont changé : une clé périmée est aussi trompeuse qu'une clé absente.
+
+`SearchPicker` est le pendant à l'écran : un champ qui cherche au lieu d'une liste déroulante de
+plusieurs centaines de lignes. Le filtrage se fait dans le navigateur, sur la même clé et les
+mêmes termes, et les résultats sont classés — un nom qui **commence** par la saisie passe avant
+un nom qui la contient, lui-même avant une simple correspondance de numéro.
+
 ### Rendez-vous
 
 `Appointment` porte le planning du cabinet : objet, client attendu, horaire, durée, lieu,

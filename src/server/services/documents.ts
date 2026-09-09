@@ -6,6 +6,7 @@ import { assertWithinLimit } from "@/lib/billing/entitlements";
 import { platformDb } from "@/lib/db/tenant";
 import { NotFoundError, ValidationError } from "@/lib/errors";
 import { deleteFile, fileExists, putFile, readFileStream } from "@/lib/storage";
+import { documentSearchKey, normalizeSearch } from "@/lib/search";
 import { searchSchema } from "@/lib/validation/schemas";
 
 const uploadSchema = z.object({
@@ -55,6 +56,7 @@ export async function uploadDocument(ctx: AuthContext, input: unknown, file: Upl
         categoryId: data.categoryId ?? null,
         fieldKey: data.fieldKey ?? null,
         filename: stored.filename,
+        searchKey: documentSearchKey({ filename: stored.filename, notes: data.notes }),
         storageKey: stored.storageKey,
         mimeType: stored.mimeType,
         size: stored.size,
@@ -123,7 +125,12 @@ export async function listDocuments(ctx: AuthContext, input: DocumentFilters = {
   if (filters?.clientId) where.clientId = filters.clientId;
   if (filters?.categoryId) where.categoryId = filters.categoryId;
   if (filters?.status && filters.status !== "all") where.status = filters.status;
-  if (q) where.filename = { contains: q };
+  if (q) {
+    where.AND = normalizeSearch(q)
+      .split(" ")
+      .filter(Boolean)
+      .map((term) => ({ searchKey: { contains: term } }));
+  }
 
   const [total, items] = await Promise.all([
     ctx.db.document.count({ where }),

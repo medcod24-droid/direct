@@ -1,5 +1,5 @@
 import { requireStaff } from "@/lib/authz/guard";
-import { listReferrers } from "@/server/services/clients";
+import { listClientOptions } from "@/server/services/clients";
 import { PageHeader } from "@/components/ui";
 import { NewClientForm } from "./NewClientForm";
 
@@ -7,7 +7,7 @@ export const metadata = { title: "Nouveau dossier — Direct Conseil" };
 
 export default async function NewClientPage() {
   const ctx = await requireStaff("client.create");
-  const referrers = await listReferrers(ctx);
+  const referrers = await listClientOptions(ctx);
   return (
     <div className="grid gap-5 max-w-3xl">
       <PageHeader

@@ -1,4 +1,5 @@
 import { recordAudit } from "@/lib/audit";
+import { deadlineSearchKey, normalizeSearch } from "@/lib/search";
 import type { AuthContext } from "@/lib/authz/guard";
 import { requireClient } from "@/lib/authz/guard";
 import {
@@ -110,6 +111,7 @@ export async function generateForYear(
           ruleId: g.ruleId ?? null,
           label: g.label,
           periodLabel: g.periodLabel,
+          searchKey: deadlineSearchKey(g),
           dueDate: g.dueDate,
           managedBy: g.managedBy,
           status: "upcoming",
@@ -159,16 +161,15 @@ export async function listDeadlines(
   }
   const q = filters.q?.trim();
   if (q) {
-    // Recherche sur le dossier et sur l'intitulé de l'obligation. Comme ailleurs dans le
-    // produit, `contains` reste sensible à la casse sur SQLite (voir README) ; en
-    // PostgreSQL, un index trigram sur `Client.legalName` couvre ce filtre.
-    where.OR = [
-      { client: { legalName: { contains: q } } },
-      { client: { tradeName: { contains: q } } },
-      { client: { ice: { contains: q } } },
-      { label: { contains: q } },
-      { periodLabel: { contains: q } },
-    ];
+    // Chaque mot doit se retrouver, dans l'échéance ou dans son dossier :
+    // « tva atlas » trouve la TVA d'Atlas Distribution. Les deux clés sont
+    // normalisées à l'écriture, la casse et les accents ne décident donc de rien.
+    where.AND = normalizeSearch(q)
+      .split(" ")
+      .filter(Boolean)
+      .map((term) => ({
+        OR: [{ searchKey: { contains: term } }, { client: { searchKey: { contains: term } } }],
+      }));
   }
   if (filters.from || filters.to) {
     where.dueDate = {

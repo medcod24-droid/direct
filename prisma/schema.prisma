@@ -315,6 +315,9 @@ model Client {
   /// La relation reste dans le cabinet : c'est le client Prisma étendu qui le garantit.
   referredById String?
 
+  /// Texte normalisé des champs cherchables : voir lib/search.ts.
+  searchKey String @default("")
+
   status       String  @default("active") // prospect | onboarding | active | suspended | terminated | archived
   activityState String @default("running") // running | dormant | liquidation | struck_off
   priority     String  @default("normal") // low | normal | high
@@ -346,6 +349,7 @@ model Client {
   updatedAt DateTime @updatedAt
 
   @@index([cabinetId, status])
+  @@index([cabinetId, searchKey])
   @@index([cabinetId, referredById])
   @@index([cabinetId, legalName])
   @@index([cabinetId, ice])
@@ -503,6 +507,9 @@ model Document {
   checksum   String
   version    Int     @default(1)
   replacesId String?
+
+  /// Texte normalisé pour la recherche : nom du fichier et notes.
+  searchKey String @default("")
 
   /// Champ de la fiche que ce document justifie : « cin », « ice », « rc:<id> »…
   /// Null pour une pièce ordinaire du dossier permanent. Un seul document actif
@@ -669,6 +676,8 @@ model Deadline {
   notes           String?
   /// Journal du « mode panne » (JSON) : tentatives horodatées, messages d'erreur
   outageLog       String?
+  /// Texte normalisé pour la recherche : libellé et période.
+  searchKey       String @default("")
   penaltyEstimate Int? // centimes de dirham
 
   cabinet Cabinet       @relation(fields: [cabinetId], references: [id], onDelete: Cascade)

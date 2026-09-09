@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Card, Field, Input, Select } from "@/components/ui";
+import { Card, Field, Input, SearchPicker, Select } from "@/components/ui";
+import type { PickerOption } from "@/components/ui";
 import { subtypesFor, type ClientKind } from "@/lib/domain/enums";
 import { subtypeLabel } from "@/lib/domain/labels";
 import { Articles } from "./Articles";
@@ -28,7 +29,7 @@ export type ClientFieldsProps = {
   /** Justificatif déjà déposé, par champ. */
   scans?: Record<string, ScanInfo>;
   /** Autres dossiers du cabinet, pour désigner celui qui a apporté celui-ci. */
-  referrers?: { id: string; legalName: string }[];
+  referrers?: PickerOption[];
 };
 
 /**
@@ -490,24 +491,19 @@ export function ClientFields({
             hint={
               referrers.length === 0
                 ? "Aucun autre dossier au cabinet pour l'instant."
-                : "Un autre dossier du cabinet."
+                : "Cherchez par nom, ICE, RC, CIN ou téléphone."
             }
             error={fieldError("referredById")}
           >
-            <Select
-              key={value("referredById")}
+            <SearchPicker
               id="referredById"
               name="referredById"
+              options={referrers}
               defaultValue={value("referredById")}
               disabled={referrers.length === 0}
-            >
-              <option value="">—</option>
-              {referrers.map((referrer) => (
-                <option key={referrer.id} value={referrer.id}>
-                  {referrer.legalName}
-                </option>
-              ))}
-            </Select>
+              emptyLabel="Aucun apporteur"
+              placeholder="Nom, ICE, RC, CIN, téléphone…"
+            />
           </Field>
         </div>
       </Card>

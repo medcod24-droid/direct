@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState } from "react";
 import { updateClientAction, type ActionState } from "@/app/actions/app";
 import { Alert, Button } from "@/components/ui";
+import type { PickerOption } from "@/components/ui";
 import { ClientFields } from "../../ClientFields";
 import type { ScanInfo } from "../../FieldScan";
 
@@ -27,7 +28,7 @@ export function EditClientForm({
   cndpMode: string;
   current: Record<string, string>;
   scans: Record<string, ScanInfo>;
-  referrers: { id: string; legalName: string }[];
+  referrers: PickerOption[];
 }) {
   const action = updateClientAction.bind(null, clientId);
   const [state, formAction, pending] = useActionState(action, initial);

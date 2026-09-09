@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { createClientAction, type ActionState } from "@/app/actions/app";
 import { Alert, Button } from "@/components/ui";
+import type { PickerOption } from "@/components/ui";
 import { ClientFields } from "../ClientFields";
 
 const initial: ActionState = {};
@@ -12,7 +13,7 @@ export function NewClientForm({
   referrers,
 }: {
   cndpMode: string;
-  referrers: { id: string; legalName: string }[];
+  referrers: PickerOption[];
 }) {
   const [state, action, pending] = useActionState(createClientAction, initial);
 

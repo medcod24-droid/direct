@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import type { AuthContext } from "@/lib/authz/guard";
 import { can } from "@/lib/authz/permissions";
 import { tenantDb } from "@/lib/db/tenant";
-import { createClient, updateClient } from "@/server/services/clients";
+import { createClient, listClients, updateClient } from "@/server/services/clients";
 import { makeCabinet, makeUser } from "../factories";
 
 /**
@@ -363,5 +363,53 @@ describe("fiche client scindée", () => {
     expect(partners.every((p) => p.id)).toBe(true);
     expect(new Set(partners.map((p) => p.id)).size).toBe(2);
     expect(partners[0]?.address).toBe("Casablanca");
+  });
+
+  it("retrouve un dossier quelle que soit la casse, et par ses numéros", async () => {
+    await createClient(authorized, {
+      ...BASE,
+      kind: "company",
+      subtype: "sarl",
+      legalName: "Meknès Textile SARL",
+      ice: "003344556000011",
+      phone: "0535112233",
+      city: "Meknès",
+      registrations: [{ number: "RC-9001", court: "Meknès", taxProfNos: [{ value: "TP-4242" }] }],
+    });
+
+    // La casse et les accents ne décident de rien.
+    for (const q of ["meknes", "MEKNÈS TEXTILE", "textile"]) {
+      const found = await listClients(authorized, { q });
+      expect(found.items.some((row) => row.legalName === "Meknès Textile SARL")).toBe(true);
+    }
+
+    // Les numéros sont dans la même clé : ICE, téléphone, RC, taxe professionnelle.
+    for (const q of ["003344556000011", "0535112233", "RC-9001", "tp-4242"]) {
+      const found = await listClients(authorized, { q });
+      expect(found.items.some((row) => row.legalName === "Meknès Textile SARL")).toBe(true);
+    }
+  });
+
+  it("tient la clé de recherche à jour après modification", async () => {
+    const created = await createClient(authorized, {
+      ...BASE,
+      kind: "company",
+      subtype: "sarl",
+      legalName: "Ancien nom SARL",
+      ice: "009988776000055",
+    });
+
+    await updateClient(authorized, created.id, {
+      kind: "company",
+      subtype: "sarl",
+      legalName: "Nouveau nom SARL",
+    });
+
+    const parNom = await listClients(authorized, { q: "nouveau nom" });
+    expect(parNom.items.some((row) => row.id === created.id)).toBe(true);
+
+    // Un champ que la modification ne touchait pas reste cherchable.
+    const parIce = await listClients(authorized, { q: "009988776000055" });
+    expect(parIce.items.some((row) => row.id === created.id)).toBe(true);
   });
 });

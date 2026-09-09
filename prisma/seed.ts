@@ -8,6 +8,7 @@
  * de s'y fier. Ce statut est visible dans l'application, jamais masqué.
  */
 import { PrismaClient } from "@prisma/client";
+import { clientSearchKey, deadlineSearchKey, documentSearchKey } from "../src/lib/search";
 import bcrypt from "bcryptjs";
 
 const db = new PrismaClient();
@@ -482,7 +483,49 @@ async function seedDemoInvoices(cabinetId: string) {
   }
 }
 
+/**
+ * Remet les clés de recherche à jour.
+ *
+ * Les lignes créées avant l'introduction de `searchKey` seraient restées
+ * introuvables jusqu'à leur prochaine modification. Le recalcul porte sur toutes
+ * les lignes, pas seulement sur les clés vides : la définition d'une clé peut
+ * changer — c'est déjà arrivé —, et une clé périmée est aussi trompeuse qu'une
+ * clé absente. Seules les lignes dont la clé diffère réellement sont écrites, et
+ * la graine tourne déjà à chaque déploiement.
+ */
+async function backfillSearchKeys() {
+  let filled = 0;
+
+  for (const client of await db.client.findMany()) {
+    const searchKey = clientSearchKey(client as unknown as Record<string, unknown>);
+    if (searchKey === client.searchKey) continue;
+    await db.client.update({ where: { id: client.id }, data: { searchKey } });
+    filled += 1;
+  }
+
+  for (const deadline of await db.deadline.findMany({
+    select: { id: true, label: true, periodLabel: true, searchKey: true },
+  })) {
+    const searchKey = deadlineSearchKey(deadline);
+    if (searchKey === deadline.searchKey) continue;
+    await db.deadline.update({ where: { id: deadline.id }, data: { searchKey } });
+    filled += 1;
+  }
+
+  for (const document of await db.document.findMany({
+    select: { id: true, filename: true, notes: true, searchKey: true },
+  })) {
+    const searchKey = documentSearchKey(document);
+    if (searchKey === document.searchKey) continue;
+    await db.document.update({ where: { id: document.id }, data: { searchKey } });
+    filled += 1;
+  }
+
+  if (filled > 0) console.log(`Clés de recherche mises à jour : ${filled}`);
+}
+
 main()
+  .then(() => backfillSearchKeys())
   .then(() => db.$disconnect())
   .catch(async (error) => {
     console.error(error);

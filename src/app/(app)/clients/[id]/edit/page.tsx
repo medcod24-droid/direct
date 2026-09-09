@@ -1,5 +1,5 @@
 import { requireStaff } from "@/lib/authz/guard";
-import { getClientOverview, listReferrers } from "@/server/services/clients";
+import { getClientOverview, listClientOptions } from "@/server/services/clients";
 import { fieldScans } from "@/server/services/documents";
 import { PageHeader } from "@/components/ui";
 import { EditClientForm } from "./EditClientForm";
@@ -175,7 +175,7 @@ export default async function EditClientPage({
   const [{ client }, scans, referrers] = await Promise.all([
     getClientOverview(ctx, id),
     fieldScans(ctx, id),
-    listReferrers(ctx, id),
+    listClientOptions(ctx, id),
   ]);
 
   return (

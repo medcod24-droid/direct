@@ -6,7 +6,8 @@ import {
   updateAppointmentAction,
   type ActionState,
 } from "@/app/actions/app";
-import { Alert, Button, Field, Input, Modal, Select, Textarea } from "@/components/ui";
+import { Alert, Button, Field, Input, Modal, SearchPicker, Select, Textarea } from "@/components/ui";
+import type { PickerOption } from "@/components/ui";
 import { wallInputValue } from "@/lib/calendar/month";
 
 export type AppointmentDraft = {
@@ -21,7 +22,7 @@ export type AppointmentDraft = {
   assignedToId: string | null;
 };
 
-export type Option = { id: string; label: string };
+export type Option = PickerOption;
 
 const initial: ActionState = {};
 
@@ -107,19 +108,14 @@ export function AppointmentForm({
                 />
               </>
             ) : (
-              <Select
+              <SearchPicker
                 id="clientId"
                 name="clientId"
                 required
+                options={clients}
                 defaultValue={value("clientId", defaultClientId ?? "")}
-              >
-                <option value="">Choisir un dossier…</option>
-                {clients.map((client) => (
-                  <option key={client.id} value={client.id}>
-                    {client.label}
-                  </option>
-                ))}
-              </Select>
+                placeholder="Nom, ICE, RC, CIN, téléphone…"
+              />
             )}
           </Field>
 
