@@ -1,16 +1,20 @@
 import Link from "next/link";
 import { requireStaff } from "@/lib/authz/guard";
-import { formatDate, formatMad, relativeDays } from "@/lib/format";
+import { daysUntil, formatDate, relativeDays } from "@/lib/format";
 import { PRIORITY_LABELS } from "@/lib/domain/labels";
 import { dayKey, endOf, wallTime } from "@/lib/calendar/month";
 import { listAppointments } from "@/server/services/appointments";
-import { listAwaitingApproval, listMyTodos } from "@/server/services/todos";
+import { listMyTodos, listTodos } from "@/server/services/todos";
+import { listStaffOptions } from "@/server/services/members";
+import { listClientOptions } from "@/server/services/clients";
+import { TodoCard } from "../todos/TodoCard";
 import {
   getCabinetDashboard,
   getClientsNeedingAttention,
+  getOverdueThisMonth,
   getUrgentTasks,
 } from "@/server/services/dashboard";
-import { Alert, Badge, Card, EmptyState, PageHeader, StatTile } from "@/components/ui";
+import { Alert, Badge, Card, EmptyState, PageHeader } from "@/components/ui";
 
 export const metadata = { title: "Tableau de bord — Direct Conseil" };
 export const dynamic = "force-dynamic";
@@ -23,17 +27,51 @@ export default async function DashboardPage() {
   const dayStart = new Date(`${dayKey(now)}T00:00:00Z`);
   const dayEnd = new Date(dayStart.getTime() + 86_400_000);
 
-  const [data, attention, urgentTasks, todayAppointments, myTodos, todosToApprove] =
-    await Promise.all([
+  const [
+    data,
+    overdue,
+    attention,
+    urgentTasks,
+    todayAppointments,
+    myTodos,
+    teamTodos,
+    staff,
+    todoClients,
+  ] = await Promise.all([
       getCabinetDashboard(ctx),
+      getOverdueThisMonth(ctx, now),
       getClientsNeedingAttention(ctx),
       ctx.can("task.view") ? getUrgentTasks(ctx) : Promise.resolve([]),
       ctx.can("appointment.view")
         ? listAppointments(ctx, { from: dayStart, to: dayEnd })
         : Promise.resolve([]),
       ctx.can("todo.view") ? listMyTodos(ctx) : Promise.resolve([]),
-      listAwaitingApproval(ctx),
+      // `listTodos` borne déjà la lecture : l'administration voit toute
+      // l'équipe, un collaborateur seulement ce qui lui est confié.
+      ctx.can("todo.manage") ? listTodos(ctx) : Promise.resolve([]),
+      // Le formulaire de modification, ouvert depuis une carte, a besoin des
+      // listes de choix.
+      ctx.can("todo.manage") ? listStaffOptions(ctx) : Promise.resolve([]),
+      ctx.can("todo.manage") ? listClientOptions(ctx) : Promise.resolve([]),
     ]);
+
+  const canManageTodos = ctx.can("todo.manage");
+  // Regroupement par collaborateur, pour valider sans quitter le tableau de bord.
+  const todoGroups = new Map<string, typeof teamTodos>();
+  for (const todo of teamTodos) {
+    if (todo.status === "approved") continue;
+    const list = todoGroups.get(todo.assigneeId);
+    if (list) list.push(todo);
+    else todoGroups.set(todo.assigneeId, [todo]);
+  }
+  const groups = [...todoGroups.entries()]
+    .map(([assigneeId, items]) => ({
+      assigneeId,
+      name: items[0]?.assigneeName ?? "—",
+      items,
+      awaiting: items.filter((item) => item.status === "submitted").length,
+    }))
+    .sort((a, b) => b.awaiting - a.awaiting || a.name.localeCompare(b.name, "fr"));
 
   const trial =
     data.entitlements?.status === "trialing" && data.entitlements.trialEndsAt
@@ -44,7 +82,7 @@ export default async function DashboardPage() {
     <div className="grid gap-6">
       <PageHeader
         title={`Bonjour, ${ctx.user.name.split(" ")[0]}`}
-        subtitle={`${data.clients.active} dossiers actifs · ${data.deadlines.overdue} échéance(s) en retard`}
+        subtitle={`${data.clients.active} dossiers actifs · ${overdue.total} échéance(s) en retard ce mois-ci`}
       />
 
       {trial ? (
@@ -62,35 +100,59 @@ export default async function DashboardPage() {
         </Alert>
       ))}
 
-      <section className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-        <StatTile
-          label="Échéances en retard"
-          value={data.deadlines.overdue}
-          tone={data.deadlines.overdue > 0 ? "danger" : "success"}
-          hint="Gérées par le cabinet, sans preuve de dépôt"
-          href="/deadlines?status=overdue"
-        />
-        <StatTile
-          label="Échéances cette semaine"
-          value={data.deadlines.week + data.deadlines.today}
-          tone={data.deadlines.today > 0 ? "warning" : "neutral"}
-          hint={`${data.deadlines.today} aujourd'hui`}
-          href="/deadlines"
-        />
-        <StatTile
-          label="Pièces à examiner"
-          value={data.requests.toReview}
-          hint={`${data.requests.pending} en attente chez les clients`}
-          href="/requests"
-        />
-        <StatTile
-          label="Honoraires impayés"
-          value={formatMad(data.invoices.outstanding)}
-          tone={data.invoices.overdueCount > 0 ? "warning" : "neutral"}
-          hint={`${data.invoices.overdueCount} facture(s) en retard`}
-          href="/invoices"
-        />
-      </section>
+
+      <Card
+        title="Échéances en retard ce mois-ci"
+        description="Gérées par le cabinet, sans preuve de dépôt. Le mois en cours seulement — l'année entière ne dit rien de ce qu'il y a à faire."
+        action={
+          <Link
+            href="/deadlines?status=overdue"
+            className="text-sm text-accent underline underline-offset-2"
+          >
+            Toutes les échéances
+          </Link>
+        }
+      >
+        {overdue.items.length === 0 ? (
+          <EmptyState
+            title="Rien en retard ce mois-ci"
+            description="Les obligations du mois gérées par le cabinet sont à jour."
+          />
+        ) : (
+          <>
+            <ul className="divide-y divide-line">
+              {overdue.items.map((deadline) => (
+                <li key={deadline.id} className="flex items-baseline justify-between gap-3 py-2.5">
+                  <div className="min-w-0">
+                    <div className="text-sm">{deadline.label}</div>
+                    <div className="text-xs text-muted">
+                      <Link
+                        href={`/clients/${deadline.client.id}`}
+                        className="underline underline-offset-2"
+                      >
+                        {deadline.client.legalName}
+                      </Link>
+                      {" · "}
+                      {deadline.periodLabel}
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-end text-xs">
+                    <div className="font-medium text-danger tabular">
+                      {formatDate(deadline.dueDate)}
+                    </div>
+                    <div className="text-danger">{relativeDays(deadline.dueDate)}</div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            {overdue.total > overdue.items.length ? (
+              <p className="mt-2 text-xs text-muted">
+                {overdue.total - overdue.items.length} autre(s) en retard ce mois-ci.
+              </p>
+            ) : null}
+          </>
+        )}
+      </Card>
 
       {myTodos.length > 0 ? (
         <Card
@@ -122,7 +184,7 @@ export default async function DashboardPage() {
                     <>
                       <div
                         className={
-                          todo.dueDate.getTime() < Date.now()
+                          (daysUntil(todo.dueDate) ?? 0) < 0
                             ? "font-medium text-danger"
                             : "text-ink2"
                         }
@@ -141,36 +203,56 @@ export default async function DashboardPage() {
         </Card>
       ) : null}
 
-      {todosToApprove.length > 0 ? (
+      {canManageTodos ? (
         <Card
-          title="Tâches rendues, à confirmer"
-          description="L'équipe a terminé et laissé une note. Lisez-la avant de confirmer."
+          title="To-do de l'équipe"
+          description="Ce qui reste à faire, par collaborateur. Une tâche rendue attend votre confirmation."
           action={
             <Link href="/todos" className="text-sm text-accent underline underline-offset-2">
               Ouvrir la to-do
             </Link>
           }
         >
-          <ul className="divide-y divide-line">
-            {todosToApprove.map((todo) => (
-              <li key={todo.id} className="py-2.5">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge tone="amber">À confirmer</Badge>
-                  <span className="text-sm">{todo.title}</span>
-                  <span className="text-xs text-muted">— {todo.assigneeName}</span>
+          {groups.length === 0 ? (
+            <EmptyState
+              title="Rien en cours"
+              description="Tout ce qui a été confié est confirmé. Ouvrez la to-do pour distribuer le travail du jour."
+            />
+          ) : (
+          <div className="grid gap-4">
+            {groups.map((group) => (
+              <div key={group.assigneeId}>
+                <div className="mb-2 flex items-baseline gap-2">
+                  <Link
+                    href={`/team/${group.assigneeId}`}
+                    className="text-sm font-medium underline underline-offset-2"
+                  >
+                    {group.name}
+                  </Link>
+                  {group.awaiting > 0 ? (
+                    <Badge tone="amber">{group.awaiting} à confirmer</Badge>
+                  ) : null}
                 </div>
-                {todo.submittedNote ? (
-                  <p className="mt-0.5 whitespace-pre-line text-xs text-ink2">
-                    {todo.submittedNote}
-                  </p>
-                ) : null}
-              </li>
+                <div className="grid gap-2">
+                  {group.items.map((todo) => (
+                    <TodoCard
+                      key={todo.id}
+                      todo={todo}
+                      canManage
+                      isMine={todo.assigneeId === ctx.user.id}
+                      staff={staff}
+                      clients={todoClients}
+                    />
+                  ))}
+                </div>
+              </div>
             ))}
-          </ul>
+          </div>
+          )}
         </Card>
       ) : null}
 
-      {todayAppointments.length > 0 ? (
+      {ctx.can("appointment.view") ? (
         <Card
           title="Rendez-vous du jour"
           description="Qui vient aujourd'hui, et ce qu'il faut avoir sorti."
@@ -180,6 +262,12 @@ export default async function DashboardPage() {
             </Link>
           }
         >
+          {todayAppointments.length === 0 ? (
+            <EmptyState
+              title="Aucun rendez-vous aujourd'hui"
+              description="Le calendrier reste ouvert pour la suite du mois."
+            />
+          ) : (
           <ul className="divide-y divide-line">
             {todayAppointments.map((appointment) => (
               <li key={appointment.id} className="flex items-baseline justify-between gap-3 py-2.5">
@@ -212,6 +300,7 @@ export default async function DashboardPage() {
               </li>
             ))}
           </ul>
+          )}
         </Card>
       ) : null}
 

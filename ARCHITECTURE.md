@@ -99,6 +99,20 @@ Deux cas propres à la personne physique élargissent la fiche :
   un bien donné en location n'y est pas soumis mais produit des revenus fonciers imposables à
   l'IR, et le secondaire ne bénéficie d'aucun abattement.
 
+### Tableau de bord
+
+Il ouvre sur trois choses, dans cet ordre : les **échéances en retard du mois en cours**, la
+to-do — la sienne, puis celle de l'équipe pour qui la distribue —, et les **rendez-vous du
+jour**. Les trois sections restent affichées même vides : leur disparition se lirait comme un
+oubli plutôt que comme « rien à faire ».
+
+Le retard est borné au mois **volontairement**. Un calendrier généré pour l'année affiche des
+dizaines d'obligations déjà passées dès sa création : « 81 en retard » ne disait rien de ce qu'il
+y a à faire, et un compteur qu'on ne peut pas ramener à zéro cesse d'être lu.
+
+Les tâches de l'équipe s'y confirment sans quitter la page — c'est le geste le plus fréquent de
+l'administration.
+
 ### To-do de l'équipe
 
 `Todo` est le travail que l'administration confie à un collaborateur, distinct de `Task` qui

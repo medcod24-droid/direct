@@ -221,3 +221,38 @@ export async function namesFor(userIds: (string | null)[]): Promise<Map<string, 
   });
   return new Map(users.map((user) => [user.id, user.name]));
 }
+
+/**
+ * Échéances en retard du **mois en cours**.
+ *
+ * Le compte annuel n'aidait pas : un calendrier généré pour l'année affiche des
+ * dizaines d'obligations déjà passées dès sa création, et « 81 en retard » ne
+ * dit rien de ce qu'il y a à faire cette semaine. Le mois est l'horizon de
+ * travail réel d'un cabinet.
+ *
+ * Seules les obligations gérées par le cabinet comptent : ce qui relève du
+ * client ou d'un tiers n'est pas son retard.
+ */
+export async function getOverdueThisMonth(ctx: AuthContext, now = new Date(), limit = 25) {
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+
+  const where = {
+    managedBy: "cabinet",
+    // Le retard se déduit de la date, il n'est pas stocké : ces trois statuts
+    // sont ceux d'une obligation non soldée.
+    status: { in: ["upcoming", "in_progress", "declared"] },
+    dueDate: { gte: monthStart, lt: now },
+  };
+
+  const [total, items] = await Promise.all([
+    ctx.db.deadline.count({ where }),
+    ctx.db.deadline.findMany({
+      where,
+      orderBy: { dueDate: "asc" },
+      take: limit,
+      include: { client: { select: { id: true, legalName: true } } },
+    }),
+  ]);
+
+  return { total, items, since: monthStart };
+}

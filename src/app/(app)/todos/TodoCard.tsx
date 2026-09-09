@@ -24,7 +24,7 @@ import {
   type PickerOption,
 } from "@/components/ui";
 import { PRIORITY_LABELS } from "@/lib/domain/labels";
-import { formatDate, formatDateTime, relativeDays } from "@/lib/format";
+import { daysUntil, formatDate, formatDateTime, relativeDays } from "@/lib/format";
 
 export type TodoItem = {
   id: string;
@@ -77,8 +77,10 @@ export function TodoCard({
   const [returning, setReturning] = useState(false);
   const [editing, setEditing] = useState(false);
   const state = STATUS[todo.status] ?? STATUS.assigned;
+  // Le retard se compte en jours, pas en millisecondes : une tâche due
+  // aujourd'hui est enregistrée à minuit et paraîtrait déjà en retard.
   const overdue =
-    todo.dueDate !== null && todo.status !== "approved" && todo.dueDate.getTime() < Date.now();
+    todo.dueDate !== null && todo.status !== "approved" && (daysUntil(todo.dueDate) ?? 0) < 0;
 
   return (
     <div
