@@ -5,6 +5,7 @@ import {
   CLIENT_STATUSES,
   CLIENT_SUBTYPES,
   MANAGED_BY,
+  PROPERTY_USAGES,
   subtypesFor,
   PRIORITIES,
   ROLES,
@@ -161,9 +162,26 @@ export const partnerSchema = z.object({
   phone: optionalText(40),
 });
 
+/**
+ * Article d'imposition d'un particulier : un par bien imposé.
+ *
+ * Rien n'est exigé ligne par ligne — le comptable saisit ce qu'il a et complète
+ * plus tard — mais une ligne entièrement vide n'est pas conservée : elle est
+ * écartée à la lecture du formulaire.
+ */
+export const articleSchema = z.object({
+  id: rowIdSchema,
+  number: optionalText(40),
+  designation: optionalText(120),
+  address: optionalText(300),
+  usage: z.enum(PROPERTY_USAGES).default("principale"),
+});
+
 export const clientSchema = z.object({
   kind: z.enum(CLIENT_KINDS),
   subtype: z.enum(CLIENT_SUBTYPES),
+  /** Nom de la forme quand `subtype = "autre"`. */
+  subtypeOther: optionalText(80),
   legalName: trimmed(200).min(2, "Raison sociale ou nom requis."),
   tradeName: optionalText(200),
   ice: iceSchema,
@@ -219,6 +237,7 @@ export const clientSchema = z.object({
   registrations: list(registrationSchema),
   partners: list(partnerSchema),
   employees: list(employeeSchema, 200),
+  articles: list(articleSchema, 50),
 });
 
 /**

@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { requireStaff } from "@/lib/authz/guard";
 import { formatDate, formatMad, relativeDays } from "@/lib/format";
-import { effectiveDeadlineStatus, subtypeLabel, VAT_REGIME_LABELS } from "@/lib/domain/labels";
+import {
+  clientFormLabel,
+  effectiveDeadlineStatus,
+  PROPERTY_USAGE_LABELS,
+  TAX_REGIME_LABELS,
+  VAT_REGIME_LABELS,
+} from "@/lib/domain/labels";
 import { getClientOverview, ratingsForClients } from "@/server/services/clients";
 import { listClientAssignees, listMembers } from "@/server/services/members";
 import { Alert, Badge, Button, Card, EmptyState, PageHeader, StarRating, StatusPill } from "@/components/ui";
@@ -25,6 +31,12 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   const activities = jsonList<string>(client.declaredActivities);
   const partners = jsonList<{ role?: string; name?: string }>(client.partners);
   const employees = jsonList<{ name?: string; cin?: string; cnssNo?: string }>(client.employees);
+  const articles = jsonList<{
+    number?: string;
+    designation?: string;
+    address?: string;
+    usage?: string;
+  }>(client.articles);
   const registrations = jsonList<{
     number?: string;
     court?: string;
@@ -93,7 +105,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         <Card title="Identité">
           <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1.5 text-sm">
             <dt className="text-muted">Forme</dt>
-            <dd>{subtypeLabel(client.subtype)}</dd>
+            <dd>{clientFormLabel(client)}</dd>
             {individual && client.managerCin ? (
               <>
                 <dt className="text-muted">CIN</dt>
@@ -138,7 +150,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
             <dt className="text-muted">Régime TVA</dt>
             <dd>{VAT_REGIME_LABELS[client.vatRegime] ?? client.vatRegime}</dd>
             <dt className="text-muted">Régime</dt>
-            <dd className="uppercase">{client.taxRegime}</dd>
+            <dd>{TAX_REGIME_LABELS[client.taxRegime] ?? client.taxRegime}</dd>
             <dt className="text-muted">Clôture</dt>
             <dd className="tabular">
               {String(client.fiscalYearEndDay).padStart(2, "0")}/
@@ -161,6 +173,24 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
               <>
                 <dt className="text-muted">{individual ? "Activités" : "Objet social"}</dt>
                 <dd>{activities.join(" · ")}</dd>
+              </>
+            ) : null}
+            {articles.length > 0 ? (
+              <>
+                <dt className="text-muted">Articles</dt>
+                <dd>
+                  {articles
+                    .map((article) =>
+                      [
+                        article.number,
+                        article.designation,
+                        article.usage ? PROPERTY_USAGE_LABELS[article.usage] : undefined,
+                      ]
+                        .filter(Boolean)
+                        .join(" — "),
+                    )
+                    .join(" · ")}
+                </dd>
               </>
             ) : null}
             {employees.length > 0 ? (

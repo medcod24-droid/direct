@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireStaff } from "@/lib/authz/guard";
-import { subtypeLabel } from "@/lib/domain/labels";
+import { clientFormLabel } from "@/lib/domain/labels";
 import { listClients, ratingsForClients } from "@/server/services/clients";
 import {
   Badge,
@@ -124,7 +124,7 @@ export default async function ClientsPage({
                       </Link>
                     </TD>
                     <TD>
-                      <Badge>{subtypeLabel(client.subtype)}</Badge>
+                      <Badge>{clientFormLabel(client)}</Badge>
                     </TD>
                     <TD>
                       <span className="tabular text-xs">{client.ice ?? "—"}</span>

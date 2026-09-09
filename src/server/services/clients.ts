@@ -15,6 +15,7 @@ export type ClientListItem = {
   id: string;
   legalName: string;
   subtype: string;
+  subtypeOther: string | null;
   city: string | null;
   status: string;
   ice: string | null;
@@ -64,6 +65,7 @@ export async function listClients(ctx: AuthContext, input: unknown) {
         id: true,
         legalName: true,
         subtype: true,
+        subtypeOther: true,
         city: true,
         status: true,
         ice: true,
@@ -299,6 +301,12 @@ type ClientLists = Partial<{
   registrations: Registration[];
   partners: (WithId & { role: string; name: string; cin?: string; address?: string; phone?: string })[];
   employees: { name: string; cin?: string; cnssNo?: string }[];
+  articles: (WithId & {
+    number?: string;
+    designation?: string;
+    address?: string;
+    usage: string;
+  })[];
 }>;
 
 /**
@@ -372,6 +380,10 @@ function listColumns(data: ClientLists, cndpMode: string) {
     );
   }
 
+  if (data.articles) {
+    columns.articles = JSON.stringify(withIds(data.articles, new Set()));
+  }
+
   if (data.employees) {
     const employees = data.employees.map((employee) => stripCin(employee, cndpMode));
     columns.employees = JSON.stringify(employees);
@@ -412,11 +424,14 @@ export async function createClient(ctx: AuthContext, input: unknown) {
   assertCinAllowed(data, ctx.cabinet.cndpMode);
   const managerCin = ctx.cabinet.cndpMode === "authorization" ? data.managerCin : undefined;
 
-  const { activities, registrations, partners, employees, ...scalars } = data;
+  const { activities, registrations, partners, employees, articles, ...scalars } = data;
   const created = await ctx.db.client.create({
     data: {
       ...scalars,
-      ...listColumns({ activities, registrations, partners, employees }, ctx.cabinet.cndpMode),
+      ...listColumns(
+        { activities, registrations, partners, employees, articles },
+        ctx.cabinet.cndpMode,
+      ),
       cabinetId: ctx.cabinet.id,
       managerCin,
       tags: "[]",
@@ -454,12 +469,15 @@ export async function updateClient(ctx: AuthContext, clientId: string, input: un
 
   assertCinAllowed(data, ctx.cabinet.cndpMode);
 
-  const { activities, registrations, partners, employees, ...scalars } = data;
+  const { activities, registrations, partners, employees, articles, ...scalars } = data;
   const updated = await ctx.db.client.update({
     where: { id: clientId },
     data: {
       ...scalars,
-      ...listColumns({ activities, registrations, partners, employees }, ctx.cabinet.cndpMode),
+      ...listColumns(
+        { activities, registrations, partners, employees, articles },
+        ctx.cabinet.cndpMode,
+      ),
     },
   });
 

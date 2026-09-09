@@ -251,4 +251,48 @@ describe("fiche client scindée", () => {
     expect(tree[0]?.id).toBe("aaaabbbb");
     expect(tree[1]?.id).not.toBe("aaaabbbb");
   });
+
+  it("accepte une forme libre pour une personne physique", async () => {
+    const created = await createClient(declaring, {
+      ...BASE,
+      kind: "individual",
+      subtype: "autre",
+      subtypeOther: "Coopérative agricole familiale",
+      legalName: "Forme hors liste",
+    });
+
+    expect(created.subtype).toBe("autre");
+    expect(created.subtypeOther).toBe("Coopérative agricole familiale");
+  });
+
+  it("enregistre les articles d'imposition avec leur usage", async () => {
+    const created = await createClient(declaring, {
+      ...BASE,
+      kind: "individual",
+      subtype: "particulier",
+      taxRegime: "none",
+      legalName: "Propriétaire particulier",
+      articles: [
+        { number: "ART-11", designation: "Appartement", address: "Casablanca", usage: "principale" },
+        { number: "ART-12", designation: "Garage", address: "Casablanca", usage: "locatif" },
+      ],
+    });
+
+    const articles = JSON.parse(created.articles) as { id: string; usage: string }[];
+    expect(articles.map((a) => a.usage)).toEqual(["principale", "locatif"]);
+    // Chaque article porte un identifiant : c'est lui qui reçoit le justificatif.
+    expect(new Set(articles.map((a) => a.id)).size).toBe(2);
+  });
+
+  it("retient l'usage « habitation principale » par défaut", async () => {
+    const created = await createClient(declaring, {
+      ...BASE,
+      kind: "individual",
+      subtype: "particulier",
+      legalName: "Article sans usage",
+      articles: [{ number: "ART-20" }],
+    });
+
+    expect((JSON.parse(created.articles) as { usage: string }[])[0]?.usage).toBe("principale");
+  });
 });

@@ -206,8 +206,10 @@ model Client {
   /// company | individual
   kind    String @default("company")
   /// sarl | sarl_au | sa | sas | snc | succursale | gie | association | cooperative |
-  /// syndic | auto_entrepreneur | cpu | rnr | rns | particulier
+  /// syndic | auto_entrepreneur | cpu | rnr | rns | particulier | autre
   subtype String
+  /// Nom de la forme quand `subtype = "autre"` : la liste fermée ne couvre pas tout.
+  subtypeOther String?
 
   legalName String
   tradeName String?
@@ -283,6 +285,14 @@ model Client {
   partners    String @default("[]")
   /// JSON: { name, cin, cnssNo }[] — données de tiers : `cin` obéit au mode CNDP.
   employees   String @default("[]")
+
+  /// Articles d'imposition d'un particulier : un par bien imposé.
+  /// JSON: { id, number, designation, address, usage }[]
+  ///
+  /// L'usage commande le traitement : la taxe d'habitation n'abat la valeur
+  /// locative que pour l'habitation principale (loi 47-06, art. 20), un bien loué
+  /// n'y est pas soumis mais produit des revenus fonciers imposables à l'IR.
+  articles String @default("[]")
 
   /// Régime et attributs qui pilotent le moteur d'échéances
   fiscalYearEndMonth Int     @default(12)

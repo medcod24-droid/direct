@@ -132,6 +132,7 @@ function clientInput(form: FormData) {
   return {
     kind: str(form, "kind"),
     subtype: str(form, "subtype"),
+    subtypeOther: str(form, "subtypeOther"),
     legalName: str(form, "legalName"),
     tradeName: str(form, "tradeName"),
     ice: str(form, "ice"),
@@ -179,6 +180,11 @@ function clientInput(form: FormData) {
       (row) => row.name,
     ),
     employees: rows(form, "employees", ["name", "cin", "cnssNo"]).filter((row) => row.name),
+    // Un article n'a pas de champ obligatoire : il est conservé dès qu'une de
+    // ses informations est saisie, et écarté s'il est resté entièrement vide.
+    articles: rows(form, "articles", ["id", "number", "designation", "address", "usage"]).filter(
+      (row) => row.number || row.designation || row.address,
+    ),
   };
 }
 

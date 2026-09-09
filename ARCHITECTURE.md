@@ -88,6 +88,17 @@ parcourir, et un dossier se retrouve par le numéro d'une succursale ou d'une ta
 `activity` garde la première activité et `employeeCount` est déduit du nombre de salariés dès
 que le cabinet les nomme.
 
+Deux cas propres à la personne physique élargissent la fiche :
+
+- la forme **« Autre »** ouvre un champ libre (`subtypeOther`), la liste fermée ne couvrant pas
+  tout ; c'est ce nom qui s'affiche partout, un dossier étiqueté « Autre » dans la liste ne
+  disant rien de plus que rien (`clientFormLabel`) ;
+- la forme **« Particulier »** ouvre les **articles d'imposition**, un par bien imposé
+  (`articles`). L'usage — principale, secondaire, locatif — n'est pas une étiquette : la taxe
+  d'habitation n'abat la valeur locative que pour l'habitation principale (loi 47-06, art. 20),
+  un bien donné en location n'y est pas soumis mais produit des revenus fonciers imposables à
+  l'IR, et le secondaire ne bénéficie d'aucun abattement.
+
 ### Justificatifs rattachés aux champs
 
 `Document.fieldKey` désigne le champ de la fiche qu'une pièce justifie :

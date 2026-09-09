@@ -9,7 +9,7 @@ export type ClientKind = (typeof CLIENT_KINDS)[number];
 export const CLIENT_SUBTYPES = [
   "sarl", "sarl_au", "sa", "sas", "snc", "succursale", "gie",
   "association", "cooperative", "syndic",
-  "auto_entrepreneur", "cpu", "rnr", "rns", "particulier",
+  "auto_entrepreneur", "cpu", "rnr", "rns", "particulier", "autre",
 ] as const;
 export type ClientSubtype = (typeof CLIENT_SUBTYPES)[number];
 
@@ -18,7 +18,7 @@ export const COMPANY_SUBTYPES: ClientSubtype[] = [
 ];
 
 export const INDIVIDUAL_SUBTYPES: ClientSubtype[] = [
-  "auto_entrepreneur", "cpu", "rnr", "rns", "particulier",
+  "auto_entrepreneur", "cpu", "rnr", "rns", "particulier", "autre",
 ];
 
 /**
@@ -31,6 +31,17 @@ export const INDIVIDUAL_SUBTYPES: ClientSubtype[] = [
 export function subtypesFor(kind: ClientKind): ClientSubtype[] {
   return kind === "individual" ? INDIVIDUAL_SUBTYPES : COMPANY_SUBTYPES;
 }
+
+/**
+ * Usage d'un bien porté par un article d'imposition.
+ *
+ * La distinction n'est pas décorative : la taxe d'habitation n'abat la valeur
+ * locative que pour l'habitation principale (loi 47-06, art. 20), un bien donné
+ * en location n'y est pas soumis mais produit des revenus fonciers imposables à
+ * l'IR, et le secondaire ne bénéficie d'aucun abattement.
+ */
+export const PROPERTY_USAGES = ["principale", "secondaire", "locatif"] as const;
+export type PropertyUsage = (typeof PROPERTY_USAGES)[number];
 
 export const VAT_REGIMES = ["monthly", "quarterly", "exempt"] as const;
 export type VatRegime = (typeof VAT_REGIMES)[number];

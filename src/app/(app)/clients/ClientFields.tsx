@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Card, Field, Input, Select } from "@/components/ui";
 import { subtypesFor, type ClientKind } from "@/lib/domain/enums";
 import { subtypeLabel } from "@/lib/domain/labels";
+import { Articles } from "./Articles";
 import { FieldScan, type ScanInfo } from "./FieldScan";
 import { Registrations } from "./Registrations";
 import { Repeatable } from "./Repeatable";
@@ -52,6 +53,14 @@ export function ClientFields({
   const [kind, setKind] = useState<ClientKind>(
     value("kind", "company") === "individual" ? "individual" : "company",
   );
+  // La forme pilote l'écran, pas seulement la valeur enregistrée : « Autre »
+  // ouvre un champ libre, « Particulier » ouvre les articles d'imposition.
+  const [subtype, setSubtype] = useState(() =>
+    preferredSubtype(
+      value("kind", "company") === "individual" ? "individual" : "company",
+      value("subtype"),
+    ),
+  );
   const individual = kind === "individual";
   const cinAllowed = cndpMode === "authorization";
 
@@ -76,21 +85,25 @@ export function ClientFields({
               id="kind"
               name="kind"
               value={kind}
-              onChange={(event) => setKind(event.target.value as ClientKind)}
+              onChange={(event) => {
+                const next = event.target.value as ClientKind;
+                setKind(next);
+                // La forme enregistrée peut ne pas exister pour le nouveau type :
+                // la laisser telle quelle aurait affiché un champ vide sans que
+                // rien ne le signale, et le serveur aurait refusé l'ensemble.
+                setSubtype(preferredSubtype(next, subtype));
+              }}
             >
               <option value="company">Personne morale</option>
               <option value="individual">Personne physique</option>
             </Select>
           </Field>
           <Field label="Forme" htmlFor="subtype" error={fieldError("subtype")}>
-            {/* Remonté à chaque changement de type : la forme enregistrée peut
-                ne plus figurer dans la liste, et un `defaultValue` orphelin
-                aurait laissé le champ vide sans que rien ne le signale. */}
             <Select
-              key={`${kind}-${value("subtype")}`}
               id="subtype"
               name="subtype"
-              defaultValue={preferredSubtype(kind, value("subtype"))}
+              value={subtype}
+              onChange={(event) => setSubtype(event.target.value)}
             >
               {subtypesFor(kind).map((subtype) => (
                 <option key={subtype} value={subtype}>
@@ -99,6 +112,17 @@ export function ClientFields({
               ))}
             </Select>
           </Field>
+
+          {subtype === "autre" ? (
+            <Field
+              label="Préciser la forme"
+              htmlFor="subtypeOther"
+              hint="Le nom exact, tel qu'il figure sur les documents."
+              error={fieldError("subtypeOther")}
+            >
+              <Input id="subtypeOther" name="subtypeOther" defaultValue={value("subtypeOther")} />
+            </Field>
+          ) : null}
 
           <Field
             label="Raison sociale"
@@ -251,6 +275,15 @@ export function ClientFields({
           </Field>
         </div>
       </Card>
+
+      {individual && subtype === "particulier" ? (
+        <Card
+          title="Articles d'imposition"
+          description="Un article par bien imposé. L'usage décide du traitement : seule l'habitation principale bénéficie de l'abattement de taxe d'habitation, un bien loué relève des revenus fonciers."
+        >
+          <Articles value={value} fieldError={fieldError} clientId={clientId} scans={scans} />
+        </Card>
+      ) : null}
 
       <Card title="Adresses">
         <div className="grid gap-3 sm:grid-cols-2">

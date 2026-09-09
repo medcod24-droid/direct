@@ -18,6 +18,22 @@ export const SUBTYPE_LABELS: Record<string, string> = {
   rnr: "IR — RNR",
   rns: "IR — RNS",
   particulier: "Particulier",
+  autre: "Autre",
+};
+
+export const PROPERTY_USAGE_LABELS: Record<string, string> = {
+  principale: "Habitation principale",
+  secondaire: "Habitation secondaire",
+  locatif: "Loué",
+};
+
+export const TAX_REGIME_LABELS: Record<string, string> = {
+  is: "IS",
+  rnr: "IR — RNR",
+  rns: "IR — RNS",
+  cpu: "CPU",
+  auto_entrepreneur: "Auto-entrepreneur",
+  none: "Aucun",
 };
 
 export const VAT_REGIME_LABELS: Record<string, string> = {
@@ -42,6 +58,18 @@ export const ROLE_LABELS: Record<string, string> = {
 
 export function subtypeLabel(subtype: string): string {
   return SUBTYPE_LABELS[subtype] ?? subtype;
+}
+
+/**
+ * Forme affichée d'un dossier.
+ *
+ * La liste fermée ne couvre pas tout : « Autre » laisse le comptable nommer la
+ * forme lui-même, et c'est ce nom qui doit apparaître partout — un dossier
+ * étiqueté « Autre » dans la liste ne dirait rien de plus que rien.
+ */
+export function clientFormLabel(client: { subtype: string; subtypeOther?: string | null }): string {
+  if (client.subtype === "autre" && client.subtypeOther?.trim()) return client.subtypeOther.trim();
+  return subtypeLabel(client.subtype);
 }
 
 /**

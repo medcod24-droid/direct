@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { requireStaff } from "@/lib/authz/guard";
-import { subtypeLabel, VAT_REGIME_LABELS } from "@/lib/domain/labels";
+import {
+  clientFormLabel,
+  PROPERTY_USAGE_LABELS,
+  TAX_REGIME_LABELS,
+  VAT_REGIME_LABELS,
+} from "@/lib/domain/labels";
 import { formatDate, formatMad } from "@/lib/format";
 import { getClientOverview } from "@/server/services/clients";
 import { Button } from "@/components/ui";
@@ -55,6 +60,12 @@ export default async function ClientFichePage({
     client.partners,
   );
   const employees = parse<{ name?: string; cin?: string; cnssNo?: string }>(client.employees);
+  const articles = parse<{
+    number?: string;
+    designation?: string;
+    address?: string;
+    usage?: string;
+  }>(client.articles);
   const registrations = parse<{
     number?: string;
     court?: string;
@@ -63,7 +74,7 @@ export default async function ClientFichePage({
   }>(client.registrations);
 
   const identity = filled([
-    ["Forme juridique", subtypeLabel(client.subtype)],
+    ["Forme juridique", clientFormLabel(client)],
     [individual ? "CIN" : "CIN du gérant", client.managerCin],
     ["Identifiant fiscal", client.if],
     ["ICE", client.ice],
@@ -89,7 +100,7 @@ export default async function ClientFichePage({
   ]);
 
   const regime = filled([
-    ["Régime fiscal", client.taxRegime?.toUpperCase()],
+    ["Régime fiscal", TAX_REGIME_LABELS[client.taxRegime] ?? client.taxRegime],
     ["Régime de TVA", VAT_REGIME_LABELS[client.vatRegime] ?? client.vatRegime],
     [
       "Clôture de l'exercice",
@@ -128,7 +139,7 @@ export default async function ClientFichePage({
             </p>
             <h1 className="mt-1 text-xl font-semibold">{client.legalName}</h1>
             <p className="text-sm text-muted print:text-black">
-              {[subtypeLabel(client.subtype), client.tradeName, client.city]
+              {[clientFormLabel(client), client.tradeName, client.city]
                 .filter(Boolean)
                 .join(" · ")}
             </p>
@@ -201,6 +212,19 @@ export default async function ClientFichePage({
               partner.name ?? "",
               partner.cin ?? "",
               partner.phone ?? "",
+            ])}
+          />
+        ) : null}
+
+        {articles.length > 0 ? (
+          <Listing
+            title="Articles d'imposition"
+            head={["N° d'article", "Désignation", "Adresse", "Usage"]}
+            rows={articles.map((article) => [
+              article.number ?? "",
+              article.designation ?? "",
+              article.address ?? "",
+              article.usage ? PROPERTY_USAGE_LABELS[article.usage] ?? article.usage : "",
             ])}
           />
         ) : null}

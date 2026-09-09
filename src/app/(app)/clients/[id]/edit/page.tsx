@@ -21,6 +21,7 @@ function toFormValues(client: Record<string, unknown>): Record<string, string> {
   const values: Record<string, string> = {
     kind: text(client.kind),
     subtype: text(client.subtype),
+    subtypeOther: text(client.subtypeOther),
     legalName: text(client.legalName),
     tradeName: text(client.tradeName),
     ice: text(client.ice),
@@ -70,6 +71,7 @@ function toFormValues(client: Record<string, unknown>): Record<string, string> {
   flatten(values, "activities", withFallback(client.declaredActivities, client.activity));
   flatten(values, "partners", parseList(client.partners));
   flatten(values, "employees", parseList(client.employees));
+  flatten(values, "articles", parseList(client.articles));
   flattenRegistrations(values, client);
 
   return values;
