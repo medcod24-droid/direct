@@ -38,6 +38,7 @@ const TENANT_MODELS = new Set([
   "ClientInvoice",
   "Activity",
   "Intervention",
+  "Appointment",
   "AuditLog",
   "Membership",
   "Subscription",
@@ -61,6 +62,7 @@ const STRICT_CLIENT_MODELS = new Set([
   "Message",
   "ClientInvoice",
   "Intervention",
+  "Appointment",
 ]);
 /** clientId nullable : les lignes sans client sont internes au cabinet, donc visibles. */
 const NULLABLE_CLIENT_MODELS = new Set(["Task", "Activity"]);

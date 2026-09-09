@@ -79,6 +79,7 @@ model Cabinet {
   auditLogs    AuditLog[]
   activities   Activity[]
   interventions Intervention[]
+  appointments Appointment[]
   invitations  Invitation[]
   categories   DocumentCategory[]
 
@@ -134,6 +135,7 @@ model User {
   messages      Message[]
   comments      TaskComment[]
   interventions Intervention[]  @relation("InterventionAuthor")
+  appointments  Appointment[]   @relation("AppointmentOwner")
   auditLogs     AuditLog[]
 
   createdAt DateTime @default(now())
@@ -337,6 +339,7 @@ model Client {
   messages    Message[]
   activities  Activity[]
   interventions Intervention[]
+  appointments Appointment[]
   portalUsers Membership[]
 
   createdAt DateTime @default(now())
@@ -379,6 +382,53 @@ model Intervention {
   updatedAt DateTime @updatedAt
 
   @@index([cabinetId, clientId, performedAt])
+}
+
+/// Rendez-vous du cabinet avec un client.
+///
+/// **Les heures sont des heures murales.** `startsAt` est construit et relu en
+/// UTC, sans conversion : un rendez-vous saisi à 9 h s'affiche à 9 h, que le
+/// serveur tourne à Casablanca ou sur un hébergeur en UTC. Convertir aurait
+/// décalé tous les horaires d'une heure en production, sans erreur visible —
+/// et un cabinet n'a de toute façon qu'un seul fuseau.
+model Appointment {
+  id        String @id @default(cuid())
+  cabinetId String
+  clientId  String
+
+  /// Objet du rendez-vous, tel qu'il s'affiche dans le calendrier
+  title           String
+  startsAt        DateTime
+  durationMinutes Int      @default(30)
+
+  /// office | client_site | phone | video
+  mode     String  @default("office")
+  /// Adresse ou lien, quand le mode ne suffit pas
+  location String?
+  /// Ce qu'il faut préparer avant le rendez-vous
+  preparation String?
+
+  /// scheduled | done | cancelled | no_show
+  status String @default("scheduled")
+  /// Compte rendu saisi à la validation ; recopié dans la liste d'activité
+  outcome String?
+
+  /// Collaborateur qui reçoit
+  assignedToId String?
+  /// Ligne créée dans la liste d'activité à la validation
+  interventionId String?
+  createdById    String?
+
+  cabinet    Cabinet @relation(fields: [cabinetId], references: [id], onDelete: Cascade)
+  client     Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  assignedTo User?   @relation("AppointmentOwner", fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([cabinetId, startsAt])
+  @@index([cabinetId, clientId, startsAt])
+  @@index([cabinetId, status, startsAt])
 }
 
 model Contact {

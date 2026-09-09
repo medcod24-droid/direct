@@ -2,6 +2,8 @@ import Link from "next/link";
 import { requireStaff } from "@/lib/authz/guard";
 import { formatDate, formatMad, relativeDays } from "@/lib/format";
 import { PRIORITY_LABELS } from "@/lib/domain/labels";
+import { dayKey, endOf, wallTime } from "@/lib/calendar/month";
+import { listAppointments } from "@/server/services/appointments";
 import {
   getCabinetDashboard,
   getClientsNeedingAttention,
@@ -14,10 +16,19 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const ctx = await requireStaff("cabinet.view");
-  const [data, attention, urgentTasks] = await Promise.all([
+  // Journée en heures murales : les rendez-vous sont enregistrés tels qu'ils ont
+  // été saisis, sans conversion de fuseau (voir lib/calendar/month.ts).
+  const now = new Date();
+  const dayStart = new Date(`${dayKey(now)}T00:00:00Z`);
+  const dayEnd = new Date(dayStart.getTime() + 86_400_000);
+
+  const [data, attention, urgentTasks, todayAppointments] = await Promise.all([
     getCabinetDashboard(ctx),
     getClientsNeedingAttention(ctx),
     ctx.can("task.view") ? getUrgentTasks(ctx) : Promise.resolve([]),
+    ctx.can("appointment.view")
+      ? listAppointments(ctx, { from: dayStart, to: dayEnd })
+      : Promise.resolve([]),
   ]);
 
   const trial =
@@ -76,6 +87,51 @@ export default async function DashboardPage() {
           href="/invoices"
         />
       </section>
+
+      {todayAppointments.length > 0 ? (
+        <Card
+          title="Rendez-vous du jour"
+          description="Qui vient aujourd'hui, et ce qu'il faut avoir sorti."
+          action={
+            <Link href="/appointments" className="text-sm text-accent underline underline-offset-2">
+              Le calendrier
+            </Link>
+          }
+        >
+          <ul className="divide-y divide-line">
+            {todayAppointments.map((appointment) => (
+              <li key={appointment.id} className="flex items-baseline justify-between gap-3 py-2.5">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="tabular text-sm font-medium">
+                      {wallTime(appointment.startsAt)} –{" "}
+                      {wallTime(endOf(appointment.startsAt, appointment.durationMinutes))}
+                    </span>
+                    {appointment.status === "done" ? <Badge tone="green">Validé</Badge> : null}
+                    {appointment.status === "cancelled" ? <Badge>Annulé</Badge> : null}
+                    {appointment.status === "no_show" ? <Badge tone="red">Absent</Badge> : null}
+                    <span className="text-sm">{appointment.title}</span>
+                  </div>
+                  <div className="mt-0.5 text-xs text-muted">
+                    <Link
+                      href={`/clients/${appointment.client.id}`}
+                      className="underline underline-offset-2"
+                    >
+                      {appointment.client.legalName}
+                    </Link>
+                    {appointment.assignedTo ? ` · reçu par ${appointment.assignedTo.name}` : ""}
+                  </div>
+                  {appointment.preparation ? (
+                    <p className="mt-0.5 whitespace-pre-line text-xs text-ink2">
+                      À préparer : {appointment.preparation}
+                    </p>
+                  ) : null}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
 
       {urgentTasks.length > 0 ? (
         <Card

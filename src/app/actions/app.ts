@@ -12,6 +12,13 @@ import { generateForYear, logOutageAttempt, setManagedBy, updateDeadlineStatus }
 import { createInvoice, recordPayment } from "@/server/services/invoices";
 import { createRequest, reviewRequest, submitRequest } from "@/server/services/requests";
 import {
+  completeAppointment,
+  createAppointment,
+  deleteAppointment,
+  setAppointmentStatus,
+  updateAppointment,
+} from "@/server/services/appointments";
+import {
   createIntervention,
   deleteIntervention,
   updateIntervention,
@@ -325,6 +332,102 @@ export async function uploadFieldScanAction(
       message: "Justificatif enregistré.",
       document: { id: document.id, filename: document.filename },
     };
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+// --- rendez-vous ---------------------------------------------------------------
+
+function appointmentInput(form: FormData) {
+  return {
+    clientId: str(form, "clientId"),
+    title: str(form, "title"),
+    startsAt: str(form, "startsAt"),
+    durationMinutes: str(form, "durationMinutes") ?? 30,
+    mode: str(form, "mode"),
+    location: str(form, "location"),
+    preparation: str(form, "preparation"),
+    assignedToId: str(form, "assignedToId"),
+  };
+}
+
+export async function createAppointmentAction(
+  _prev: ActionState,
+  form: FormData,
+): Promise<ActionState> {
+  try {
+    const ctx = await requirePermission("appointment.manage");
+    await createAppointment(ctx, appointmentInput(form));
+    revalidatePath("/appointments");
+    revalidatePath(`/clients/${str(form, "clientId") ?? ""}`);
+    return { ok: true, message: "Rendez-vous enregistré." };
+  } catch (error) {
+    return { ...fail(error), values: formValues(form) };
+  }
+}
+
+export async function updateAppointmentAction(
+  appointmentId: string,
+  _prev: ActionState,
+  form: FormData,
+): Promise<ActionState> {
+  try {
+    const ctx = await requirePermission("appointment.manage");
+    await updateAppointment(ctx, appointmentId, appointmentInput(form));
+    revalidatePath("/appointments");
+    revalidatePath(`/clients/${str(form, "clientId") ?? ""}`);
+    return { ok: true, message: "Rendez-vous mis à jour." };
+  } catch (error) {
+    return { ...fail(error), values: formValues(form) };
+  }
+}
+
+/**
+ * Validation d'un rendez-vous honoré.
+ *
+ * Le compte rendu ne reste pas dans le calendrier : il devient une ligne de la
+ * liste d'activité du client, là où le comptable relit ce qui a été fait.
+ */
+export async function completeAppointmentAction(
+  appointmentId: string,
+  _prev: ActionState,
+  form: FormData,
+): Promise<ActionState> {
+  try {
+    const ctx = await requirePermission("appointment.manage");
+    await completeAppointment(ctx, appointmentId, {
+      outcome: str(form, "outcome"),
+      reason: str(form, "reason"),
+    });
+    revalidatePath("/appointments");
+    revalidatePath(`/clients/${str(form, "clientId") ?? ""}`);
+    return { ok: true, message: "Rendez-vous validé et versé à la liste d'activité." };
+  } catch (error) {
+    return { ...fail(error), values: formValues(form) };
+  }
+}
+
+export async function setAppointmentStatusAction(
+  appointmentId: string,
+  status: "cancelled" | "no_show" | "scheduled",
+): Promise<ActionState> {
+  try {
+    const ctx = await requirePermission("appointment.manage");
+    await setAppointmentStatus(ctx, appointmentId, status);
+    revalidatePath("/appointments");
+    return { ok: true, message: "Rendez-vous mis à jour." };
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+export async function deleteAppointmentAction(appointmentId: string): Promise<ActionState> {
+  try {
+    const ctx = await requirePermission("appointment.manage");
+    await deleteAppointment(ctx, appointmentId);
+    revalidatePath("/appointments");
+    return { ok: true, message: "Rendez-vous supprimé." };
   } catch (error) {
     return fail(error);
   }

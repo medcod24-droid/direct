@@ -9,11 +9,13 @@ import {
   VAT_REGIME_LABELS,
 } from "@/lib/domain/labels";
 import { getClientOverview, ratingsForClients } from "@/server/services/clients";
+import { listAppointments } from "@/server/services/appointments";
 import { listInterventions } from "@/server/services/interventions";
 import { listClientAssignees, listMembers } from "@/server/services/members";
 import { Alert, Badge, Button, Card, EmptyState, PageHeader, StarRating, StatusPill } from "@/components/ui";
 import { ArchiveClient } from "./ArchiveClient";
 import { Interventions } from "./Interventions";
+import { wallDateLong, wallTime } from "@/lib/calendar/month";
 import { Assignees } from "./Assignees";
 import { RequestForm } from "./RequestForm";
 import { UploadForm } from "./UploadForm";
@@ -55,10 +57,14 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   // Les assignations conditionnent ce que voit un collaborateur restreint :
   // elles se gèrent donc depuis le dossier lui-même.
   const canAssign = ctx.can("client.assign");
-  const [assignees, staff, interventions] = await Promise.all([
+  const now = new Date();
+  const [assignees, staff, interventions, appointments] = await Promise.all([
     listClientAssignees(ctx, id),
     canAssign ? listMembers(ctx) : Promise.resolve([]),
     ctx.can("intervention.view") ? listInterventions(ctx, id) : Promise.resolve([]),
+    ctx.can("appointment.view")
+      ? listAppointments(ctx, { clientId: id, from: now, status: "scheduled" })
+      : Promise.resolve([]),
   ]);
 
   return (
@@ -392,6 +398,32 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           )}
         </Card>
       </div>
+
+      {appointments.length > 0 ? (
+        <Card
+          title="Prochains rendez-vous"
+          description="Planifiés avec ce client."
+          action={
+            <Button href={`/appointments?client=${id}`} variant="ghost" size="sm">
+              Voir le calendrier
+            </Button>
+          }
+        >
+          <ul className="grid gap-2 text-sm">
+            {appointments.slice(0, 5).map((appointment) => (
+              <li key={appointment.id} className="flex flex-wrap items-baseline gap-x-2">
+                <span className="tabular font-medium">
+                  {wallDateLong(appointment.startsAt)} à {wallTime(appointment.startsAt)}
+                </span>
+                <span>{appointment.title}</span>
+                {appointment.assignedTo ? (
+                  <span className="text-xs text-muted">reçu par {appointment.assignedTo.name}</span>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
 
       {ctx.can("intervention.view") ? (
         <Card

@@ -17,7 +17,7 @@ import { makeCabinet, makeClient, makeUser } from "../factories";
  * ici est qu'il reste dans son cabinet, dans l'ordre où on le relit, et qu'une
  * modification ne puisse pas déplacer une ligne d'un dossier vers un autre.
  */
-function contextFor(cabinetId: string, userId: string, role = "owner"): AuthContext {
+function contextFor(cabinetId: string, userId: string, role: "owner" | "accountant" | "assistant" = "owner"): AuthContext {
   const scope = { cabinetId, clientIds: null };
   return {
     sessionId: "test",
@@ -28,7 +28,7 @@ function contextFor(cabinetId: string, userId: string, role = "owner"): AuthCont
     db: tenantDb(scope),
     ip: null,
     userAgent: "vitest",
-    can: (p) => can(role as "owner", p),
+    can: (p) => can(role, p),
   };
 }
 

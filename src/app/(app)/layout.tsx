@@ -9,6 +9,7 @@ const NAV = [
   { href: "/dashboard", label: "Tableau de bord", permission: "cabinet.view" },
   { href: "/clients", label: "Clients", permission: "client.view" },
   { href: "/deadlines", label: "Échéances", permission: "deadline.view" },
+  { href: "/appointments", label: "Rendez-vous", permission: "appointment.view" },
   { href: "/requests", label: "Demandes", permission: "request.view" },
   { href: "/documents", label: "Documents", permission: "document.view" },
   { href: "/tasks", label: "Tâches", permission: "task.view" },

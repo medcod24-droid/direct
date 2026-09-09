@@ -99,6 +99,28 @@ Deux cas propres à la personne physique élargissent la fiche :
   un bien donné en location n'y est pas soumis mais produit des revenus fonciers imposables à
   l'IR, et le secondaire ne bénéficie d'aucun abattement.
 
+### Rendez-vous
+
+`Appointment` porte le planning du cabinet : objet, client attendu, horaire, durée, lieu,
+collaborateur qui reçoit, et ce qu'il faut préparer. Le calendrier (`/appointments`) est rendu
+côté serveur à partir d'un module pur, `lib/calendar/month.ts` — pas de bibliothèque de
+calendrier, rien à charger depuis un CDN que la politique de sécurité bloquerait. Le mois, le
+jour affiché et les filtres passent par l'URL : une vue se partage et survit à un rechargement.
+
+**Les horaires sont des heures murales.** `startsAt` est écrit et relu en UTC, sans conversion :
+un rendez-vous saisi à 9 h s'affiche à 9 h, que le serveur tourne à Casablanca ou sur un
+hébergeur réglé en UTC. Convertir aurait décalé tous les horaires d'une heure en production sans
+erreur visible, et un cabinet n'exerce que dans un seul fuseau.
+
+Valider un rendez-vous **crée une ligne dans la liste d'activité du client** : le compte rendu ne
+reste pas dans le calendrier, où plus personne ne le relirait. La ligne créée est retenue
+(`interventionId`), une seconde validation est refusée, et un rendez-vous validé ne se supprime
+plus — il a produit une trace au dossier.
+
+Un rendez-vous passé resté « prévu » est signalé partout comme « à valider ». Le retard n'est pas
+un statut stocké, il se déduit de l'heure : sans ce rappel, un rendez-vous honoré mais jamais
+validé disparaîtrait dans le passé du calendrier et son compte rendu ne serait jamais écrit.
+
 ### Liste d'activité
 
 `Intervention` est le registre, **écrit à la main**, de ce que le cabinet a fait pour un
