@@ -99,6 +99,31 @@ Deux cas propres à la personne physique élargissent la fiche :
   un bien donné en location n'y est pas soumis mais produit des revenus fonciers imposables à
   l'IR, et le secondaire ne bénéficie d'aucun abattement.
 
+### To-do de l'équipe
+
+`Todo` est le travail que l'administration confie à un collaborateur, distinct de `Task` qui
+porte le travail d'un dossier et que tout collaborateur peut créer. Le va-et-vient est le sujet :
+l'administrateur confie, le collaborateur **rend** la tâche avec une note — faite, ou ce qui
+manque —, et l'administrateur **confirme** après l'avoir lue. Trois états visibles, trois
+couleurs : confiée, rendue (orange, elle attend), confirmée (vert, des deux côtés). Un quatrième,
+« renvoyée », existe parce qu'un collaborateur qui écrit « il manque une pièce » n'a pas
+terminé : sans lui, l'administrateur n'aurait d'autre choix que de clore une tâche inachevée.
+
+`todo.manage` (administration) distribue et confirme ; `todo.view` (tout collaborateur) ne voit
+que ce qui lui est confié — le service applique cette restriction quoi qu'affiche la page, la
+répartition du travail des autres n'étant pas une information d'équipe.
+
+**La section Équipe est réservée à l'administration** (`member.view`) : elle porte l'invitation,
+les rôles et l'historique de chacun. Savoir qui compose son cabinet n'en dépend pas — les
+sélecteurs « reçu par », « assigné à » passent par `listStaffOptions`, autorisé par la permission
+de l'écran qui les affiche.
+
+La fiche d'un collaborateur (`/team/<userId>`) montre ses tâches et **son historique**, construit
+depuis le **journal d'audit** et non depuis le fil d'activité : l'audit enregistre tout, y compris
+les modifications, qui sont précisément ce que l'administrateur veut relire. Les noms de dossiers
+y sont résolus à travers le client Prisma du contexte — un dossier hors de portée reste anonyme
+plutôt que de fuir par l'historique.
+
 ### Recherche
 
 `contains` de Prisma est sensible à la casse sur SQLite, et `mode: "insensitive"` n'existe que

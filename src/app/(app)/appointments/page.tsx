@@ -13,9 +13,8 @@ import {
   WEEKDAY_LABELS,
 } from "@/lib/calendar/month";
 import { listAppointments, listAwaitingReview } from "@/server/services/appointments";
-import { buildSearchKey } from "@/lib/search";
 import { listClientOptions } from "@/server/services/clients";
-import { listMembers } from "@/server/services/members";
+import { listStaffOptions } from "@/server/services/members";
 import { Alert, Button, Card, EmptyState, Field, PageHeader, SearchPicker, Select } from "@/components/ui";
 import type { PickerOption } from "@/components/ui";
 import { AppointmentCard, type AppointmentItem } from "./AppointmentActions";
@@ -65,17 +64,11 @@ export default async function AppointmentsPage({ searchParams }: { searchParams:
     // Le champ de recherche filtre dans le navigateur : il reçoit la clé de
     // recherche de chaque dossier, pas seulement son nom.
     listClientOptions(ctx),
-    ctx.can("member.view") ? listMembers(ctx) : Promise.resolve([]),
+    listStaffOptions(ctx),
   ]);
 
   const clients = clientRows;
-  const staff = members
-    .filter((member) => member.role !== "client")
-    .map((member) => ({
-      id: member.userId,
-      label: member.name,
-      searchKey: buildSearchKey(member.name, member.email),
-    }));
+  const staff = members;
 
   const byDay = new Map<string, AppointmentItem[]>();
   for (const appointment of appointments) {

@@ -12,6 +12,7 @@ const NAV = [
   { href: "/appointments", label: "Rendez-vous", permission: "appointment.view" },
   { href: "/requests", label: "Demandes", permission: "request.view" },
   { href: "/documents", label: "Documents", permission: "document.view" },
+  { href: "/todos", label: "To-do équipe", permission: "todo.view" },
   { href: "/tasks", label: "Tâches", permission: "task.view" },
   { href: "/invoices", label: "Honoraires", permission: "invoice.view" },
   { href: "/team", label: "Équipe", permission: "member.view" },

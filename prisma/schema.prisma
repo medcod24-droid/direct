@@ -80,6 +80,7 @@ model Cabinet {
   activities   Activity[]
   interventions Intervention[]
   appointments Appointment[]
+  todos        Todo[]
   invitations  Invitation[]
   categories   DocumentCategory[]
 
@@ -136,6 +137,8 @@ model User {
   comments      TaskComment[]
   interventions Intervention[]  @relation("InterventionAuthor")
   appointments  Appointment[]   @relation("AppointmentOwner")
+  todos         Todo[]          @relation("TodoAssignee")
+  todosReviewed Todo[]          @relation("TodoReviewer")
   auditLogs     AuditLog[]
 
   createdAt DateTime @default(now())
@@ -343,6 +346,7 @@ model Client {
   activities  Activity[]
   interventions Intervention[]
   appointments Appointment[]
+  todos       Todo[]
   portalUsers Membership[]
 
   createdAt DateTime @default(now())
@@ -433,6 +437,52 @@ model Appointment {
   @@index([cabinetId, startsAt])
   @@index([cabinetId, clientId, startsAt])
   @@index([cabinetId, status, startsAt])
+}
+
+/// Tâche confiée par l'administrateur à un collaborateur de l'équipe.
+///
+/// Distincte de `Task`, qui porte le travail d'un dossier et que tout
+/// collaborateur peut créer. Ici, l'administrateur distribue le travail du jour
+/// et la tâche revient vers lui : le collaborateur la rend avec une note, elle
+/// passe en attente de confirmation, et c'est l'administrateur qui la clôt.
+/// Trois états visibles, trois couleurs : confiée, rendue (orange), confirmée
+/// (vert).
+model Todo {
+  id        String @id @default(cuid())
+  cabinetId String
+  /// Collaborateur à qui la tâche est confiée
+  assigneeId String
+  /// Dossier concerné, quand la tâche en vise un
+  clientId String?
+
+  title    String
+  details  String?
+  dueDate  DateTime?
+  priority String    @default("normal") // low | normal | high | urgent
+
+  /// assigned | submitted | approved | returned
+  status String @default("assigned")
+
+  /// Ce que le collaborateur écrit en rendant la tâche : fait, ou ce qui manque
+  submittedNote String?
+  submittedAt   DateTime?
+  /// Ce que l'administrateur écrit s'il la renvoie
+  reviewNote   String?
+  approvedAt   DateTime?
+  approvedById String?
+
+  createdById String?
+
+  cabinet    Cabinet @relation(fields: [cabinetId], references: [id], onDelete: Cascade)
+  client     Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  assignee   User    @relation("TodoAssignee", fields: [assigneeId], references: [id], onDelete: Cascade)
+  approvedBy User?   @relation("TodoReviewer", fields: [approvedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([cabinetId, assigneeId, status])
+  @@index([cabinetId, status, dueDate])
 }
 
 model Contact {

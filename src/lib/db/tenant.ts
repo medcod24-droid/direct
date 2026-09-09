@@ -39,6 +39,7 @@ const TENANT_MODELS = new Set([
   "Activity",
   "Intervention",
   "Appointment",
+  "Todo",
   "AuditLog",
   "Membership",
   "Subscription",
@@ -65,7 +66,7 @@ const STRICT_CLIENT_MODELS = new Set([
   "Appointment",
 ]);
 /** clientId nullable : les lignes sans client sont internes au cabinet, donc visibles. */
-const NULLABLE_CLIENT_MODELS = new Set(["Task", "Activity"]);
+const NULLABLE_CLIENT_MODELS = new Set(["Task", "Activity", "Todo"]);
 
 const READ_OPS = new Set([
   "findUnique",

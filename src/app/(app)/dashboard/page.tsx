@@ -4,6 +4,7 @@ import { formatDate, formatMad, relativeDays } from "@/lib/format";
 import { PRIORITY_LABELS } from "@/lib/domain/labels";
 import { dayKey, endOf, wallTime } from "@/lib/calendar/month";
 import { listAppointments } from "@/server/services/appointments";
+import { listAwaitingApproval, listMyTodos } from "@/server/services/todos";
 import {
   getCabinetDashboard,
   getClientsNeedingAttention,
@@ -22,14 +23,17 @@ export default async function DashboardPage() {
   const dayStart = new Date(`${dayKey(now)}T00:00:00Z`);
   const dayEnd = new Date(dayStart.getTime() + 86_400_000);
 
-  const [data, attention, urgentTasks, todayAppointments] = await Promise.all([
-    getCabinetDashboard(ctx),
-    getClientsNeedingAttention(ctx),
-    ctx.can("task.view") ? getUrgentTasks(ctx) : Promise.resolve([]),
-    ctx.can("appointment.view")
-      ? listAppointments(ctx, { from: dayStart, to: dayEnd })
-      : Promise.resolve([]),
-  ]);
+  const [data, attention, urgentTasks, todayAppointments, myTodos, todosToApprove] =
+    await Promise.all([
+      getCabinetDashboard(ctx),
+      getClientsNeedingAttention(ctx),
+      ctx.can("task.view") ? getUrgentTasks(ctx) : Promise.resolve([]),
+      ctx.can("appointment.view")
+        ? listAppointments(ctx, { from: dayStart, to: dayEnd })
+        : Promise.resolve([]),
+      ctx.can("todo.view") ? listMyTodos(ctx) : Promise.resolve([]),
+      listAwaitingApproval(ctx),
+    ]);
 
   const trial =
     data.entitlements?.status === "trialing" && data.entitlements.trialEndsAt
@@ -87,6 +91,84 @@ export default async function DashboardPage() {
           href="/invoices"
         />
       </section>
+
+      {myTodos.length > 0 ? (
+        <Card
+          title="Ce que le cabinet attend de vous"
+          description="Tâches confiées par l'administration. Marquez-les comme faites en laissant une note."
+          action={
+            <Link href="/todos" className="text-sm text-accent underline underline-offset-2">
+              Ma to-do
+            </Link>
+          }
+        >
+          <ul className="divide-y divide-line">
+            {myTodos.map((todo) => (
+              <li key={todo.id} className="flex items-baseline justify-between gap-3 py-2.5">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {todo.status === "returned" ? <Badge tone="red">Renvoyée</Badge> : null}
+                    {todo.priority === "urgent" ? (
+                      <Badge tone="red">{PRIORITY_LABELS.urgent}</Badge>
+                    ) : null}
+                    <span className="text-sm">{todo.title}</span>
+                  </div>
+                  {todo.reviewNote ? (
+                    <p className="mt-0.5 text-xs text-ink2">À reprendre : {todo.reviewNote}</p>
+                  ) : null}
+                </div>
+                <div className="shrink-0 text-end text-xs">
+                  {todo.dueDate ? (
+                    <>
+                      <div
+                        className={
+                          todo.dueDate.getTime() < Date.now()
+                            ? "font-medium text-danger"
+                            : "text-ink2"
+                        }
+                      >
+                        {formatDate(todo.dueDate)}
+                      </div>
+                      <div className="text-muted">{relativeDays(todo.dueDate)}</div>
+                    </>
+                  ) : (
+                    <span className="text-muted">sans date</span>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+
+      {todosToApprove.length > 0 ? (
+        <Card
+          title="Tâches rendues, à confirmer"
+          description="L'équipe a terminé et laissé une note. Lisez-la avant de confirmer."
+          action={
+            <Link href="/todos" className="text-sm text-accent underline underline-offset-2">
+              Ouvrir la to-do
+            </Link>
+          }
+        >
+          <ul className="divide-y divide-line">
+            {todosToApprove.map((todo) => (
+              <li key={todo.id} className="py-2.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge tone="amber">À confirmer</Badge>
+                  <span className="text-sm">{todo.title}</span>
+                  <span className="text-xs text-muted">— {todo.assigneeName}</span>
+                </div>
+                {todo.submittedNote ? (
+                  <p className="mt-0.5 whitespace-pre-line text-xs text-ink2">
+                    {todo.submittedNote}
+                  </p>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
 
       {todayAppointments.length > 0 ? (
         <Card

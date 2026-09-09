@@ -7,6 +7,7 @@ import { assertWithinLimit } from "@/lib/billing/entitlements";
 import { platformDb } from "@/lib/db/tenant";
 import type { Role } from "@/lib/domain/enums";
 import { ForbiddenError, NotFoundError, ValidationError } from "@/lib/errors";
+import { buildSearchKey } from "@/lib/search";
 import { cabinetSettingsSchema, inviteSchema } from "@/lib/validation/schemas";
 
 /**
@@ -368,4 +369,148 @@ export async function updateCabinetSettings(ctx: AuthContext, input: unknown) {
   });
 
   return updated;
+}
+
+/**
+ * Collaborateurs, au format des sélecteurs.
+ *
+ * Distinct de `listMembers`, qui alimente la section Équipe et demande
+ * `member.view` : savoir qui compose son cabinet n'est pas une donnée
+ * d'administration, et un comptable doit pouvoir dire qui reçoit un
+ * rendez-vous. L'autorisation est celle de l'écran appelant.
+ */
+export async function listStaffOptions(ctx: AuthContext) {
+  const memberships = await ctx.db.membership.findMany({
+    where: { status: "active", role: { not: "client" } },
+    select: { userId: true },
+  });
+  const users = await platformDb.user.findMany({
+    where: { id: { in: memberships.map((m) => m.userId) } },
+    select: { id: true, name: true, email: true },
+    orderBy: { name: "asc" },
+  });
+
+  return users.map((user) => ({
+    id: user.id,
+    label: user.name,
+    hint: user.email,
+    searchKey: buildSearchKey(user.name, user.email),
+  }));
+}
+
+/** Libellés lisibles des actions journalisées, pour l'historique d'un collaborateur. */
+const ACTION_LABELS: Record<string, string> = {
+  "client.created": "a créé un dossier",
+  "client.updated": "a modifié un dossier",
+  "client.archived": "a archivé un dossier",
+  "client.assigned": "a assigné un dossier",
+  "document.uploaded": "a déposé un document",
+  "document.downloaded": "a téléchargé un document",
+  "document.deleted": "a supprimé un document",
+  "document.approved": "a validé un document",
+  "document.rejected": "a refusé un document",
+  "deadline.generated": "a généré des échéances",
+  "deadline.updated": "a mis à jour une échéance",
+  "intervention.created": "a enregistré un service rendu",
+  "intervention.updated": "a modifié un service rendu",
+  "intervention.deleted": "a retiré un service rendu",
+  "appointment.created": "a pris un rendez-vous",
+  "appointment.updated": "a modifié un rendez-vous",
+  "appointment.completed": "a validé un rendez-vous",
+  "todo.created": "a confié une tâche",
+  "todo.submitted": "a rendu une tâche",
+  "todo.approved": "a confirmé une tâche",
+  "todo.returned": "a renvoyé une tâche",
+  "invoice.created": "a émis une facture",
+  "invoice.payment": "a enregistré un règlement",
+  "member.invited": "a invité un collaborateur",
+  "member.updated": "a modifié un collaborateur",
+  "member.removed": "a retiré un collaborateur",
+  "auth.login": "s'est connecté",
+  "auth.logout": "s'est déconnecté",
+};
+
+export function actionLabel(action: string): string {
+  return ACTION_LABELS[action] ?? action.replace(/[._]/g, " ");
+}
+
+export type MemberActivity = {
+  id: string;
+  action: string;
+  label: string;
+  resourceType: string | null;
+  resourceId: string | null;
+  clientName: string | null;
+  outcome: string;
+  createdAt: Date;
+};
+
+/**
+ * Ce qu'un collaborateur a fait sur la plateforme.
+ *
+ * La source est le journal d'audit, non le fil d'activité : l'audit enregistre
+ * **tout**, y compris les modifications, qui sont précisément ce que
+ * l'administrateur veut voir. Les noms de dossiers sont résolus à travers le
+ * client Prisma du contexte : un dossier hors de sa portée reste anonyme plutôt
+ * que de fuir par l'historique.
+ */
+export async function listMemberActivity(
+  ctx: AuthContext,
+  userId: string,
+  limit = 60,
+): Promise<MemberActivity[]> {
+  // Le collaborateur doit appartenir au cabinet : l'identifiant vient de l'URL.
+  const member = await ctx.db.membership.findFirst({ where: { userId }, select: { id: true } });
+  if (!member) throw new NotFoundError("Collaborateur");
+
+  const entries = await ctx.db.auditLog.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    take: limit,
+  });
+
+  const clientIds = new Set<string>();
+  for (const entry of entries) {
+    if (entry.resourceType === "Client" && entry.resourceId) clientIds.add(entry.resourceId);
+    const target = readClientId(entry.metadata);
+    if (target) clientIds.add(target);
+  }
+
+  const clients = clientIds.size
+    ? await ctx.db.client.findMany({
+        where: { id: { in: [...clientIds] } },
+        select: { id: true, legalName: true },
+      })
+    : [];
+  const names = new Map(clients.map((client) => [client.id, client.legalName]));
+
+  return entries.map((entry) => {
+    const clientId =
+      entry.resourceType === "Client" ? entry.resourceId : readClientId(entry.metadata);
+    return {
+      id: entry.id,
+      action: entry.action,
+      label: actionLabel(entry.action),
+      resourceType: entry.resourceType,
+      resourceId: entry.resourceId,
+      clientName: clientId ? names.get(clientId) ?? null : null,
+      outcome: entry.outcome,
+      createdAt: entry.createdAt,
+    };
+  });
+}
+
+/** Le dossier visé, quand l'action l'a noté dans ses métadonnées. */
+function readClientId(metadata: string | null): string | null {
+  if (!metadata) return null;
+  try {
+    const parsed: unknown = JSON.parse(metadata);
+    if (parsed && typeof parsed === "object" && "clientId" in parsed) {
+      const value = (parsed as { clientId?: unknown }).clientId;
+      return typeof value === "string" ? value : null;
+    }
+  } catch {
+    return null;
+  }
+  return null;
 }

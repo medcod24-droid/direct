@@ -85,10 +85,24 @@ describe("comptable", () => {
     }
   });
 
-  it("ne gère pas les membres du cabinet", () => {
+  it("n'ouvre pas la section Équipe", () => {
+    // La section porte l'invitation, les rôles et l'historique d'un
+    // collaborateur : elle relève de l'administration. Savoir qui compose son
+    // cabinet n'en dépend pas (voir `listStaffOptions`).
     expect(can("accountant", "member.manage")).toBe(false);
     expect(can("accountant", "member.invite")).toBe(false);
-    expect(can("accountant", "member.view")).toBe(true);
+    expect(can("accountant", "member.view")).toBe(false);
+  });
+
+  it("tient sa propre liste de tâches sans distribuer celle des autres", () => {
+    expect(can("accountant", "todo.view")).toBe(true);
+    expect(can("accountant", "todo.manage")).toBe(false);
+    expect(can("assistant", "todo.view")).toBe(true);
+    expect(can("assistant", "todo.manage")).toBe(false);
+    expect(can("owner", "todo.manage")).toBe(true);
+    expect(can("admin", "todo.manage")).toBe(true);
+    // Un compte client n'a rien à faire dans la to-do de l'équipe.
+    expect(can("client", "todo.view")).toBe(false);
   });
 
   it("ne gère pas la facturation du cabinet", () => {

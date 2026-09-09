@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireStaff } from "@/lib/authz/guard";
 import { formatDate } from "@/lib/format";
 import { ROLE_LABELS } from "@/lib/domain/labels";
@@ -36,7 +37,7 @@ export default async function TeamPage() {
     <div className="grid gap-5">
       <PageHeader
         title="Équipe"
-        subtitle={`${staff.length} collaborateur(s)`}
+        subtitle={`${staff.length} collaborateur(s) · ouvrez une fiche pour voir ses tâches et son historique`}
         actions={canInvite ? <InviteMember /> : null}
       />
 
@@ -57,7 +58,14 @@ export default async function TeamPage() {
               {members.map((member) => (
                 <TR key={member.membershipId}>
                   <TD>
-                    {member.name}
+                    {/* La fiche porte l'historique du collaborateur et ses tâches :
+                        c'est là que l'administrateur va voir ce qu'il a fait. */}
+                    <Link
+                      href={`/team/${member.userId}`}
+                      className="underline underline-offset-2 hover:no-underline"
+                    >
+                      {member.name}
+                    </Link>
                     {member.isSelf ? <span className="ms-1.5 text-xs text-muted">(vous)</span> : null}
                   </TD>
                   <TD>

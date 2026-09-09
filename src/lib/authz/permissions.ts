@@ -3,6 +3,12 @@ import type { Role } from "@/lib/domain/enums";
 /**
  * RBAC : liste fermée de permissions. Le refus est la valeur par défaut —
  * une permission absente de la table est refusée, y compris pour le propriétaire.
+ *
+ * `member.view` ouvre la **section Équipe** — inviter, changer un rôle, lire
+ * l'historique d'un collaborateur — et reste réservée à l'administration.
+ * Connaître le nom de ses collègues n'en dépend pas : les sélecteurs
+ * « assigné à », « reçu par » passent par `listStaffOptions`, autorisé par la
+ * permission de l'écran qui les affiche.
  */
 export const PERMISSIONS = [
   "cabinet.view", "cabinet.manage", "cabinet.delete",
@@ -18,6 +24,7 @@ export const PERMISSIONS = [
   "activity.view", "audit.view", "report.view",
   "intervention.view", "intervention.manage",
   "appointment.view", "appointment.manage",
+  "todo.view", "todo.manage",
   "billing.view", "billing.manage",
   "portal.access",
 ] as const;
@@ -28,7 +35,6 @@ const ALL: Permission[] = [...PERMISSIONS];
 
 const ACCOUNTANT: Permission[] = [
   "cabinet.view",
-  "member.view",
   "client.view", "client.create", "client.update", "contact.manage",
   "document.view", "document.upload", "document.download", "document.delete", "document.approve",
   "request.view", "request.create", "request.review", "request.cancel",
@@ -39,6 +45,8 @@ const ACCOUNTANT: Permission[] = [
   "activity.view", "report.view",
   "intervention.view", "intervention.manage",
   "appointment.view", "appointment.manage",
+  // Voit sa propre liste de tâches et la rend ; c'est l'administrateur qui distribue.
+  "todo.view",
 ];
 
 const ASSISTANT: Permission[] = [
@@ -54,6 +62,7 @@ const ASSISTANT: Permission[] = [
   "intervention.view",
   // Le planning, en revanche, il le tient : c'est souvent lui qui prend les rendez-vous.
   "appointment.view", "appointment.manage",
+  "todo.view",
 ];
 
 /** Compte client : accès au portail, limité à son propre dossier (voir TenantScope). */

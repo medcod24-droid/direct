@@ -25,6 +25,14 @@ import {
 } from "@/server/services/interventions";
 import { createTask, updateTask } from "@/server/services/tasks";
 import {
+  approveTodo,
+  createTodo,
+  deleteTodo,
+  returnTodo,
+  submitTodo,
+  updateTodo,
+} from "@/server/services/todos";
+import {
   updateCabinetSettings,
   inviteMember,
   removeMember,
@@ -332,6 +340,107 @@ export async function uploadFieldScanAction(
       message: "Justificatif enregistré.",
       document: { id: document.id, filename: document.filename },
     };
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+// --- liste de tâches de l'équipe ----------------------------------------------
+
+function todoInput(form: FormData) {
+  return {
+    assigneeId: str(form, "assigneeId"),
+    title: str(form, "title"),
+    details: str(form, "details"),
+    dueDate: str(form, "dueDate"),
+    priority: str(form, "priority") ?? "normal",
+    clientId: str(form, "clientId"),
+  };
+}
+
+export async function createTodoAction(_prev: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    const ctx = await requirePermission("todo.manage");
+    await createTodo(ctx, todoInput(form));
+    revalidatePath("/todos");
+    revalidatePath("/dashboard");
+    return { ok: true, message: "Tâche confiée." };
+  } catch (error) {
+    return { ...fail(error), values: formValues(form) };
+  }
+}
+
+export async function updateTodoAction(
+  todoId: string,
+  _prev: ActionState,
+  form: FormData,
+): Promise<ActionState> {
+  try {
+    const ctx = await requirePermission("todo.manage");
+    await updateTodo(ctx, todoId, todoInput(form));
+    revalidatePath("/todos");
+    return { ok: true, message: "Tâche mise à jour." };
+  } catch (error) {
+    return { ...fail(error), values: formValues(form) };
+  }
+}
+
+/**
+ * Le collaborateur rend sa tâche.
+ *
+ * Autorisé par `todo.view` : c'est l'acte de celui à qui la tâche est confiée,
+ * et le service vérifie que c'est bien lui.
+ */
+export async function submitTodoAction(
+  todoId: string,
+  _prev: ActionState,
+  form: FormData,
+): Promise<ActionState> {
+  try {
+    const ctx = await requirePermission("todo.view");
+    await submitTodo(ctx, todoId, { note: str(form, "note") });
+    revalidatePath("/todos");
+    revalidatePath("/dashboard");
+    return { ok: true, message: "Tâche rendue. En attente de confirmation." };
+  } catch (error) {
+    return { ...fail(error), values: formValues(form) };
+  }
+}
+
+export async function approveTodoAction(todoId: string): Promise<ActionState> {
+  try {
+    const ctx = await requirePermission("todo.manage");
+    await approveTodo(ctx, todoId);
+    revalidatePath("/todos");
+    revalidatePath("/dashboard");
+    return { ok: true, message: "Tâche confirmée." };
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+export async function returnTodoAction(
+  todoId: string,
+  _prev: ActionState,
+  form: FormData,
+): Promise<ActionState> {
+  try {
+    const ctx = await requirePermission("todo.manage");
+    await returnTodo(ctx, todoId, { note: str(form, "note") });
+    revalidatePath("/todos");
+    revalidatePath("/dashboard");
+    return { ok: true, message: "Tâche renvoyée au collaborateur." };
+  } catch (error) {
+    return { ...fail(error), values: formValues(form) };
+  }
+}
+
+export async function deleteTodoAction(todoId: string): Promise<ActionState> {
+  try {
+    const ctx = await requirePermission("todo.manage");
+    await deleteTodo(ctx, todoId);
+    revalidatePath("/todos");
+    return { ok: true, message: "Tâche retirée." };
   } catch (error) {
     return fail(error);
   }
