@@ -16,6 +16,7 @@ export const PERMISSIONS = [
   "invoice.view", "invoice.manage",
   "message.view", "message.send", "note.internal",
   "activity.view", "audit.view", "report.view",
+  "intervention.view", "intervention.manage",
   "billing.view", "billing.manage",
   "portal.access",
 ] as const;
@@ -35,6 +36,7 @@ const ACCOUNTANT: Permission[] = [
   "invoice.view",
   "message.view", "message.send", "note.internal",
   "activity.view", "report.view",
+  "intervention.view", "intervention.manage",
 ];
 
 const ASSISTANT: Permission[] = [
@@ -46,6 +48,8 @@ const ASSISTANT: Permission[] = [
   "deadline.view",
   "message.view",
   "activity.view",
+  // L'assistant lit le registre des services rendus, il ne l'écrit pas.
+  "intervention.view",
 ];
 
 /** Compte client : accès au portail, limité à son propre dossier (voir TenantScope). */

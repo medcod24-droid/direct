@@ -99,6 +99,22 @@ Deux cas propres à la personne physique élargissent la fiche :
   un bien donné en location n'y est pas soumis mais produit des revenus fonciers imposables à
   l'IR, et le secondaire ne bénéficie d'aucun abattement.
 
+### Liste d'activité
+
+`Intervention` est le registre, **écrit à la main**, de ce que le cabinet a fait pour un
+client : nom du service, date, motif, compte rendu. Il ne se déduit d'aucune autre table —
+un rendez-vous, un passage à la DGI, une régularisation ne laissent aucune trace ailleurs —
+et il s'imprime avec la fiche, pour le classeur papier.
+
+À ne pas confondre avec `Activity`, la trace **automatique** de ce que la plateforme
+enregistre. Les deux apparaissent sur le dossier, sous deux titres distincts : « Liste
+d'activité » pour le registre du comptable, « Journal du dossier » pour la trace machine.
+
+Le modèle est déclaré dans `TENANT_MODELS` **et** `STRICT_CLIENT_MODELS` : sans la seconde
+entrée, un collaborateur restreint à ses dossiers assignés aurait lu les comptes rendus des
+autres. Les permissions `intervention.view` / `intervention.manage` séparent la lecture de
+l'écriture — l'assistant lit, il n'écrit pas.
+
 `Client.referredById` désigne le dossier du cabinet qui a apporté celui-ci. La relation est
 vérifiée côté service, à travers le client Prisma du contexte : un dossier d'un autre cabinet est
 introuvable, et un dossier ne peut pas être son propre apporteur.

@@ -8,6 +8,7 @@ import {
 } from "@/lib/domain/labels";
 import { formatDate, formatMad } from "@/lib/format";
 import { getClientOverview } from "@/server/services/clients";
+import { listInterventions } from "@/server/services/interventions";
 import { Button } from "@/components/ui";
 import { PrintButton } from "./PrintButton";
 
@@ -52,7 +53,10 @@ export default async function ClientFichePage({
 }) {
   const ctx = await requireStaff("client.view");
   const { id } = await params;
-  const { client, contacts, referrer } = await getClientOverview(ctx, id);
+  const [{ client, contacts, referrer }, interventions] = await Promise.all([
+    getClientOverview(ctx, id),
+    ctx.can("intervention.view") ? listInterventions(ctx, id) : Promise.resolve([]),
+  ]);
 
   const individual = client.kind === "individual";
   const activities = parse<string>(client.declaredActivities);
@@ -254,6 +258,36 @@ export default async function ClientFichePage({
               contact.email ?? "",
             ])}
           />
+        ) : null}
+
+        {interventions.length > 0 ? (
+          <section className="print-bloc mt-5">
+            <h2 className="text-sm font-semibold uppercase tracking-wide">Liste d&apos;activité</h2>
+            <table className="mt-2 w-full text-sm">
+              <thead>
+                <tr className="border-b border-line">
+                  <th className="py-1 text-start font-medium text-muted print:text-black">Service</th>
+                  <th className="py-1 text-start font-medium text-muted print:text-black">Date</th>
+                  <th className="py-1 text-start font-medium text-muted print:text-black">Motif</th>
+                  <th className="py-1 text-start font-medium text-muted print:text-black">
+                    Compte rendu
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {interventions.map((row) => (
+                  <tr key={row.id} className="border-b border-line/60">
+                    <td className="py-1 pe-3 align-top">{row.service}</td>
+                    <td className="py-1 pe-3 align-top tabular whitespace-nowrap">
+                      {formatDate(row.performedAt)}
+                    </td>
+                    <td className="py-1 pe-3 align-top">{row.reason ?? ""}</td>
+                    <td className="py-1 align-top whitespace-pre-line">{row.report ?? ""}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
         ) : null}
 
         {client.notes ? (

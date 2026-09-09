@@ -9,9 +9,11 @@ import {
   VAT_REGIME_LABELS,
 } from "@/lib/domain/labels";
 import { getClientOverview, ratingsForClients } from "@/server/services/clients";
+import { listInterventions } from "@/server/services/interventions";
 import { listClientAssignees, listMembers } from "@/server/services/members";
 import { Alert, Badge, Button, Card, EmptyState, PageHeader, StarRating, StatusPill } from "@/components/ui";
 import { ArchiveClient } from "./ArchiveClient";
+import { Interventions } from "./Interventions";
 import { Assignees } from "./Assignees";
 import { RequestForm } from "./RequestForm";
 import { UploadForm } from "./UploadForm";
@@ -53,9 +55,10 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   // Les assignations conditionnent ce que voit un collaborateur restreint :
   // elles se gèrent donc depuis le dossier lui-même.
   const canAssign = ctx.can("client.assign");
-  const [assignees, staff] = await Promise.all([
+  const [assignees, staff, interventions] = await Promise.all([
     listClientAssignees(ctx, id),
     canAssign ? listMembers(ctx) : Promise.resolve([]),
+    ctx.can("intervention.view") ? listInterventions(ctx, id) : Promise.resolve([]),
   ]);
 
   return (
@@ -390,9 +393,27 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         </Card>
       </div>
 
-      <Card title="Historique">
+      {ctx.can("intervention.view") ? (
+        <Card
+          title="Liste d'activité"
+          description="Ce que le cabinet a fait pour ce client : le service, sa date, son motif et son compte rendu."
+        >
+          <Interventions
+            clientId={id}
+            canManage={ctx.can("intervention.manage")}
+            rows={interventions}
+          />
+        </Card>
+      ) : null}
+
+      {/* Distinct de la liste d'activité ci-dessus : ce journal est écrit par la
+          plateforme, celui-là par le comptable. */}
+      <Card
+        title="Journal du dossier"
+        description="Trace automatique des actions enregistrées par la plateforme."
+      >
         {data.activities.length === 0 ? (
-          <EmptyState title="Aucune activité" description="Les événements du dossier apparaîtront ici." />
+          <EmptyState title="Aucun événement" description="Les événements du dossier apparaîtront ici." />
         ) : (
           <ol className="grid gap-2">
             {data.activities.map((activity) => (

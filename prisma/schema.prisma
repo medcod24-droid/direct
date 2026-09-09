@@ -78,6 +78,7 @@ model Cabinet {
   notifications Notification[]
   auditLogs    AuditLog[]
   activities   Activity[]
+  interventions Intervention[]
   invitations  Invitation[]
   categories   DocumentCategory[]
 
@@ -132,6 +133,7 @@ model User {
   notifications Notification[]
   messages      Message[]
   comments      TaskComment[]
+  interventions Intervention[]  @relation("InterventionAuthor")
   auditLogs     AuditLog[]
 
   createdAt DateTime @default(now())
@@ -334,6 +336,7 @@ model Client {
   invoices    ClientInvoice[]
   messages    Message[]
   activities  Activity[]
+  interventions Intervention[]
   portalUsers Membership[]
 
   createdAt DateTime @default(now())
@@ -344,6 +347,38 @@ model Client {
   @@index([cabinetId, legalName])
   @@index([cabinetId, ice])
   @@index([cabinetId, if])
+}
+
+/// Registre des services rendus au client par le cabinet.
+///
+/// À ne pas confondre avec `Activity`, qui est la trace **automatique** de ce que
+/// la plateforme enregistre. Ici, c'est le comptable qui écrit : quel service, à
+/// quelle date, pourquoi, et ce qu'il en est résulté. C'est ce registre que l'on
+/// relit pour savoir ce que le cabinet a fait pour un dossier, et qui s'imprime
+/// avec la fiche.
+model Intervention {
+  id        String @id @default(cuid())
+  cabinetId String
+  clientId  String
+
+  /// Nom du service rendu
+  service     String
+  performedAt DateTime
+  /// Pourquoi il a été rendu
+  reason String?
+  /// Ce qui a été fait, et ce qu'il en est résulté
+  report String?
+
+  createdById String?
+
+  cabinet   Cabinet @relation(fields: [cabinetId], references: [id], onDelete: Cascade)
+  client    Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  createdBy User?   @relation("InterventionAuthor", fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([cabinetId, clientId, performedAt])
 }
 
 model Contact {

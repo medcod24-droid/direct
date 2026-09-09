@@ -11,6 +11,11 @@ import { deleteDocument, replaceFieldScan, setDocumentStatus, uploadDocument } f
 import { generateForYear, logOutageAttempt, setManagedBy, updateDeadlineStatus } from "@/server/services/deadlines";
 import { createInvoice, recordPayment } from "@/server/services/invoices";
 import { createRequest, reviewRequest, submitRequest } from "@/server/services/requests";
+import {
+  createIntervention,
+  deleteIntervention,
+  updateIntervention,
+} from "@/server/services/interventions";
 import { createTask, updateTask } from "@/server/services/tasks";
 import {
   updateCabinetSettings,
@@ -320,6 +325,71 @@ export async function uploadFieldScanAction(
       message: "Justificatif enregistré.",
       document: { id: document.id, filename: document.filename },
     };
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+// --- registre des services rendus --------------------------------------------
+
+/**
+ * Enregistre un service rendu au client.
+ *
+ * Le registre est écrit à la main par le cabinet : il ne se déduit d'aucune
+ * autre table, et c'est lui que le comptable relit — et imprime — pour savoir ce
+ * qu'il a fait pour un dossier.
+ */
+export async function createInterventionAction(
+  _prev: ActionState,
+  form: FormData,
+): Promise<ActionState> {
+  const clientId = str(form, "clientId");
+  try {
+    const ctx = await requirePermission("intervention.manage");
+    await createIntervention(ctx, {
+      clientId,
+      service: str(form, "service"),
+      performedAt: str(form, "performedAt") ?? new Date().toISOString(),
+      reason: str(form, "reason"),
+      report: str(form, "report"),
+    });
+    revalidatePath(`/clients/${clientId ?? ""}`);
+    return { ok: true, message: "Service enregistré." };
+  } catch (error) {
+    return { ...fail(error), values: formValues(form) };
+  }
+}
+
+export async function updateInterventionAction(
+  interventionId: string,
+  _prev: ActionState,
+  form: FormData,
+): Promise<ActionState> {
+  const clientId = str(form, "clientId");
+  try {
+    const ctx = await requirePermission("intervention.manage");
+    await updateIntervention(ctx, interventionId, {
+      service: str(form, "service"),
+      performedAt: str(form, "performedAt") ?? new Date().toISOString(),
+      reason: str(form, "reason"),
+      report: str(form, "report"),
+    });
+    revalidatePath(`/clients/${clientId ?? ""}`);
+    return { ok: true, message: "Service mis à jour." };
+  } catch (error) {
+    return { ...fail(error), values: formValues(form) };
+  }
+}
+
+export async function deleteInterventionAction(
+  interventionId: string,
+  clientId: string,
+): Promise<ActionState> {
+  try {
+    const ctx = await requirePermission("intervention.manage");
+    await deleteIntervention(ctx, interventionId);
+    revalidatePath(`/clients/${clientId}`);
+    return { ok: true, message: "Service retiré." };
   } catch (error) {
     return fail(error);
   }
