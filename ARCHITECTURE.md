@@ -88,6 +88,27 @@ parcourir, et un dossier se retrouve par le numéro d'une succursale ou d'une ta
 `activity` garde la première activité et `employeeCount` est déduit du nombre de salariés dès
 que le cabinet les nomme.
 
+### Justificatifs rattachés aux champs
+
+`Document.fieldKey` désigne le champ de la fiche qu'une pièce justifie :
+`« cin »`, `« ice »`, ou `« rc:<id> »` pour une ligne d'une liste. Un seul
+document actif par champ — le dépôt suivant remplace le précédent, la fiche
+montrant la pièce en cours et non un historique.
+
+Les lignes des listes portent donc un **identifiant stable**, émis par le
+navigateur puis réémis par le serveur s'il manque ou se répète. Un indice de
+position ne conviendrait pas : retirer une succursale renumérote celles qui
+suivent, et le scan du registre se retrouverait accroché au mauvais
+établissement. Un justificatif dont la ligne a été supprimée n'est pas perdu : il
+reste une pièce ordinaire du dossier, simplement plus affichée en face d'un
+champ.
+
+Le dépôt appelle l'action serveur directement, sans `<form>` : ces contrôles
+vivent à l'intérieur du formulaire de la fiche, et un formulaire imbriqué est
+interdit en HTML — le navigateur l'ignore sans rien signaler. L'action ne
+revalide aucun chemin, car rafraîchir la route en cours remonterait le formulaire
+et réémettrait les identifiants des lignes non encore enregistrées.
+
 Les CIN des associés et des salariés suivent la même règle que celle du gérant : elles ne sont
 enregistrées qu'en mode CNDP « autorisation » (loi 09-08, art. 12-1-e). Le filtrage est appliqué
 dans `server/services/clients.ts`, à un seul endroit, et non dans le formulaire — une liste non

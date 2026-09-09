@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { recordAudit } from "@/lib/audit";
 import type { AuthContext } from "@/lib/authz/guard";
@@ -283,19 +284,38 @@ export async function ratingsForClients(
   return result;
 }
 
-type Registration = {
+type WithId = { id?: string };
+type TaxProf = WithId & { value: string };
+type Branch = WithId & { number: string; court?: string; taxProfNos: TaxProf[] };
+type Registration = WithId & {
   number: string;
   court?: string;
-  taxProfNos: string[];
-  branches: { number: string; court?: string; taxProfNos: string[] }[];
+  taxProfNos: TaxProf[];
+  branches: Branch[];
 };
 
 type ClientLists = Partial<{
   activities: string[];
   registrations: Registration[];
-  partners: { role: string; name: string; cin?: string; address?: string; phone?: string }[];
+  partners: (WithId & { role: string; name: string; cin?: string; address?: string; phone?: string })[];
   employees: { name: string; cin?: string; cnssNo?: string }[];
 }>;
+
+/**
+ * Identifiants de ligne, complétés et rendus uniques.
+ *
+ * Le navigateur en émet un à la création d'une ligne, pour que le justificatif
+ * déposé dans la foulée s'y rattache. Le serveur ne s'y fie pas : un identifiant
+ * absent ou déjà pris est réémis ici, sinon deux lignes partageraient leurs
+ * pièces.
+ */
+function withIds<T extends WithId>(rows: T[], seen: Set<string>): T[] {
+  return rows.map((row) => {
+    const id = row.id && !seen.has(row.id) ? row.id : randomUUID().slice(0, 8);
+    seen.add(id);
+    return { ...row, id };
+  });
+}
 
 /**
  * Colonnes de listes, sérialisées en JSON comme `tags`.
@@ -320,7 +340,15 @@ function listColumns(data: ClientLists, cndpMode: string) {
   }
 
   if (data.registrations) {
-    const registrations = data.registrations;
+    const seen = new Set<string>();
+    const registrations = withIds(data.registrations, seen).map((registration) => ({
+      ...registration,
+      taxProfNos: withIds(registration.taxProfNos, seen),
+      branches: withIds(registration.branches, seen).map((branch) => ({
+        ...branch,
+        taxProfNos: withIds(branch.taxProfNos, seen),
+      })),
+    }));
     columns.registrations = JSON.stringify(registrations);
     columns.rc = registrations[0]?.number ?? "";
     columns.rcCourt = registrations[0]?.court ?? "";
@@ -331,15 +359,17 @@ function listColumns(data: ClientLists, cndpMode: string) {
     );
 
     const taxProfNos = registrations.flatMap((registration) => [
-      ...registration.taxProfNos,
-      ...registration.branches.flatMap((branch) => branch.taxProfNos),
+      ...registration.taxProfNos.map((tax) => tax.value),
+      ...registration.branches.flatMap((branch) => branch.taxProfNos.map((tax) => tax.value)),
     ]);
     columns.taxProfNos = JSON.stringify(taxProfNos);
     columns.taxProfNo = taxProfNos[0] ?? "";
   }
 
   if (data.partners) {
-    columns.partners = JSON.stringify(data.partners.map((partner) => stripCin(partner, cndpMode)));
+    columns.partners = JSON.stringify(
+      withIds(data.partners, new Set()).map((partner) => stripCin(partner, cndpMode)),
+    );
   }
 
   if (data.employees) {

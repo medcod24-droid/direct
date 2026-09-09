@@ -89,9 +89,9 @@ describe("fiche client scindée", () => {
         {
           number: "RC-100",
           court: "Fès",
-          taxProfNos: ["TP-PRINCIPAL"],
+          taxProfNos: [{ value: "TP-PRINCIPAL" }],
           branches: [
-            { number: "SUC-9", court: "Fès", taxProfNos: ["TP-A", "TP-B"] },
+            { number: "SUC-9", court: "Fès", taxProfNos: [{ value: "TP-A" }, { value: "TP-B" }] },
             { number: "SUC-10", court: "Fès", taxProfNos: [] },
           ],
         },
@@ -100,9 +100,24 @@ describe("fiche client scindée", () => {
     });
 
     // L'arbre est la source ; le reste en est déduit à l'écriture.
-    const tree = JSON.parse(created.registrations) as { branches: unknown[] }[];
+    const tree = JSON.parse(created.registrations) as {
+      id: string;
+      branches: { id: string; taxProfNos: { id: string }[] }[];
+      taxProfNos: { id: string }[];
+    }[];
     expect(tree).toHaveLength(2);
     expect(tree[0]?.branches).toHaveLength(2);
+
+    // Chaque ligne reçoit un identifiant stable, distinct : c'est lui qui porte
+    // le justificatif, un indice de position se décalant au moindre retrait.
+    const ids = [
+      ...tree.map((r) => r.id),
+      ...tree.flatMap((r) => r.taxProfNos.map((t) => t.id)),
+      ...tree.flatMap((r) => r.branches.map((b) => b.id)),
+      ...tree.flatMap((r) => r.branches.flatMap((b) => b.taxProfNos.map((t) => t.id))),
+    ];
+    expect(ids.every(Boolean)).toBe(true);
+    expect(new Set(ids).size).toBe(ids.length);
 
     expect(created.rc).toBe("RC-100");
     expect(created.rcCourt).toBe("Fès");
@@ -209,7 +224,7 @@ describe("fiche client scindée", () => {
       ...BASE,
       kind: "company",
       subtype: "sarl",
-      registrations: [{ number: "RC-7", court: "Rabat", taxProfNos: ["TP-7"] }],
+      registrations: [{ number: "RC-7", court: "Rabat", taxProfNos: [{ value: "TP-7" }] }],
     });
 
     const updated = await updateClient(authorized, created.id, { city: "Agadir" });
@@ -219,4 +234,21 @@ describe("fiche client scindée", () => {
     expect(updated.city).toBe("Agadir");
   });
 
+
+  it("réémet un identifiant de ligne dupliqué", async () => {
+    const created = await createClient(declaring, {
+      ...BASE,
+      kind: "company",
+      subtype: "sarl",
+      legalName: "Identifiants dupliqués",
+      registrations: [
+        { id: "aaaabbbb", number: "RC-1", taxProfNos: [] },
+        { id: "aaaabbbb", number: "RC-2", taxProfNos: [] },
+      ],
+    });
+
+    const tree = JSON.parse(created.registrations) as { id: string }[];
+    expect(tree[0]?.id).toBe("aaaabbbb");
+    expect(tree[1]?.id).not.toBe("aaaabbbb");
+  });
 });

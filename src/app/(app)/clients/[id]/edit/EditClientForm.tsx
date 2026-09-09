@@ -5,6 +5,7 @@ import { useActionState } from "react";
 import { updateClientAction, type ActionState } from "@/app/actions/app";
 import { Alert, Button } from "@/components/ui";
 import { ClientFields } from "../../ClientFields";
+import type { ScanInfo } from "../../FieldScan";
 
 const initial: ActionState = {};
 
@@ -19,10 +20,12 @@ export function EditClientForm({
   clientId,
   cndpMode,
   current,
+  scans,
 }: {
   clientId: string;
   cndpMode: string;
   current: Record<string, string>;
+  scans: Record<string, ScanInfo>;
 }) {
   const action = updateClientAction.bind(null, clientId);
   const [state, formAction, pending] = useActionState(action, initial);
@@ -43,6 +46,8 @@ export function EditClientForm({
         checked={checked}
         fieldError={fieldError}
         cndpMode={cndpMode}
+        clientId={clientId}
+        scans={scans}
       />
 
       <div className="flex justify-end gap-2">

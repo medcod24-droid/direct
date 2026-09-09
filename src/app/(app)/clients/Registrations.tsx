@@ -2,19 +2,41 @@
 
 import { useState } from "react";
 import { Button, Field, Input } from "@/components/ui";
+import { FieldScan, type ScanInfo } from "./FieldScan";
 
-type TaxRow = { id: number; value: string };
-type BranchRow = { id: number; number: string; court: string; taxProfNos: TaxRow[] };
-type RegistrationRow = { id: number; number: string; court: string; taxProfNos: TaxRow[]; branches: BranchRow[] };
+type TaxRow = { key: number; id: string; value: string };
+type BranchRow = { key: number; id: string; number: string; court: string; taxProfNos: TaxRow[] };
+type RegistrationRow = {
+  key: number;
+  id: string;
+  number: string;
+  court: string;
+  taxProfNos: TaxRow[];
+  branches: BranchRow[];
+};
 
 export type RegistrationsProps = {
   /** Valeur enregistrée ou ressaisie, par nom complet de champ. */
   value: (name: string, fallback?: string) => string;
   fieldError: (name: string) => string | undefined;
+  /** Dossier concerné ; absent tant qu'il n'est pas créé (pas de justificatif). */
+  clientId: string | null;
+  scans: Record<string, ScanInfo>;
 };
 
-let nextId = 0;
-const id = () => (nextId += 1);
+let nextKey = 0;
+/** Clé React, locale à la page. */
+const key = () => (nextKey += 1);
+
+/**
+ * Identifiant persistant d'une ligne, émis ici pour qu'un justificatif puisse
+ * être déposé dans la foulée, avant même l'enregistrement de la fiche. Le
+ * serveur le réémet s'il manque ou se répète.
+ */
+const newId = () =>
+  typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID().slice(0, 8)
+    : Math.random().toString(36).slice(2, 10);
 
 const MAX_REGISTRATIONS = 20;
 const MAX_BRANCHES = 20;
@@ -39,7 +61,7 @@ const MAX_TAXES = 20;
  * sûr que des valeurs laissées dans le DOM, où l'ajout ou le retrait d'une ligne
  * renumérote tout ce qui suit.
  */
-export function Registrations({ value, fieldError }: RegistrationsProps) {
+export function Registrations({ value, fieldError, clientId, scans }: RegistrationsProps) {
   const [rows, setRows] = useState<RegistrationRow[]>(() => readRegistrations(value));
 
   const patch = (index: number, change: Partial<RegistrationRow>) =>
@@ -56,11 +78,12 @@ export function Registrations({ value, fieldError }: RegistrationsProps) {
       {rows.map((registration, index) => {
         const prefix = `registrations.${index}`;
         return (
-          <fieldset key={registration.id} className="rounded-md border border-line bg-surface2 p-3">
+          <fieldset key={registration.key} className="rounded-md border border-line bg-surface2 p-3">
             <legend className="px-1 text-[13px] font-medium text-ink2">
               {index === 0 ? "Immatriculation principale" : `Immatriculation ${index + 1}`}
             </legend>
 
+            <input type="hidden" name={`${prefix}.id`} value={registration.id} />
             <div className="grid gap-3 sm:grid-cols-2">
               <Field
                 label="N° de registre de commerce"
@@ -88,12 +111,20 @@ export function Registrations({ value, fieldError }: RegistrationsProps) {
               </Field>
             </div>
 
+            <FieldScan
+              clientId={clientId}
+              fieldKey={`rc:${registration.id}`}
+              current={scans[`rc:${registration.id}`]}
+            />
+
             <TaxList
               prefix={prefix}
               label="Taxe professionnelle — établissement principal"
               rows={registration.taxProfNos}
               onChange={(taxProfNos) => patch(index, { taxProfNos })}
               fieldError={fieldError}
+              clientId={clientId}
+              scans={scans}
             />
 
             <div className="mt-3 grid gap-2 border-t border-line pt-3">
@@ -119,9 +150,10 @@ export function Registrations({ value, fieldError }: RegistrationsProps) {
                   });
                 return (
                   <div
-                    key={branch.id}
+                    key={branch.key}
                     className="rounded-md border border-line bg-surface p-3"
                   >
+                    <input type="hidden" name={`${branchPrefix}.id`} value={branch.id} />
                     <div className="grid gap-3 sm:grid-cols-2">
                       <Field
                         label="N° de succursale"
@@ -149,12 +181,20 @@ export function Registrations({ value, fieldError }: RegistrationsProps) {
                       </Field>
                     </div>
 
+                    <FieldScan
+                      clientId={clientId}
+                      fieldKey={`branch:${branch.id}`}
+                      current={scans[`branch:${branch.id}`]}
+                    />
+
                     <TaxList
                       prefix={branchPrefix}
                       label="Taxe professionnelle de cette succursale"
                       rows={branch.taxProfNos}
                       onChange={(taxProfNos) => patchBranch({ taxProfNos })}
                       fieldError={fieldError}
+                      clientId={clientId}
+                      scans={scans}
                     />
 
                     <div className="mt-2">
@@ -185,7 +225,7 @@ export function Registrations({ value, fieldError }: RegistrationsProps) {
                       patch(index, {
                         branches: [
                           ...registration.branches,
-                          { id: id(), number: "", court: "", taxProfNos: [] },
+                          { key: key(), id: newId(), number: "", court: "", taxProfNos: [] },
                         ],
                       })
                     }
@@ -218,7 +258,7 @@ export function Registrations({ value, fieldError }: RegistrationsProps) {
             onClick={() =>
               setRows((current) => [
                 ...current,
-                { id: id(), number: "", court: "", taxProfNos: [], branches: [] },
+                { key: key(), id: newId(), number: "", court: "", taxProfNos: [], branches: [] },
               ])
             }
           >
@@ -236,12 +276,16 @@ function TaxList({
   rows,
   onChange,
   fieldError,
+  clientId,
+  scans,
 }: {
   prefix: string;
   label: string;
   rows: TaxRow[];
   onChange: (rows: TaxRow[]) => void;
   fieldError: (name: string) => string | undefined;
+  clientId: string | null;
+  scans: Record<string, ScanInfo>;
 }) {
   return (
     <div className="mt-3 grid gap-2">
@@ -253,7 +297,9 @@ function TaxList({
       {rows.map((row, index) => {
         const field = `${prefix}.taxProfNos.${index}.value`;
         return (
-          <div key={row.id} className="flex items-end gap-2">
+          <div key={row.key} className="grid gap-1">
+            <input type="hidden" name={`${prefix}.taxProfNos.${index}.id`} value={row.id} />
+            <div className="flex items-end gap-2">
             <Field
               label="Numéro"
               htmlFor={field}
@@ -277,6 +323,12 @@ function TaxList({
             >
               Retirer
             </Button>
+            </div>
+            <FieldScan
+              clientId={clientId}
+              fieldKey={`tax:${row.id}`}
+              current={scans[`tax:${row.id}`]}
+            />
           </div>
         );
       })}
@@ -287,7 +339,7 @@ function TaxList({
             type="button"
             variant="ghost"
             size="sm"
-            onClick={() => onChange([...rows, { id: id(), value: "" }])}
+            onClick={() => onChange([...rows, { key: key(), id: newId(), value: "" }])}
           >
             + Ajouter un numéro
           </Button>
@@ -304,14 +356,16 @@ function readRegistrations(value: (name: string, fallback?: string) => string): 
     const prefix = `registrations.${index}`;
     const branchCount = bounded(value(`${prefix}.branches.count`, "0"), MAX_BRANCHES);
     return {
-      id: id(),
+      key: key(),
+      id: value(`${prefix}.id`) || newId(),
       number: value(`${prefix}.number`),
       court: value(`${prefix}.court`),
       taxProfNos: readTaxes(value, prefix),
       branches: Array.from({ length: branchCount }, (_, branchIndex) => {
         const branchPrefix = `${prefix}.branches.${branchIndex}`;
         return {
-          id: id(),
+          key: key(),
+          id: value(`${branchPrefix}.id`) || newId(),
           number: value(`${branchPrefix}.number`),
           court: value(`${branchPrefix}.court`),
           taxProfNos: readTaxes(value, branchPrefix),
@@ -324,7 +378,8 @@ function readRegistrations(value: (name: string, fallback?: string) => string): 
 function readTaxes(value: (name: string, fallback?: string) => string, prefix: string): TaxRow[] {
   const count = bounded(value(`${prefix}.taxProfNos.count`, "0"), MAX_TAXES);
   return Array.from({ length: count }, (_, index) => ({
-    id: id(),
+    key: key(),
+    id: value(`${prefix}.taxProfNos.${index}.id`) || newId(),
     value: value(`${prefix}.taxProfNos.${index}.value`),
   }));
 }

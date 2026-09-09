@@ -7,7 +7,7 @@ import { env } from "@/lib/env";
 import { toPublicError } from "@/lib/errors";
 import { markAllNotificationsRead, markNotificationRead } from "@/lib/notifications/service";
 import { archiveClient, assignCollaborator, createClient, updateClient } from "@/server/services/clients";
-import { deleteDocument, setDocumentStatus, uploadDocument } from "@/server/services/documents";
+import { deleteDocument, replaceFieldScan, setDocumentStatus, uploadDocument } from "@/server/services/documents";
 import { generateForYear, logOutageAttempt, setManagedBy, updateDeadlineStatus } from "@/server/services/deadlines";
 import { createInvoice, recordPayment } from "@/server/services/invoices";
 import { createRequest, reviewRequest, submitRequest } from "@/server/services/requests";
@@ -96,23 +96,27 @@ function textList(form: FormData, name: string): string[] {
  * plates, et une convention explicite vaut mieux qu'un balayage de clés.
  */
 function registrationList(form: FormData) {
-  return rows(form, "registrations", ["number", "court"])
+  return rows(form, "registrations", ["id", "number", "court"])
     .map((registration, index) => ({
+      id: registration.id,
       number: registration.number,
       court: registration.court,
-      taxProfNos: textList(form, `registrations.${index}.taxProfNos`),
-      branches: rows(form, `registrations.${index}.branches`, ["number", "court"])
+      taxProfNos: taxList(form, `registrations.${index}.taxProfNos`),
+      branches: rows(form, `registrations.${index}.branches`, ["id", "number", "court"])
         .map((branch, branchIndex) => ({
+          id: branch.id,
           number: branch.number,
           court: branch.court,
-          taxProfNos: textList(
-            form,
-            `registrations.${index}.branches.${branchIndex}.taxProfNos`,
-          ),
+          taxProfNos: taxList(form, `registrations.${index}.branches.${branchIndex}.taxProfNos`),
         }))
         .filter((branch) => branch.number),
     }))
     .filter((registration) => registration.number);
+}
+
+/** Numéros de taxe professionnelle : chacun garde son identifiant de ligne. */
+function taxList(form: FormData, name: string) {
+  return rows(form, name, ["id", "value"]).filter((row) => row.value);
 }
 
 /**
@@ -171,7 +175,7 @@ function clientInput(form: FormData) {
     // Une ligne sans son champ identifiant est une ligne ajoutée puis laissée
     // vide : elle est écartée plutôt que refusée, la corriger n'apporterait rien.
     registrations: registrationList(form),
-    partners: rows(form, "partners", ["role", "name", "cin", "phone", "address"]).filter(
+    partners: rows(form, "partners", ["id", "role", "name", "cin", "phone", "address"]).filter(
       (row) => row.name,
     ),
     employees: rows(form, "employees", ["name", "cin", "cnssNo"]).filter((row) => row.name),
@@ -270,6 +274,45 @@ export async function uploadDocumentAction(
     revalidatePath(`/clients/${str(form, "clientId") ?? ""}`);
     revalidatePath("/documents");
     return { ok: true, message: "Document ajouté." };
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+/**
+ * Justificatif d'un champ de la fiche.
+ *
+ * Un dépôt par requête, déclenché dès le choix du fichier : la fiche compte une
+ * dizaine de pièces possibles, les envoyer toutes dans la soumission du
+ * formulaire aurait fait un corps de requête de plusieurs centaines de
+ * mégaoctets, et une erreur aurait emporté la saisie avec elle.
+ */
+export async function uploadFieldScanAction(
+  form: FormData,
+): Promise<ActionState & { document?: { id: string; filename: string } }> {
+  const clientId = str(form, "clientId");
+  try {
+    const ctx = await requirePermission("document.upload");
+    const file = await fileFromForm(form);
+    if (!file) return { error: "Sélectionnez un fichier." };
+
+    const document = await replaceFieldScan(
+      ctx,
+      { clientId, fieldKey: str(form, "fieldKey") },
+      file,
+    );
+    // Pas de `revalidatePath` ici. Il rafraîchit l'arbre de la route en cours,
+    // donc remonte le formulaire de la fiche — et les identifiants des lignes
+    // ajoutées à l'écran mais pas encore enregistrées sont réémis : le
+    // justificatif qui vient d'être déposé se retrouverait rattaché à une ligne
+    // qui n'existe plus. Les pages concernées sont `force-dynamic`, elles se
+    // rechargent de toute façon à la navigation, et le composant met à jour son
+    // propre affichage avec le document renvoyé.
+    return {
+      ok: true,
+      message: "Justificatif enregistré.",
+      document: { id: document.id, filename: document.filename },
+    };
   } catch (error) {
     return fail(error);
   }

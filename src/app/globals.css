@@ -264,3 +264,53 @@
 :root[data-theme="dark"] .logo-sombre {
   display: block;
 }
+
+/* ==========================================================================
+   Impression
+   ========================================================================== */
+
+/*
+ * La fiche client est faite pour être imprimée et classée dans le dossier
+ * papier du cabinet. Ce qui n'a pas de sens sur papier disparaît : navigation,
+ * en-tête applicatif, boutons. La règle est globale et non propre à la fiche —
+ * aucune page de l'application n'a de raison d'imprimer son menu.
+ */
+@media print {
+  :root {
+    color-scheme: light;
+  }
+
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  aside,
+  header,
+  nav,
+  .no-print {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+  }
+
+  a[href] {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  /* Une section ne doit pas être coupée en deux pages si elle tient sur une. */
+  .print-bloc {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
+
+@page {
+  size: A4;
+  margin: 14mm 14mm 16mm;
+}

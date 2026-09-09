@@ -1,5 +1,6 @@
 import { requireStaff } from "@/lib/authz/guard";
 import { getClientOverview } from "@/server/services/clients";
+import { fieldScans } from "@/server/services/documents";
 import { PageHeader } from "@/components/ui";
 import { EditClientForm } from "./EditClientForm";
 
@@ -89,7 +90,7 @@ function flattenRegistrations(values: Record<string, string>, client: Record<str
       {
         number: client.rc,
         court: client.rcCourt,
-        taxProfNos: client.taxProfNo ? [client.taxProfNo] : [],
+        taxProfNos: client.taxProfNo ? [{ value: client.taxProfNo }] : [],
         branches: [],
       },
     ];
@@ -98,6 +99,7 @@ function flattenRegistrations(values: Record<string, string>, client: Record<str
   values["registrations.count"] = String(registrations.length);
   registrations.forEach((registration, index) => {
     const prefix = `registrations.${index}`;
+    values[`${prefix}.id`] = String(registration.id ?? "");
     values[`${prefix}.number`] = String(registration.number ?? "");
     values[`${prefix}.court`] = String(registration.court ?? "");
     flattenTaxes(values, prefix, registration.taxProfNos);
@@ -106,6 +108,7 @@ function flattenRegistrations(values: Record<string, string>, client: Record<str
     values[`${prefix}.branches.count`] = String(branches.length);
     branches.forEach((branch: Record<string, unknown>, branchIndex: number) => {
       const branchPrefix = `${prefix}.branches.${branchIndex}`;
+      values[`${branchPrefix}.id`] = String(branch.id ?? "");
       values[`${branchPrefix}.number`] = String(branch.number ?? "");
       values[`${branchPrefix}.court`] = String(branch.court ?? "");
       flattenTaxes(values, branchPrefix, branch.taxProfNos);
@@ -117,7 +120,11 @@ function flattenTaxes(values: Record<string, string>, prefix: string, raw: unkno
   const taxes = Array.isArray(raw) ? raw : [];
   values[`${prefix}.taxProfNos.count`] = String(taxes.length);
   taxes.forEach((tax, index) => {
-    values[`${prefix}.taxProfNos.${index}.value`] = String(tax ?? "");
+    // Les numéros étaient de simples chaînes avant d'avoir un identifiant de ligne.
+    const row: Record<string, unknown> =
+      tax !== null && typeof tax === "object" ? (tax as Record<string, unknown>) : { value: tax };
+    values[`${prefix}.taxProfNos.${index}.id`] = String(row.id ?? "");
+    values[`${prefix}.taxProfNos.${index}.value`] = String(row.value ?? "");
   });
 }
 
@@ -162,7 +169,10 @@ export default async function EditClientPage({
 }) {
   const ctx = await requireStaff("client.update");
   const { id } = await params;
-  const { client } = await getClientOverview(ctx, id);
+  const [{ client }, scans] = await Promise.all([
+    getClientOverview(ctx, id),
+    fieldScans(ctx, id),
+  ]);
 
   return (
     <div className="grid gap-5">
@@ -173,6 +183,12 @@ export default async function EditClientPage({
       <EditClientForm
         clientId={id}
         cndpMode={ctx.cabinet.cndpMode}
+        scans={Object.fromEntries(
+          [...scans].map(([key, document]) => [
+            key,
+            { id: document.id, filename: document.filename },
+          ]),
+        )}
         current={toFormValues(client as unknown as Record<string, unknown>)}
       />
     </div>

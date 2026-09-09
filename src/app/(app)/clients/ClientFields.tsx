@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Card, Field, Input, Select } from "@/components/ui";
 import { subtypesFor, type ClientKind } from "@/lib/domain/enums";
 import { subtypeLabel } from "@/lib/domain/labels";
+import { FieldScan, type ScanInfo } from "./FieldScan";
 import { Registrations } from "./Registrations";
 import { Repeatable } from "./Repeatable";
 
@@ -15,6 +16,15 @@ export type ClientFieldsProps = {
   /** Message d'erreur du serveur pour un champ. */
   fieldError: (name: string) => string | undefined;
   cndpMode: string;
+  /**
+   * Dossier concerné, quand il existe déjà. À la création il n'y a rien à quoi
+   * rattacher un document : les justificatifs n'apparaissent qu'à la
+   * modification, ce qui est aussi l'usage — les scans arrivent rarement en même
+   * temps que la saisie.
+   */
+  clientId?: string | null;
+  /** Justificatif déjà déposé, par champ. */
+  scans?: Record<string, ScanInfo>;
 };
 
 /**
@@ -31,12 +41,24 @@ export type ClientFieldsProps = {
  * cases laisser vides ; le formulaire ne montre donc que les champs qui existent
  * pour le type choisi.
  */
-export function ClientFields({ value, checked, fieldError, cndpMode }: ClientFieldsProps) {
+export function ClientFields({
+  value,
+  checked,
+  fieldError,
+  cndpMode,
+  clientId = null,
+  scans = {},
+}: ClientFieldsProps) {
   const [kind, setKind] = useState<ClientKind>(
     value("kind", "company") === "individual" ? "individual" : "company",
   );
   const individual = kind === "individual";
   const cinAllowed = cndpMode === "authorization";
+
+  /** Justificatif d'un champ, affiché sous le champ lui-même. */
+  const scan = (fieldKey: string) => (
+    <FieldScan clientId={clientId} fieldKey={fieldKey} current={scans[fieldKey]} />
+  );
 
   return (
     <>
@@ -101,14 +123,17 @@ export function ClientFields({ value, checked, fieldError, cndpMode }: ClientFie
           {individual && cinAllowed ? (
             <Field label="CIN" htmlFor="managerCin" error={fieldError("managerCin")}>
               <Input id="managerCin" name="managerCin" defaultValue={value("managerCin")} />
+              {scan("cin")}
             </Field>
           ) : null}
 
           <Field label="Identifiant fiscal" htmlFor="if" error={fieldError("if")}>
             <Input id="if" name="if" inputMode="numeric" defaultValue={value("if")} />
+            {scan("if")}
           </Field>
           <Field label="ICE" htmlFor="ice" hint="15 chiffres" error={fieldError("ice")}>
             <Input id="ice" name="ice" inputMode="numeric" defaultValue={value("ice")} />
+            {scan("ice")}
           </Field>
 
           {individual ? (
@@ -129,6 +154,7 @@ export function ClientFields({ value, checked, fieldError, cndpMode }: ClientFie
             error={fieldError("authorizationNo")}
           >
             <Input id="authorizationNo" name="authorizationNo" defaultValue={value("authorizationNo")} />
+            {scan("authorization")}
           </Field>
         </div>
 
@@ -152,6 +178,7 @@ export function ClientFields({ value, checked, fieldError, cndpMode }: ClientFie
             </Field>
             <Field label="Numéro" htmlFor="signNo" error={fieldError("signNo")}>
               <Input id="signNo" name="signNo" defaultValue={value("signNo")} />
+              {scan("sign")}
             </Field>
             <Field label="Date de référence" htmlFor="signRefDate" error={fieldError("signRefDate")}>
               <Input id="signRefDate" name="signRefDate" type="date" defaultValue={value("signRefDate")} />
@@ -174,6 +201,7 @@ export function ClientFields({ value, checked, fieldError, cndpMode }: ClientFie
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Numéro" htmlFor="negCertNo" error={fieldError("negCertNo")}>
               <Input id="negCertNo" name="negCertNo" defaultValue={value("negCertNo")} />
+              {scan("negCert")}
             </Field>
             <Field label="Nom commercial" htmlFor="tradeName" error={fieldError("tradeName")}>
               <Input id="tradeName" name="tradeName" defaultValue={value("tradeName")} />
@@ -197,7 +225,7 @@ export function ClientFields({ value, checked, fieldError, cndpMode }: ClientFie
         title="Registre de commerce"
         description="Une immatriculation principale, plus une immatriculation secondaire par ressort où le client exploite. La taxe professionnelle se rattache à l'établissement."
       >
-        <Registrations value={value} fieldError={fieldError} />
+        <Registrations value={value} fieldError={fieldError} clientId={clientId} scans={scans} />
       </Card>
 
       <Card title="Activité">
@@ -293,6 +321,7 @@ export function ClientFields({ value, checked, fieldError, cndpMode }: ClientFie
               error={fieldError("cnssRegNo")}
             >
               <Input id="cnssRegNo" name="cnssRegNo" inputMode="numeric" defaultValue={value("cnssRegNo")} />
+              {scan("cnssReg")}
             </Field>
           ) : null}
           <Field
@@ -302,6 +331,7 @@ export function ClientFields({ value, checked, fieldError, cndpMode }: ClientFie
             error={fieldError("cnssNo")}
           >
             <Input id="cnssNo" name="cnssNo" defaultValue={value("cnssNo")} />
+            {scan("cnssAffiliation")}
           </Field>
           <Field
             label="Date d'affiliation"
@@ -401,7 +431,6 @@ export function ClientFields({ value, checked, fieldError, cndpMode }: ClientFie
               id="takeoverDate"
               name="takeoverDate"
               type="date"
-              required
               defaultValue={value("takeoverDate", new Date().toISOString().slice(0, 10))}
             />
           </Field>

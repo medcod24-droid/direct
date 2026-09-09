@@ -402,6 +402,11 @@ model Document {
   version    Int     @default(1)
   replacesId String?
 
+  /// Champ de la fiche que ce document justifie : « cin », « ice », « rc:<id> »…
+  /// Null pour une pièce ordinaire du dossier permanent. Un seul document actif
+  /// par champ : le dépôt suivant remplace le précédent.
+  fieldKey String?
+
   documentDate DateTime?
   expiresAt    DateTime?
   status       String    @default("received") // received | approved | rejected | archived
@@ -422,6 +427,7 @@ model Document {
   updatedAt DateTime @updatedAt
 
   @@index([cabinetId, clientId])
+  @@index([cabinetId, clientId, fieldKey])
   @@index([cabinetId, status])
   @@index([cabinetId, expiresAt])
 }

@@ -15,6 +15,13 @@ const uploadSchema = z.object({
   expiresAt: z.coerce.date().optional(),
   notes: z.string().trim().max(1000).optional(),
   requestId: z.string().optional(),
+  /// Champ de la fiche justifié par la pièce (« cin », « rc:<id> »…).
+  fieldKey: z
+    .string()
+    .trim()
+    .regex(/^[a-zA-Z]+(:[A-Za-z0-9_-]{4,36})?$/, "Champ inconnu.")
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
 });
 
 export type UploadFile = { name: string; type: string; buffer: Buffer };
@@ -46,6 +53,7 @@ export async function uploadDocument(ctx: AuthContext, input: unknown, file: Upl
         cabinetId: ctx.cabinet.id,
         clientId: data.clientId ?? null,
         categoryId: data.categoryId ?? null,
+        fieldKey: data.fieldKey ?? null,
         filename: stored.filename,
         storageKey: stored.storageKey,
         mimeType: stored.mimeType,
@@ -225,4 +233,53 @@ export async function deleteDocument(ctx: AuthContext, documentId: string) {
     ip: ctx.ip,
     userAgent: ctx.userAgent,
   });
+}
+
+/**
+ * Justificatifs rattachés aux champs de la fiche, par champ.
+ *
+ * Un seul document actif par champ : la fiche montre la pièce en cours, pas un
+ * historique. Le remplacement est géré au dépôt (voir `replaceFieldScan`).
+ */
+export async function fieldScans(ctx: AuthContext, clientId: string) {
+  await requireClient(ctx, clientId);
+  const rows = await ctx.db.document.findMany({
+    where: { clientId, fieldKey: { not: null } },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, fieldKey: true, filename: true, size: true, createdAt: true },
+  });
+
+  const byField = new Map<string, (typeof rows)[number]>();
+  for (const row of rows) {
+    if (row.fieldKey && !byField.has(row.fieldKey)) byField.set(row.fieldKey, row);
+  }
+  return byField;
+}
+
+/**
+ * Dépose le justificatif d'un champ, en retirant celui qu'il remplace.
+ *
+ * L'ancienne pièce n'est supprimée qu'une fois la nouvelle enregistrée : en cas
+ * d'échec du dépôt, la fiche garde le justificatif qu'elle avait.
+ */
+export async function replaceFieldScan(ctx: AuthContext, input: unknown, file: UploadFile) {
+  const data = uploadSchema.parse(input);
+  if (!data.clientId || !data.fieldKey) {
+    throw new ValidationError("Justificatif sans dossier ni champ.");
+  }
+
+  const previous = await ctx.db.document.findMany({
+    where: { clientId: data.clientId, fieldKey: data.fieldKey },
+    select: { id: true },
+  });
+
+  const document = await uploadDocument(ctx, data, file);
+
+  for (const old of previous) {
+    // Une pièce qui sert de preuve de dépôt à une échéance est conservée :
+    // `deleteDocument` la refuse, et la fiche n'a pas à trancher pour l'échéance.
+    await deleteDocument(ctx, old.id).catch(() => undefined);
+  }
+
+  return document;
 }

@@ -54,6 +54,9 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           <div className="flex items-center gap-3">
             {rating ? <StarRating stars={rating.stars} reasons={rating.reasons} /> : null}
             <StatusPill status={data.health.status} />
+            <Button href={`/clients/${id}/fiche`} variant="ghost" size="sm">
+              Imprimer la fiche
+            </Button>
             {ctx.can("client.update") ? (
               <Button href={`/clients/${id}/edit`} variant="secondary" size="sm">
                 Modifier

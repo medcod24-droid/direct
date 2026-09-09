@@ -90,15 +90,37 @@ const list = <T extends z.ZodTypeAny>(item: T, max = 20) => z.array(item).max(ma
  * aussi ses numéros de taxe — sans quoi le dossier le plus courant, un local
  * unique sans succursale, n'aurait nulle part où les inscrire.
  */
-const taxProfList = z.array(trimmed(40).min(1, "Numéro de taxe professionnelle vide.")).max(20).default([]);
+/**
+ * Identifiant stable d'une ligne d'une liste.
+ *
+ * Il ne sert pas à la base — le contenu reste du JSON — mais à rattacher un
+ * justificatif à *cette* ligne-là. Un indice de position ne le permettrait pas :
+ * retirer une succursale renumérote celles qui suivent, et le scan du registre
+ * se retrouverait accroché au mauvais établissement. Émis par le navigateur,
+ * réémis par le serveur s'il manque ou se répète.
+ */
+export const rowIdSchema = z
+  .string()
+  .trim()
+  .regex(/^[A-Za-z0-9_-]{4,36}$/)
+  .optional()
+  .or(z.literal("").transform(() => undefined));
+
+const taxProfSchema = z.object({
+  id: rowIdSchema,
+  value: trimmed(40).min(1, "Numéro de taxe professionnelle vide."),
+});
+const taxProfList = z.array(taxProfSchema).max(20).default([]);
 
 export const branchSchema = z.object({
+  id: rowIdSchema,
   number: trimmed(40).min(1, "Numéro de succursale requis."),
   court: optionalText(80),
   taxProfNos: taxProfList,
 });
 
 export const registrationSchema = z.object({
+  id: rowIdSchema,
   number: trimmed(40).min(1, "Numéro de registre de commerce requis."),
   court: optionalText(80),
   taxProfNos: taxProfList,
@@ -131,6 +153,7 @@ export const employeeSchema = z.object({
  * appliqué côté service, pas ici, pour que la règle vive à un seul endroit.
  */
 export const partnerSchema = z.object({
+  id: rowIdSchema,
   role: z.enum(["gerant", "associe"]).default("associe"),
   name: trimmed(120).min(2, "Nom de l'associé requis."),
   cin: optionalText(20),

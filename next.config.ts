@@ -38,6 +38,13 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   serverExternalPackages: ["@prisma/client", "bcryptjs"],
+  experimental: {
+    // Les dépôts de fichiers passent par des actions serveur, dont le corps est
+    // limité à 1 Mo par défaut : un scan de CIN ou de modèle J dépasse cette
+    // taille sans rien afficher d'explicite. La limite suit celle du produit,
+    // avec une marge pour l'encodage multipart et les autres champs du formulaire.
+    serverActions: { bodySizeLimit: `${Number(process.env.MAX_UPLOAD_MB || 25) + 5}mb` },
+  },
   async headers() {
     return [
       {
