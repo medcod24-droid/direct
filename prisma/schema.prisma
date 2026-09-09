@@ -82,7 +82,6 @@ model Cabinet {
   appointments Appointment[]
   todos        Todo[]
   results      MonthlyResult[]
-  invitations  Invitation[]
   categories   DocumentCategory[]
 
   createdAt DateTime @default(now())
@@ -185,22 +184,6 @@ model Session {
 
   @@index([userId])
   @@index([expiresAt])
-}
-
-model Invitation {
-  id        String    @id @default(cuid())
-  cabinetId String
-  email     String
-  role      String    @default("accountant")
-  tokenHash String    @unique
-  expiresAt DateTime
-  acceptedAt DateTime?
-  invitedBy String?
-
-  cabinet   Cabinet  @relation(fields: [cabinetId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-
-  @@index([cabinetId, email])
 }
 
 // ---------------------------------------------------------------------------

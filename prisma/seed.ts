@@ -493,16 +493,6 @@ async function seedDemoInvoices(cabinetId: string) {
  * clé absente. Seules les lignes dont la clé diffère réellement sont écrites, et
  * la graine tourne déjà à chaque déploiement.
  */
-/**
- * Les invitations n'existent plus : l'administration crée les comptes
- * directement. Les lignes restantes sont purgées pour que le modèle puisse être
- * retiré du schéma sans perte de données.
- */
-async function dropInvitations() {
-  const { count } = await db.invitation.deleteMany({});
-  if (count > 0) console.log(`Invitations obsolètes supprimées : ${count}`);
-}
-
 async function backfillSearchKeys() {
   let filled = 0;
 
@@ -535,7 +525,6 @@ async function backfillSearchKeys() {
 }
 
 main()
-  .then(() => dropInvitations())
   .then(() => backfillSearchKeys())
   .then(() => db.$disconnect())
   .catch(async (error) => {

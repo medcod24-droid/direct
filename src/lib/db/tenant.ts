@@ -44,7 +44,6 @@ const TENANT_MODELS = new Set([
   "AuditLog",
   "Membership",
   "Subscription",
-  "Invitation",
 ]);
 
 /**
