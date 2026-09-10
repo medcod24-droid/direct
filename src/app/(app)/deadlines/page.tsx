@@ -3,13 +3,16 @@ import Link from "next/link";
 import { requireStaff } from "@/lib/authz/guard";
 import { formatDate, relativeDays } from "@/lib/format";
 import { listDeadlines } from "@/server/services/deadlines";
+import { getMonthDeadlineSummary } from "@/server/services/dashboard";
 import { deadlineStatus } from "@/lib/deadlines/engine";
 import { effectiveDeadlineStatus, MANAGED_BY_LABELS } from "@/lib/domain/labels";
 import {
   Badge,
   Card,
+  CountBadge,
   EmptyState,
   PageHeader,
+  SegmentedProgress,
   StatusPill,
   Table,
   TableWrap,
@@ -58,16 +61,17 @@ export default async function DeadlinesPage({
   const clientId = params.client || undefined;
   const q = params.q?.trim() || undefined;
 
-  const [deadlines, clients] = await Promise.all([
+  const now = new Date();
+  const [deadlines, clients, month] = await Promise.all([
     listDeadlines(ctx, { status, clientId, q }),
     ctx.db.client.findMany({
       where: { status: { not: "archived" } },
       select: { id: true, legalName: true },
       orderBy: { legalName: "asc" },
     }),
+    getMonthDeadlineSummary(ctx, now),
   ]);
 
-  const now = new Date();
   const overdue = deadlines.filter(
     (d) =>
       d.managedBy === "cabinet" &&
@@ -102,6 +106,7 @@ export default async function DeadlinesPage({
   return (
     <div className="grid gap-5">
       <PageHeader
+        eyebrow="Obligations fiscales et sociales"
         title="Échéances"
         subtitle={
           selected
@@ -113,13 +118,58 @@ export default async function DeadlinesPage({
         }
       />
 
-      <Card>
-        <p className="text-sm text-ink2">
-          Les règles proviennent d&apos;une table modifiable, versionnée par loi de finances.
-          Une échéance ne passe au vert qu&apos;avec sa preuve de dépôt. Ce qui est géré par le
-          client ou par un tiers n&apos;est jamais compté en retard pour le cabinet.
-        </p>
+      {/* L'avancement du mois avant la liste : c'est la question qu'on se pose
+          en ouvrant la page, et un total qu'on peut ramener à zéro. */}
+      <Card
+        icon="calendar"
+        title={`Mois en cours — ${MONTHS[now.getUTCMonth()]} ${now.getUTCFullYear()}`}
+        description={`${month.deposited} déposées sur ${month.total} · ${month.overdue} en retard`}
+      >
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-center">
+          <div className="flex flex-col gap-2.5">
+            <div className="flex items-baseline gap-2.5">
+              <span className="text-3xl font-650 text-ink tabular">
+                {month.deposited} sur {month.total}
+              </span>
+              <span className="text-sm text-muted">déposées au titre du mois</span>
+            </div>
+            <SegmentedProgress
+              height={10}
+              total={month.total}
+              segments={[
+                { label: "Payées", value: month.paid, className: "bg-ok" },
+                { label: "Déclarées", value: month.declared, className: "bg-accent" },
+                { label: "À déposer", value: month.remaining, className: "bg-warn" },
+                { label: "En retard", value: month.overdue, className: "bg-danger" },
+              ]}
+            />
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: "Payées", value: month.paid, tone: "text-ok" },
+              { label: "À déposer", value: month.remaining, tone: "text-warn" },
+              { label: "En retard", value: month.overdue, tone: "text-danger" },
+            ].map((tile) => (
+              <div
+                key={tile.label}
+                className="flex flex-col gap-1 rounded-[11px] border border-line bg-bg p-3"
+              >
+                <span className="text-2xs font-bold uppercase tracking-[0.1em] text-muted">
+                  {tile.label}
+                </span>
+                <span className={`text-xl font-650 tabular ${tile.tone}`}>{tile.value}</span>
+                <span className="text-xs text-muted tabular">sur {month.total}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </Card>
+
+      <p className="text-sm text-ink2">
+        Les règles proviennent d&apos;une table modifiable, versionnée par loi de finances. Une
+        échéance ne passe au vert qu&apos;avec sa preuve de dépôt. Ce qui est géré par le client
+        ou par un tiers n&apos;est jamais compté en retard pour le cabinet.
+      </p>
 
       <DeadlineSearch />
 
@@ -129,13 +179,16 @@ export default async function DeadlinesPage({
             <Link
               key={tab.key}
               href={href({ status: tab.key })}
-              className={`px-3 py-1.5 rounded-md border ${
+              className={`inline-flex items-center gap-2 rounded-chip border px-3 py-1.5 transition-colors ${
                 status === tab.key
-                  ? "border-accent text-accent bg-accentSoft"
-                  : "border-line text-ink2 hover:bg-surface2"
+                  ? "border-accent bg-accentSoft font-650 text-accent"
+                  : "border-line text-ink2 hover:bg-surface2 hover:text-ink"
               }`}
             >
               {tab.label}
+              {tab.key === "overdue" && overdue.length > 0 ? (
+                <CountBadge value={overdue.length} tone="danger" />
+              ) : null}
             </Link>
           ))}
         </nav>
@@ -153,6 +206,7 @@ export default async function DeadlinesPage({
 
       {deadlines.length === 0 ? (
         <EmptyState
+          iconName="calendar"
           title="Aucune échéance"
           description={
             q

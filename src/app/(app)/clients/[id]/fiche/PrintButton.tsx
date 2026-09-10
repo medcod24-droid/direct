@@ -12,7 +12,7 @@ import { Button } from "@/components/ui";
  */
 export function PrintButton() {
   return (
-    <Button variant="primary" size="sm" onClick={() => window.print()}>
+    <Button variant="gold" size="sm" iconName="print" onClick={() => window.print()}>
       Imprimer
     </Button>
   );

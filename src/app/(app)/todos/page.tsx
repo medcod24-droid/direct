@@ -2,7 +2,7 @@ import { requireStaff } from "@/lib/authz/guard";
 import { listClientOptions } from "@/server/services/clients";
 import { listStaffOptions } from "@/server/services/members";
 import { listTodos } from "@/server/services/todos";
-import { Alert, Card, EmptyState, PageHeader } from "@/components/ui";
+import { Alert, Card, EmptyState, PageHeader, SegmentedProgress } from "@/components/ui";
 import { TodoCard, TodoForm, type TodoItem } from "./TodoCard";
 
 export const metadata = { title: "To-do équipe — Direct Conseil" };
@@ -58,6 +58,7 @@ export default async function TodosPage() {
   return (
     <div className="grid gap-5">
       <PageHeader
+        eyebrow="Travail de l'équipe"
         title="To-do équipe"
         subtitle={
           canManage
@@ -72,7 +73,7 @@ export default async function TodosPage() {
       />
 
       {canManage && awaiting.length > 0 ? (
-        <Alert tone="warning">
+        <Alert tone="warning" title="Tâches rendues">
           {awaiting.length === 1
             ? "1 tâche rendue attend votre confirmation."
             : `${awaiting.length} tâches rendues attendent votre confirmation.`}{" "}
@@ -82,6 +83,8 @@ export default async function TodosPage() {
 
       {canManage && awaiting.length > 0 ? (
         <Card
+          icon="clock"
+          iconTone="warn"
           title="À confirmer"
           description="Tâches rendues par l'équipe, avec la note de chacun."
         >
@@ -90,15 +93,16 @@ export default async function TodosPage() {
       ) : null}
 
       {canManage && mine.length > 0 ? (
-        <Card title="Mes tâches" description="Ce qui vous est confié à vous.">
+        <Card icon="task" title="Mes tâches" description="Ce qui vous est confié à vous.">
           <div className="grid gap-2">{mine.map(render)}</div>
         </Card>
       ) : null}
 
       {canManage ? (
         groups.length === 0 ? (
-          <Card title="Par collaborateur">
+          <Card icon="team" title="Par collaborateur">
             <EmptyState
+              iconName="task"
               title="Aucune tâche confiée"
               description="Confiez le travail du jour à chaque membre de l'équipe : chacun le verra sur son tableau de bord."
             />
@@ -107,6 +111,7 @@ export default async function TodosPage() {
           groups.map((group) => (
             <Card
               key={group.assigneeId}
+              icon="clients"
               title={group.name}
               description={summarize(group.items)}
               action={
@@ -118,14 +123,39 @@ export default async function TodosPage() {
                 />
               }
             >
+              {/* Où en est ce collaborateur, avant le détail de ses tâches. */}
+              <SegmentedProgress
+                className="mb-3"
+                height={8}
+                segments={[
+                  {
+                    label: "Confirmées",
+                    value: group.items.filter((item) => item.status === "approved").length,
+                    className: "bg-ok",
+                  },
+                  {
+                    label: "Rendues",
+                    value: group.items.filter((item) => item.status === "submitted").length,
+                    className: "bg-accent",
+                  },
+                  {
+                    label: "À faire",
+                    value: group.items.filter(
+                      (item) => item.status === "assigned" || item.status === "returned",
+                    ).length,
+                    className: "bg-warn",
+                  },
+                ]}
+              />
               <div className="grid gap-2">{group.items.map(render)}</div>
             </Card>
           ))
         )
       ) : (
-        <Card title="Mes tâches">
+        <Card icon="task" title="Mes tâches">
           {todos.length === 0 ? (
             <EmptyState
+              iconName="check"
               title="Rien à faire pour l'instant"
               description="Les tâches que l'administrateur vous confie apparaîtront ici et sur votre tableau de bord."
             />

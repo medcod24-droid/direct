@@ -11,11 +11,32 @@ export { Button, type ButtonProps, type ButtonSize, type ButtonVariant } from ".
 export { Card, type CardProps } from "./Card";
 export { EmptyState, type EmptyStateProps } from "./EmptyState";
 export { Field, type FieldControlProps, type FieldProps } from "./Field";
+export {
+  Icon,
+  IconChip,
+  type ChipTone,
+  type IconChipProps,
+  type IconName,
+  type IconProps,
+} from "./Icon";
 export { Input, type InputProps } from "./Input";
 export { Logo, type LogoProps } from "./Logo";
 export { Modal, type ModalProps, type ModalSize } from "./Modal";
 export { MonthlyBars, type MonthlyBar, type MonthlyBarsProps } from "./MonthlyBars";
 export { PageHeader, type PageHeaderProps } from "./PageHeader";
+export {
+  CountBadge,
+  DeltaPill,
+  Gauge,
+  ProgressBar,
+  SegmentedProgress,
+  type CountBadgeProps,
+  type DeltaPillProps,
+  type GaugeProps,
+  type ProgressBarProps,
+  type Segment,
+  type SegmentedProgressProps,
+} from "./Progress";
 export { Pagination, type PaginationProps } from "./Pagination";
 export { SearchPicker, type PickerOption, type SearchPickerProps } from "./SearchPicker";
 export { Select, type SelectOption, type SelectProps } from "./Select";

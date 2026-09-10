@@ -58,7 +58,7 @@ export function Field({
 
   return (
     <div className={clsx("flex flex-col gap-1.5", className)}>
-      <label htmlFor={controlId} className="flex items-baseline gap-1.5 text-[13px] font-medium text-ink2">
+      <label htmlFor={controlId} className="flex items-baseline gap-1.5 text-sm font-semibold text-ink2">
         <span>{label}</span>
         {required ? (
           <span className="text-danger" title={t(dict, "common.required")} aria-hidden="true">

@@ -46,6 +46,7 @@ export default async function ResultatsPage({ searchParams }: { searchParams: Se
   return (
     <div className="grid gap-5">
       <PageHeader
+        eyebrow="Comptabilité du cabinet"
         title="Résultat du cabinet"
         subtitle="Ce que le cabinet gagne et dépense, mois par mois. Saisie manuelle : facturé n'est pas encaissé."
         actions={
@@ -69,6 +70,8 @@ export default async function ResultatsPage({ searchParams }: { searchParams: Se
       </div>
 
       <Card
+        icon="chart"
+        iconTone="gold"
         title={`Exercice ${year}`}
         description={
           totals.monthsFilled === 0
@@ -102,7 +105,7 @@ export default async function ResultatsPage({ searchParams }: { searchParams: Se
         ) : null}
       </Card>
 
-      <Card title="Détail" padded={false}>
+      <Card icon="doc" title="Détail" padded={false}>
         <Table label={`Résultat mensuel ${year}`} minWidth={760}>
           <THead>
             <TR>

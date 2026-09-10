@@ -30,6 +30,7 @@ export default async function InvoicesPage() {
   return (
     <div className="grid gap-5">
       <PageHeader
+        eyebrow="Facturation du cabinet"
         title="Honoraires"
         subtitle="Ce que le cabinet facture et encaisse"
         actions={
@@ -43,9 +44,27 @@ export default async function InvoicesPage() {
       />
 
       <section className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-        <StatTile label="Impayés" value={formatMad(summary.outstanding)} tone={summary.outstanding > 0 ? "warning" : "neutral"} hint={`${summary.outstandingCount} facture(s)`} />
-        <StatTile label="En retard" value={formatMad(summary.overdue)} tone={summary.overdueCount > 0 ? "danger" : "neutral"} hint={`${summary.overdueCount} facture(s)`} />
-        <StatTile label="Encaissé" value={formatMad(summary.paidTotal)} tone="success" hint={`${summary.paidCount} facture(s)`} />
+        <StatTile
+          label="Impayés"
+          icon="coins"
+          value={formatMad(summary.outstanding)}
+          tone={summary.outstanding > 0 ? "warning" : "neutral"}
+          compare={`${summary.outstandingCount} facture(s)`}
+        />
+        <StatTile
+          label="En retard"
+          icon="alert"
+          value={formatMad(summary.overdue)}
+          tone={summary.overdueCount > 0 ? "danger" : "neutral"}
+          compare={`${summary.overdueCount} facture(s)`}
+        />
+        <StatTile
+          label="Encaissé"
+          icon="check"
+          value={formatMad(summary.paidTotal)}
+          tone="success"
+          compare={`${summary.paidCount} facture(s)`}
+        />
         <StatTile label="Factures ouvertes" value={invoices.length} />
       </section>
 

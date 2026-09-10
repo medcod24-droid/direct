@@ -14,9 +14,9 @@ export type AvatarProps = {
 };
 
 const SIZES: Record<AvatarSize, string> = {
-  xs: "h-6 w-6 text-[10px]",
-  sm: "h-7 w-7 text-[11px]",
-  md: "h-9 w-9 text-xs",
+  xs: "h-6 w-6 rounded-[7px] text-[10px]",
+  sm: "h-7 w-7 rounded-chip text-[11px]",
+  md: "h-[34px] w-[34px] rounded-control text-xs",
 };
 
 /** Palette dérivée des jetons : aucune couleur sémantique de conformité. */
@@ -43,7 +43,7 @@ export function Avatar({ name, size = "sm", colorful = true, className, locale =
       aria-label={t(dict, "a11y.avatarOf", { name })}
       title={name}
       className={clsx(
-        "inline-flex shrink-0 select-none items-center justify-center rounded-full border border-line font-semibold uppercase",
+        "inline-flex shrink-0 select-none items-center justify-center border border-line font-bold uppercase",
         SIZES[size],
         colorful ? hueOf(name) : "bg-surface2 text-ink2",
         className,

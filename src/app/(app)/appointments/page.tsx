@@ -107,6 +107,7 @@ export default async function AppointmentsPage({ searchParams }: { searchParams:
   return (
     <div className="grid gap-5">
       <PageHeader
+        eyebrow="Planning du cabinet"
         title="Rendez-vous"
         subtitle="Le planning du cabinet. Un rendez-vous validé verse son compte rendu dans la liste d'activité du client."
         actions={
@@ -122,7 +123,7 @@ export default async function AppointmentsPage({ searchParams }: { searchParams:
       />
 
       {awaiting.length > 0 ? (
-        <Alert tone="warning">
+        <Alert tone="warning" title="Rendez-vous à valider">
           {awaiting.length === 1
             ? "1 rendez-vous passé attend sa validation."
             : `${awaiting.length} rendez-vous passés attendent leur validation.`}{" "}

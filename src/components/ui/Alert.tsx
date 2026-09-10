@@ -16,9 +16,17 @@ export type AlertProps = {
 
 const STYLES: Record<AlertTone, string> = {
   info: "border-line bg-surface2 text-ink",
-  warning: "border-[var(--amber)] bg-warnSoft text-ink",
-  danger: "border-[var(--red)] bg-dangerSoft text-ink",
-  success: "border-[var(--green)] bg-okSoft text-ink",
+  warning: "border-warnSoft bg-warnSoft text-ink",
+  danger: "border-dangerSoft bg-dangerSoft text-ink",
+  success: "border-okSoft bg-okSoft text-ink",
+};
+
+/* Fond de la puce d'icône : la couleur reste dans la puce, pas dans la bordure. */
+const CHIP: Record<AlertTone, string> = {
+  info: "bg-surface text-accent border border-line",
+  warning: "bg-surface text-warn border border-warnSoft",
+  danger: "bg-surface text-danger border border-dangerSoft",
+  success: "bg-surface text-ok border border-okSoft",
 };
 
 const ICON_COLOR: Record<AlertTone, string> = {
@@ -43,14 +51,24 @@ export function Alert({ tone = "info", title, action, className, locale = "fr", 
   return (
     <div
       role={urgent ? "alert" : "status"}
-      className={clsx("flex items-start gap-3 rounded-lg border p-3", STYLES[tone], className)}
+      className={clsx(
+        "flex items-start gap-3 rounded-card border p-3.5",
+        STYLES[tone],
+        className,
+      )}
     >
-      <span aria-hidden="true" className={clsx("mt-0.5 shrink-0", ICON_COLOR[tone])}>
+      <span
+        aria-hidden="true"
+        className={clsx(
+          "flex h-8 w-8 shrink-0 items-center justify-center rounded-chip",
+          CHIP[tone],
+        )}
+      >
         <AlertIcon tone={tone} />
       </span>
 
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold">{heading}</p>
+        <p className="text-sm font-650">{heading}</p>
         {children ? <div className="mt-0.5 text-sm text-ink2">{children}</div> : null}
       </div>
 

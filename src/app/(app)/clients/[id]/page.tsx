@@ -10,9 +10,20 @@ import {
 } from "@/lib/domain/labels";
 import { getClientOverview, ratingsForClients } from "@/server/services/clients";
 import { listAppointments } from "@/server/services/appointments";
+import { expectedScans, fieldScans } from "@/server/services/documents";
 import { listInterventions } from "@/server/services/interventions";
 import { listClientAssignees, listMembers } from "@/server/services/members";
-import { Alert, Badge, Button, Card, EmptyState, PageHeader, StarRating, StatusPill } from "@/components/ui";
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  Gauge,
+  PageHeader,
+  StarRating,
+  StatusPill,
+} from "@/components/ui";
 import { ArchiveClient } from "./ArchiveClient";
 import { Interventions } from "./Interventions";
 import { wallDateLong, wallTime } from "@/lib/calendar/month";
@@ -58,14 +69,20 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   // elles se gèrent donc depuis le dossier lui-même.
   const canAssign = ctx.can("client.assign");
   const now = new Date();
-  const [assignees, staff, interventions, appointments] = await Promise.all([
+  const [assignees, staff, interventions, appointments, scans] = await Promise.all([
     listClientAssignees(ctx, id),
     canAssign ? listMembers(ctx) : Promise.resolve([]),
     ctx.can("intervention.view") ? listInterventions(ctx, id) : Promise.resolve([]),
     ctx.can("appointment.view")
       ? listAppointments(ctx, { clientId: id, from: now, status: "scheduled" })
       : Promise.resolve([]),
+    fieldScans(ctx, id),
   ]);
+
+  // Complétude du dossier : ce qui manque, nommé, plutôt qu'un pourcentage seul.
+  const expected = expectedScans(client as unknown as Record<string, unknown>, scans);
+  const attached = expected.filter((row) => row.attached).length;
+  const missing = expected.filter((row) => !row.attached);
 
   return (
     <div className="grid gap-5">
@@ -76,11 +93,11 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           <div className="flex items-center gap-3">
             {rating ? <StarRating stars={rating.stars} reasons={rating.reasons} /> : null}
             <StatusPill status={data.health.status} />
-            <Button href={`/clients/${id}/fiche`} variant="ghost" size="sm">
+            <Button href={`/clients/${id}/fiche`} variant="ghost" size="sm" iconName="print">
               Imprimer la fiche
             </Button>
             {ctx.can("client.update") ? (
-              <Button href={`/clients/${id}/edit`} variant="secondary" size="sm">
+              <Button href={`/clients/${id}/edit`} variant="primary" size="sm" iconName="edit">
                 Modifier
               </Button>
             ) : null}
@@ -92,12 +109,64 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
       />
 
       {data.health.status !== "green" ? (
-        <Alert tone={data.health.status === "red" ? "danger" : "warning"}>
+        <Alert
+          tone={data.health.status === "red" ? "danger" : "warning"}
+          title={
+            data.health.status === "red" ? "Dossier en retard" : "Dossier à surveiller"
+          }
+        >
           {data.health.reasons.join(" · ")}
         </Alert>
       ) : null}
 
+      {/* Complétude : combien de pièces sur celles attendues, et lesquelles
+          manquent. Un pourcentage sans la liste n'aide pas à agir. */}
+      {expected.length > 0 ? (
+        <Card
+          icon="folder"
+          iconTone={missing.length === 0 ? "ok" : "gold"}
+          title="Dossier permanent"
+          description={`${attached} pièce(s) sur ${expected.length} attendues`}
+          action={
+            ctx.can("client.update") ? (
+              <Button href={`/clients/${id}/edit`} variant="ghost" size="sm" iconName="upload">
+                Joindre
+              </Button>
+            ) : undefined
+          }
+        >
+          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:items-center">
+            <div className="flex items-center gap-3.5">
+              <Gauge
+                ratio={expected.length > 0 ? attached / expected.length : 1}
+                caption={missing.length === 0 ? "COMPLET" : "À COMPLÉTER"}
+                tone={missing.length === 0 ? "ok" : "gold"}
+                size={104}
+              />
+              <div className="flex flex-col gap-0.5">
+                <span className="text-xl font-650 text-ink tabular">
+                  {attached} sur {expected.length}
+                </span>
+                <span className="text-xs text-muted">pièces justificatives</span>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {expected.map((row) => (
+                <Badge
+                  key={row.key}
+                  tone={row.attached ? "green" : "neutral"}
+                  iconName={row.attached ? "check" : "missing"}
+                >
+                  {row.label}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        </Card>
+      ) : null}
+
       <Card
+        icon="team"
         title="Collaborateurs du dossier"
         description="Qui suit ce dossier au cabinet."
       >
@@ -112,7 +181,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <Card title="Identité">
+        <Card icon="building" title="Identité">
           <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1.5 text-sm">
             <dt className="text-muted">Forme</dt>
             <dd>{clientFormLabel(client)}</dd>
@@ -240,7 +309,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           </dl>
         </Card>
 
-        <Card title="Registre de commerce">
+        <Card icon="tree" title="Registre de commerce">
           {registrations.length === 0 ? (
             <p className="text-sm text-muted">
               {client.rc
@@ -284,7 +353,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           )}
         </Card>
 
-        <Card title="Échéances ouvertes" className="lg:col-span-2">
+        <Card icon="calendar" title="Échéances ouvertes" className="lg:col-span-2">
           {data.deadlines.length === 0 ? (
             <EmptyState
               title="Aucune échéance ouverte"

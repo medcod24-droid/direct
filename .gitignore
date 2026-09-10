@@ -15,3 +15,7 @@ tsconfig.tsbuildinfo
 prisma/dev.db
 prisma/test.db
 var/test-storage
+
+# Export de l'outil de maquettage : source de la refonte visuelle, mais pas du
+# code. Le système qui en découle est décrit dans docs/systeme-de-design.md.
+/design/

@@ -290,3 +290,79 @@ export async function replaceFieldScan(ctx: AuthContext, input: unknown, file: U
 
   return document;
 }
+
+/**
+ * Champs pour lesquels une pièce justificative est attendue.
+ *
+ * La liste dépend du type de personne : une société n'a ni CIN ni
+ * immatriculation CNSS personnelle, un contribuable individuel n'a pas de
+ * certificat négatif. Les lignes du registre de commerce s'y ajoutent, une par
+ * immatriculation et par succursale.
+ */
+export type ExpectedScan = { key: string; label: string; attached: boolean };
+
+export function expectedScans(
+  client: Record<string, unknown>,
+  scans: Map<string, unknown>,
+): ExpectedScan[] {
+  const individual = client.kind === "individual";
+  const has = (key: string) => scans.has(key);
+
+  const base: { key: string; label: string }[] = individual
+    ? [
+        { key: "cin", label: "CIN" },
+        { key: "if", label: "Identifiant fiscal" },
+        { key: "ice", label: "ICE" },
+        { key: "sign", label: "Enseigne commerciale" },
+        { key: "cnssReg", label: "Immatriculation CNSS" },
+      ]
+    : [
+        { key: "statuts", label: "Statuts" },
+        { key: "if", label: "Identifiant fiscal" },
+        { key: "ice", label: "ICE" },
+        { key: "negCert", label: "Certificat négatif" },
+        { key: "siege", label: "Titre d'occupation du siège" },
+      ];
+
+  if (client.cnssNo) base.push({ key: "cnssAffiliation", label: "Affiliation CNSS" });
+  if (client.authorizationNo) base.push({ key: "authorization", label: "Autorisation" });
+
+  const rows = base.map((row) => ({ ...row, attached: has(row.key) }));
+
+  // Registre de commerce : une pièce par immatriculation et par succursale.
+  const registrations = parseJson<{
+    id?: string;
+    number?: string;
+    branches?: { id?: string; number?: string }[];
+  }>(client.registrations);
+
+  for (const registration of registrations) {
+    if (registration.id) {
+      rows.push({
+        key: `rc:${registration.id}`,
+        label: `Registre ${registration.number ?? ""}`.trim(),
+        attached: has(`rc:${registration.id}`),
+      });
+    }
+    for (const branch of registration.branches ?? []) {
+      if (!branch.id) continue;
+      rows.push({
+        key: `branch:${branch.id}`,
+        label: `Succursale ${branch.number ?? ""}`.trim(),
+        attached: has(`branch:${branch.id}`),
+      });
+    }
+  }
+
+  return rows;
+}
+
+function parseJson<T>(raw: unknown): T[] {
+  if (typeof raw !== "string" || raw.length === 0) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as T[]) : [];
+  } catch {
+    return [];
+  }
+}

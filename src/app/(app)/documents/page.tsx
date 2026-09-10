@@ -36,7 +36,8 @@ export default async function DocumentsPage({
 
   return (
     <div className="grid gap-5">
-      <PageHeader title="Documents" subtitle={`${result.total} document(s)`} />
+      <PageHeader eyebrow="Dossier permanent"
+        title="Documents" subtitle={`${result.total} document(s)`} />
 
       <form method="get" className="flex flex-wrap gap-2">
         <input

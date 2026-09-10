@@ -58,7 +58,7 @@ export function StarRating({
             height={px}
             viewBox="0 0 24 24"
             aria-hidden="true"
-            className={clsx("shrink-0", filled ? "text-accent" : "text-line")}
+            className={clsx("shrink-0", filled ? "text-gold" : "text-line")}
             fill={filled ? "currentColor" : "none"}
             stroke="currentColor"
             strokeWidth={filled ? 0 : 1.6}

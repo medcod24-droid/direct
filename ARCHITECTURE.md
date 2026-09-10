@@ -162,6 +162,21 @@ les modifications, qui sont précisément ce que l'administrateur veut relire. L
 y sont résolus à travers le client Prisma du contexte — un dossier hors de portée reste anonyme
 plutôt que de fuir par l'historique.
 
+### Couche visuelle
+
+Les jetons de couleur, les échelles et les recettes de composants sont décrits dans
+[docs/systeme-de-design.md](docs/systeme-de-design.md). Deux règles s'y jouent au-delà de
+l'esthétique :
+
+- **l'or de marque ne signifie jamais un état**, il signifie une valeur ; l'avertissement est
+  orange, pour se distinguer de lui au premier regard ;
+- **aucun statut ne tient à la seule couleur** : chacun porte une icône, seule chose qui reste
+  lisible à l'impression en noir et blanc.
+
+Les icônes sont 39 tracés en ligne dans `components/ui/Icon.tsx` : la politique de sécurité
+(`default-src 'self'`) bloque toute police d'icônes distante, et une icône qui ne se charge pas
+laisse un bouton muet. Même raison pour les graphiques, tous écrits à la main en SVG.
+
 ### Recherche
 
 `contains` de Prisma est sensible à la casse sur SQLite, et `mode: "insensitive"` n'existe que

@@ -15,7 +15,7 @@ export type PaginationProps = {
 };
 
 const ITEM =
-  "inline-flex h-8 min-w-[2rem] items-center justify-center rounded-md border px-2 text-[13px] font-medium transition-colors";
+  "inline-flex h-[30px] min-w-[30px] items-center justify-center rounded-lg border px-2 text-sm font-semibold tabular transition-colors";
 
 export function Pagination({
   page,
@@ -64,7 +64,7 @@ export function Pagination({
                   ITEM,
                   "tabular",
                   item === current
-                    ? "border-transparent bg-accent text-accentInk"
+                    ? "border-accent bg-accent text-accentInk font-bold"
                     : "border-line bg-surface text-ink2 hover:bg-surface2 hover:text-ink",
                 )}
               >

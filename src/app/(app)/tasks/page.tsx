@@ -37,6 +37,7 @@ export default async function TasksPage({
   return (
     <div className="grid gap-5">
       <PageHeader
+        eyebrow="Travail sur dossiers"
         title="Tâches"
         subtitle={mine ? "Mes tâches ouvertes" : "Tâches de l'équipe"}
       />

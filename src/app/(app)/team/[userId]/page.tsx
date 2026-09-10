@@ -55,19 +55,26 @@ export default async function MemberPage({ params }: { params: Promise<{ userId:
 
       {counts ? (
         <section className="grid gap-3 sm:grid-cols-4">
-          <StatTile label="À faire" value={String(counts.assigned)} />
-          <StatTile label="Renvoyées" value={String(counts.returned)} tone={counts.returned > 0 ? "danger" : undefined} />
+          <StatTile label="À faire" icon="task" value={String(counts.assigned)} />
+          <StatTile
+            label="Renvoyées"
+            icon="alert"
+            value={String(counts.returned)}
+            tone={counts.returned > 0 ? "danger" : "neutral"}
+          />
           <StatTile
             label="À confirmer"
+            icon="clock"
             value={String(counts.submitted)}
-            tone={counts.submitted > 0 ? "warning" : undefined}
+            tone={counts.submitted > 0 ? "warning" : "neutral"}
           />
-          <StatTile label="Confirmées" value={String(counts.approved)} tone="success" />
+          <StatTile label="Confirmées" icon="check" value={String(counts.approved)} tone="success" />
         </section>
       ) : null}
 
       {canManageTodos ? (
         <Card
+          icon="task"
           title="Tâches confiées"
           description="Ce que le cabinet attend de ce collaborateur."
           action={
@@ -102,6 +109,8 @@ export default async function MemberPage({ params }: { params: Promise<{ userId:
       ) : null}
 
       <Card
+        icon="clock"
+        iconTone="neutral"
         title="Historique"
         description="Tout ce que ce collaborateur a fait sur la plateforme, du plus récent au plus ancien."
       >

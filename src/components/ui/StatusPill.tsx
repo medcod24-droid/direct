@@ -2,6 +2,7 @@ import type { INVOICE_STATUSES } from "@/lib/domain/enums";
 import type { DeadlineStatus, Health, RequestStatus, TaskStatus } from "@/lib/domain/enums";
 import { getDictionary, t, type Locale, type TranslationKey } from "@/lib/i18n";
 import { Badge, type Tone } from "./Badge";
+import type { IconName } from "./Icon";
 
 /** `INVOICE_STATUSES` n'expose pas de type nommé dans le domaine. */
 export type InvoiceStatus = (typeof INVOICE_STATUSES)[number];
@@ -11,7 +12,7 @@ export type StatusKind = "deadline" | "task" | "request" | "invoice" | "health" 
 export type DomainStatus = DeadlineStatus | TaskStatus | RequestStatus | InvoiceStatus | Health;
 
 type StatusKey = Extract<TranslationKey, `status.${string}`>;
-type Entry = { tone: Tone; key: StatusKey };
+type Entry = { tone: Tone; key: StatusKey; icon?: IconName };
 
 /**
  * Les couleurs sémantiques portent une information de conformité :
@@ -19,43 +20,43 @@ type Entry = { tone: Tone; key: StatusKey };
  * Tout le reste reste neutre ou accent.
  */
 const DEADLINE: Record<DeadlineStatus, Entry> = {
-  upcoming: { tone: "neutral", key: "status.deadline.upcoming" },
-  in_progress: { tone: "accent", key: "status.deadline.in_progress" },
-  declared: { tone: "accent", key: "status.deadline.declared" },
-  paid: { tone: "green", key: "status.deadline.paid" },
-  overdue: { tone: "red", key: "status.deadline.overdue" },
+  upcoming: { tone: "neutral", key: "status.deadline.upcoming", icon: "clock" },
+  in_progress: { tone: "accent", key: "status.deadline.in_progress", icon: "clock" },
+  declared: { tone: "accent", key: "status.deadline.declared", icon: "send" },
+  paid: { tone: "green", key: "status.deadline.paid", icon: "check" },
+  overdue: { tone: "red", key: "status.deadline.overdue", icon: "alert" },
   not_applicable: { tone: "neutral", key: "status.deadline.not_applicable" },
 };
 
 const TASK: Record<TaskStatus, Entry> = {
   todo: { tone: "neutral", key: "status.task.todo" },
   in_progress: { tone: "accent", key: "status.task.in_progress" },
-  waiting_client: { tone: "amber", key: "status.task.waiting_client" },
-  done: { tone: "green", key: "status.task.done" },
+  waiting_client: { tone: "amber", key: "status.task.waiting_client", icon: "clock" },
+  done: { tone: "green", key: "status.task.done", icon: "check" },
   cancelled: { tone: "neutral", key: "status.task.cancelled" },
 };
 
 const REQUEST: Record<RequestStatus, Entry> = {
   pending: { tone: "neutral", key: "status.request.pending" },
   submitted: { tone: "accent", key: "status.request.submitted" },
-  approved: { tone: "green", key: "status.request.approved" },
-  rejected: { tone: "red", key: "status.request.rejected" },
+  approved: { tone: "green", key: "status.request.approved", icon: "check" },
+  rejected: { tone: "red", key: "status.request.rejected", icon: "x" },
   cancelled: { tone: "neutral", key: "status.request.cancelled" },
 };
 
 const INVOICE: Record<InvoiceStatus, Entry> = {
   pending: { tone: "neutral", key: "status.invoice.pending" },
   partial: { tone: "amber", key: "status.invoice.partial" },
-  paid: { tone: "green", key: "status.invoice.paid" },
-  overdue: { tone: "red", key: "status.invoice.overdue" },
+  paid: { tone: "green", key: "status.invoice.paid", icon: "check" },
+  overdue: { tone: "red", key: "status.invoice.overdue", icon: "alert" },
   cancelled: { tone: "neutral", key: "status.invoice.cancelled" },
 };
 
 /** Les documents n'avaient pas de table : leurs statuts s'affichaient en anglais. */
 const DOCUMENT: Record<string, Entry> = {
   received: { tone: "neutral", key: "status.document.received" },
-  approved: { tone: "green", key: "status.document.approved" },
-  rejected: { tone: "red", key: "status.document.rejected" },
+  approved: { tone: "green", key: "status.document.approved", icon: "check" },
+  rejected: { tone: "red", key: "status.document.rejected", icon: "x" },
   archived: { tone: "neutral", key: "status.document.archived" },
 };
 
@@ -117,6 +118,7 @@ export function StatusPill({ status, kind, title, locale = "fr", className }: St
   return (
     <Badge
       tone={entry?.tone ?? "neutral"}
+      iconName={entry?.icon}
       className={className}
       title={title ?? t(dict, "a11y.statusOf", { status: label })}
     >

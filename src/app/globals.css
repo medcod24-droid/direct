@@ -18,98 +18,143 @@
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
     "Liberation Mono", monospace;
 
-  /* Fonds et texte */
-  --bg: #f1f5f4;
+  /* Fonds et texte. Neutres légèrement teintés vers le vert, jamais du gris pur. */
+  --bg: #f2f6f4;
   --surface: #ffffff;
-  --surface-2: #e8efed;
-  --ink: #0c1a17;
+  --surface-2: #e9f0ee;
+  --ink: #0b1a16;
   --ink-2: #37504b;
   --muted: #5d7873;
-  --line: #d4e0dd;
+  --line: #d3e0dc;
+  /* Liseré supérieur des cartes : la profondeur vient de la bordure et du fond,
+     pas de l'ombre portée. */
+  --edge: rgb(11 26 22 / 3.5%);
 
-  /* Accent : vert-sarcelle profond */
+  /* Accent : vert sarcelle profond, tiré du logo. */
   --accent: #0e6a59;
   --accent-ink: #ffffff;
-  --accent-soft: #d8ece7;
+  --accent-soft: #dfeeea;
   --accent-strong: #0a5045;
 
-  /* Conformité */
+  /* Or de marque. Règle : l'or ne signifie jamais un état, il signifie une
+     valeur. Sur fond clair il doit foncer, sinon le contraste ne passe pas
+     sur du texte de 13 px. */
+  --gold: #7a5a12;
+  --gold-ink: #ffffff;
+  --gold-soft: #f6ecd4;
+  --gold-line: #e0cb96;
+
+  /* Conformité. L'avertissement est orange et non doré : il doit se distinguer
+     de l'or de marque au premier regard, puisqu'un cabinet lit la couleur avant
+     le texte. */
   --red: #b3261e;
-  --red-soft: #fbe4e2;
+  --red-soft: #fbeceb;
   --red-ink: #ffffff;
   --red-strong: #8f1c16;
-  --amber: #8a5a00;
-  --amber-soft: #fbeed2;
-  --green: #1a6b45;
-  --green-soft: #dcefe4;
+  --amber: #a04a06;
+  --amber-soft: #fdeade;
+  --green: #17683f;
+  --green-soft: #e6f2ea;
 
-  /* Divers */
+  /* Chrome : barre latérale, et plaque sombre sur laquelle le logo se lit. */
+  --chrome: #ffffff;
+  --chrome-ink: #37504b;
+  --chrome-line: #d3e0dc;
+  --plate: #0b1a16;
+  --plate-ink: #ffffff;
+
   --focus: var(--accent);
-  --shadow-1: 0 1px 2px rgb(12 26 23 / 6%), 0 1px 1px rgb(12 26 23 / 4%);
-  --shadow-2: 0 10px 30px rgb(12 26 23 / 12%), 0 2px 8px rgb(12 26 23 / 8%);
-  --overlay: rgb(12 26 23 / 45%);
+  --shadow-1: 0 1px 2px rgb(11 26 22 / 6%), 0 1px 1px rgb(11 26 22 / 4%);
+  --shadow-2: 0 10px 30px rgb(11 26 22 / 12%), 0 2px 8px rgb(11 26 22 / 8%);
+  --overlay: rgb(11 26 22 / 45%);
 }
 
+/* Préférence système, sauf si le thème clair a été choisi explicitement. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
 
-    --bg: #08120f;
-    --surface: #0f1c19;
-    --surface-2: #172724;
-    --ink: #e7efec;
-    --ink-2: #b2c7c2;
-    --muted: #85a09a;
-    --line: #233733;
+    --bg: #071411;
+    --surface: #0d1d19;
+    --surface-2: #142925;
+    --ink: #e9f2ef;
+    --ink-2: #b3c8c3;
+    --muted: #7f9a94;
+    --line: #1f3a34;
+    --edge: rgb(255 255 255 / 5.5%);
 
-    --accent: #35a58c;
-    --accent-ink: #04211b;
-    --accent-soft: #10352d;
-    --accent-strong: #46b79c;
+    --accent: #2f9e86;
+    --accent-ink: #04150f;
+    --accent-soft: #12302a;
+    --accent-strong: #3fb096;
 
-    --red: #f2867c;
-    --red-soft: #3a1a17;
+    --gold: #d9b45e;
+    --gold-ink: #231903;
+    --gold-soft: #33270e;
+    --gold-line: #54401a;
+
+    --red: #f0a9a4;
+    --red-soft: #3a1512;
     --red-ink: #2a0d0a;
-    --red-strong: #f79c93;
-    --amber: #e0a83a;
-    --amber-soft: #362710;
-    --green: #59bd8b;
-    --green-soft: #123024;
+    --red-strong: #f5bab6;
+    --amber: #e9944e;
+    --amber-soft: #3a2110;
+    --green: #63c996;
+    --green-soft: #0f2c20;
+
+    --chrome: #061210;
+    --chrome-ink: #b3c8c3;
+    --chrome-line: #16302a;
+    --plate: #061210;
+    --plate-ink: #ffffff;
 
     --shadow-1: 0 1px 2px rgb(0 0 0 / 40%);
     --shadow-2: 0 12px 34px rgb(0 0 0 / 55%), 0 2px 8px rgb(0 0 0 / 40%);
-    --overlay: rgb(4 9 8 / 65%);
+    --overlay: rgb(3 8 7 / 68%);
   }
 }
 
+/* Choix explicite : il gagne dans les deux sens. */
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  --bg: #08120f;
-  --surface: #0f1c19;
-  --surface-2: #172724;
-  --ink: #e7efec;
-  --ink-2: #b2c7c2;
-  --muted: #85a09a;
-  --line: #233733;
+  --bg: #071411;
+  --surface: #0d1d19;
+  --surface-2: #142925;
+  --ink: #e9f2ef;
+  --ink-2: #b3c8c3;
+  --muted: #7f9a94;
+  --line: #1f3a34;
+  --edge: rgb(255 255 255 / 5.5%);
 
-  --accent: #35a58c;
-  --accent-ink: #04211b;
-  --accent-soft: #10352d;
-  --accent-strong: #46b79c;
+  --accent: #2f9e86;
+  --accent-ink: #04150f;
+  --accent-soft: #12302a;
+  --accent-strong: #3fb096;
 
-  --red: #f2867c;
-  --red-soft: #3a1a17;
+  --gold: #d9b45e;
+  --gold-ink: #231903;
+  --gold-soft: #33270e;
+  --gold-line: #54401a;
+
+  --red: #f0a9a4;
+  --red-soft: #3a1512;
   --red-ink: #2a0d0a;
-  --red-strong: #f79c93;
-  --amber: #e0a83a;
-  --amber-soft: #362710;
-  --green: #59bd8b;
-  --green-soft: #123024;
+  --red-strong: #f5bab6;
+  --amber: #e9944e;
+  --amber-soft: #3a2110;
+  --green: #63c996;
+  --green-soft: #0f2c20;
+
+  --chrome: #061210;
+  --chrome-ink: #b3c8c3;
+  --chrome-line: #16302a;
+  --plate: #061210;
+  --plate-ink: #ffffff;
 
   --shadow-1: 0 1px 2px rgb(0 0 0 / 40%);
   --shadow-2: 0 12px 34px rgb(0 0 0 / 55%), 0 2px 8px rgb(0 0 0 / 40%);
-  --overlay: rgb(4 9 8 / 65%);
+  --overlay: rgb(3 8 7 / 68%);
 }
 
 @layer base {

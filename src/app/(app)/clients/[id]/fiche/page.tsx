@@ -136,7 +136,7 @@ export default async function ClientFichePage({
         <PrintButton />
       </div>
 
-      <article className="rounded-lg border border-line bg-surface p-8 text-ink print:border-0 print:bg-white print:p-0 print:text-black">
+      <article className="rounded-card border border-line bg-surface p-8 text-ink shadow-edge print:border-0 print:bg-white print:p-0 print:text-black print:shadow-none">
         <header className="print-bloc flex items-baseline justify-between gap-4 border-b border-line pb-3">
           <div>
             <p className="text-xs uppercase tracking-wide text-muted print:text-black">

@@ -2,23 +2,104 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { logoutAction } from "@/app/actions/auth";
 import { getAuthContext } from "@/lib/authz/guard";
-import { Avatar, Badge, Logo, ThemeToggle } from "@/components/ui";
-import { MobileNav, SidebarNav } from "./AppNav";
+import type { Permission } from "@/lib/authz/permissions";
+import { ROLE_LABELS } from "@/lib/domain/labels";
+import { getNavCounts } from "@/server/services/dashboard";
+import { Avatar, CountBadge, Icon, Logo, ThemeToggle } from "@/components/ui";
+import { MobileNav, SidebarNav, type NavGroup, type NavItem } from "./AppNav";
+import { AppSearch } from "./AppSearch";
 
-const NAV = [
-  { href: "/dashboard", label: "Tableau de bord", permission: "cabinet.view" },
-  { href: "/clients", label: "Clients", permission: "client.view" },
-  { href: "/deadlines", label: "Échéances", permission: "deadline.view" },
-  { href: "/appointments", label: "Rendez-vous", permission: "appointment.view" },
-  { href: "/requests", label: "Demandes", permission: "request.view" },
-  { href: "/documents", label: "Documents", permission: "document.view" },
-  { href: "/todos", label: "To-do équipe", permission: "todo.view" },
-  { href: "/tasks", label: "Tâches", permission: "task.view" },
-  { href: "/invoices", label: "Honoraires", permission: "invoice.view" },
-  { href: "/resultats", label: "Résultat", permission: "finance.view" },
-  { href: "/team", label: "Équipe", permission: "member.view" },
-  { href: "/settings", label: "Paramètres", permission: "cabinet.view" },
-] as const;
+type Entry = NavItem & { permission: Permission };
+type Group = { title: string; items: readonly Entry[] };
+
+/**
+ * Navigation, en trois groupes.
+ *
+ * Le regroupement n'est pas décoratif : une barre de onze entrées plates ne se
+ * parcourt pas. « Suivi » est ce qu'on ouvre le matin, « Travail » ce qu'on
+ * exécute, « Cabinet » ce qui concerne la maison elle-même.
+ */
+function navigation(counts: Awaited<ReturnType<typeof getNavCounts>>): Group[] {
+  return [
+    {
+      title: "Suivi",
+      items: [
+        { href: "/dashboard", label: "Tableau de bord", icon: "dash", permission: "cabinet.view" },
+        {
+          href: "/clients",
+          label: "Clients",
+          icon: "clients",
+          count: counts.clients,
+          permission: "client.view",
+        },
+        {
+          href: "/deadlines",
+          label: "Échéances",
+          icon: "calendar",
+          count: counts.deadlinesOverdue,
+          alert: counts.deadlinesOverdue > 0,
+          permission: "deadline.view",
+        },
+        {
+          href: "/appointments",
+          label: "Rendez-vous",
+          icon: "clock",
+          count: counts.appointmentsToday,
+          permission: "appointment.view",
+        },
+      ],
+    },
+    {
+      title: "Travail",
+      items: [
+        {
+          href: "/todos",
+          label: "To-do équipe",
+          icon: "task",
+          count: counts.todos,
+          alert: counts.todosToApprove > 0,
+          permission: "todo.view",
+        },
+        {
+          href: "/tasks",
+          label: "Tâches",
+          icon: "check",
+          count: counts.tasksOpen,
+          permission: "task.view",
+        },
+        {
+          href: "/requests",
+          label: "Demandes",
+          icon: "inbox",
+          count: counts.requestsToReview,
+          permission: "request.view",
+        },
+        {
+          href: "/documents",
+          label: "Documents",
+          icon: "doc",
+          count: counts.documentsToReview,
+          permission: "document.view",
+        },
+      ],
+    },
+    {
+      title: "Cabinet",
+      items: [
+        { href: "/invoices", label: "Honoraires", icon: "coins", permission: "invoice.view" },
+        {
+          href: "/resultats",
+          label: "Résultat",
+          icon: "chart",
+          count: counts.resultMissing,
+          alert: counts.resultMissing > 0,
+          permission: "finance.view",
+        },
+        { href: "/team", label: "Équipe", icon: "team", permission: "member.view" },
+      ],
+    },
+  ];
+}
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const ctx = await getAuthContext();
@@ -26,104 +107,107 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // Un compte client n'a rien à faire dans l'espace cabinet.
   if (ctx.membership.role === "client") redirect("/portal");
 
-  const unread = await ctx.db.notification.count({
-    where: { userId: ctx.user.id, readAt: null },
-  });
+  const [unread, counts] = await Promise.all([
+    ctx.db.notification.count({ where: { userId: ctx.user.id, readAt: null } }),
+    getNavCounts(ctx),
+  ]);
 
-  const items = NAV.filter((item) => ctx.can(item.permission));
+  const groups: NavGroup[] = navigation(counts)
+    .map((group) => ({
+      title: group.title,
+      items: group.items
+        .filter((item) => ctx.can(item.permission))
+        .map(({ permission: _p, ...item }) => item),
+    }))
+    .filter((group) => group.items.length > 0);
 
   return (
-    <div className="min-h-screen bg-bg text-ink flex">
-      <aside className="w-60 shrink-0 border-e border-line bg-surface hidden md:flex md:flex-col">
-        <div className="border-b border-line px-5 py-4">
-          <Link href="/dashboard" className="block rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
-            <Logo className="w-40" priority />
+    <div className="flex min-h-screen bg-bg text-ink">
+      <aside className="sticky top-0 hidden h-screen w-[248px] shrink-0 flex-col gap-3.5 overflow-auto border-e border-chromeLine bg-chrome p-3 md:flex">
+        {/* Le logo est blanc et vert : il ne se lit que sur une plaque sombre,
+            y compris en thème clair. */}
+        <Link
+          href="/dashboard"
+          className="flex items-center gap-2.5 rounded-lg bg-plate p-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          <Logo className="w-36" priority />
+        </Link>
+        <p className="-mt-2 truncate px-1.5 text-[11px] text-muted">{ctx.cabinet.name}</p>
+
+        <SidebarNav groups={groups} />
+
+        <div className="mt-auto flex flex-col gap-0.5 border-t border-chromeLine pt-2.5">
+          <Link
+            href="/settings"
+            className="flex h-[38px] items-center gap-2.5 rounded-chip px-2.5 text-sm text-chromeInk transition-colors hover:bg-surface2 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            <Icon name="settings" size={20} />
+            <span>Paramètres</span>
           </Link>
-          <div className="mt-2 truncate text-xs text-muted">{ctx.cabinet.name}</div>
-        </div>
-        <SidebarNav items={items} />
-        <div className="p-3 border-t border-line text-xs text-muted">
-          Données hébergées au Maroc
+          <Link
+            href="/notifications"
+            className="flex h-[38px] items-center gap-2.5 rounded-chip px-2.5 text-sm text-chromeInk transition-colors hover:bg-surface2 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            <Icon name="bell" size={20} />
+            <span className="flex-1">Notifications</span>
+            {unread > 0 ? <CountBadge value={unread} tone="danger" /> : null}
+          </Link>
         </div>
       </aside>
 
-      <div className="flex-1 min-w-0 flex flex-col">
-        <header className="h-14 border-b border-line bg-surface flex items-center gap-3 px-4 md:px-6">
-          <MobileNav items={items} cabinetName={ctx.cabinet.name} />
-          <Link href="/dashboard" className="md:hidden rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
-            <Logo className="w-32" />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="sticky top-0 z-10 flex h-[60px] shrink-0 items-center gap-3.5 border-b border-line bg-surface px-4 md:px-5">
+          <MobileNav groups={groups} cabinetName={ctx.cabinet.name} />
+          <Link href="/dashboard" className="rounded bg-plate p-1 md:hidden">
+            <Logo className="w-28" />
           </Link>
-          <div className="flex-1" />
-          <ThemeToggle />
-          <Link
-            href="/notifications"
-            aria-label="Notifications"
-            className="flex shrink-0 items-center gap-2 rounded-md px-1.5 py-1 text-sm text-ink2 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-          >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-              className="sm:hidden"
-            >
-              <path d="M18 8A6 6 0 1 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-              <path d="M13.7 21a2 2 0 0 1-3.4 0" />
-            </svg>
-            <span className="hidden sm:inline">Notifications</span>
-            {unread > 0 ? <Badge tone="accent">{unread}</Badge> : null}
-          </Link>
-          <div className="flex items-center gap-2">
-            <Avatar name={ctx.user.name} />
-            <div className="hidden sm:block leading-tight">
-              <div className="text-sm">{ctx.user.name}</div>
-              <div className="text-xs text-muted">{roleLabel(ctx.membership.role)}</div>
-            </div>
+
+          <div className="hidden flex-1 sm:flex">
+            <AppSearch />
           </div>
-          <form action={logoutAction}>
-            <button
-              type="submit"
-              aria-label="Déconnexion"
-              className="flex shrink-0 items-center rounded px-2 py-1 text-sm text-muted hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+
+          <div className="ms-auto flex shrink-0 items-center gap-2.5">
+            <ThemeToggle />
+            <Link
+              href="/notifications"
+              aria-label={`Notifications${unread > 0 ? ` — ${unread} non lues` : ""}`}
+              className="relative flex h-[38px] w-[38px] items-center justify-center rounded-control border border-line bg-surface2 text-ink2 transition-colors hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             >
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-                className="sm:hidden"
+              <Icon name="bell" size={18} />
+              {unread > 0 ? (
+                <span className="absolute -top-1.5 -end-1.5 flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold text-[var(--red-ink)]">
+                  {unread}
+                </span>
+              ) : null}
+            </Link>
+
+            <div className="flex items-center gap-2.5 ps-1">
+              <Avatar name={ctx.user.name} size="md" />
+              <div className="hidden leading-tight lg:block">
+                <div className="text-[12.5px] font-semibold text-ink">{ctx.user.name}</div>
+                <div className="text-[11px] text-muted">
+                  {ROLE_LABELS[ctx.membership.role] ?? ctx.membership.role}
+                </div>
+              </div>
+            </div>
+
+            <form action={logoutAction}>
+              <button
+                type="submit"
+                aria-label="Déconnexion"
+                title="Déconnexion"
+                className="flex h-[38px] w-[38px] items-center justify-center rounded-control border border-line bg-surface2 text-ink2 transition-colors hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                <path d="M16 17l5-5-5-5M21 12H9" />
-              </svg>
-              <span className="hidden sm:inline">Déconnexion</span>
-            </button>
-          </form>
+                <Icon name="login" size={18} />
+              </button>
+            </form>
+          </div>
         </header>
 
-        <main className="flex-1 w-full max-w-[1400px] mx-auto p-4 md:p-6">{children}</main>
+        <main className="mx-auto flex w-full max-w-[1520px] flex-1 flex-col gap-[18px] p-4 pb-10 md:px-5 md:pt-[22px]">
+          {children}
+        </main>
       </div>
     </div>
   );
-}
-
-function roleLabel(role: string): string {
-  const labels: Record<string, string> = {
-    owner: "Gérant",
-    admin: "Administrateur",
-    accountant: "Comptable",
-    assistant: "Assistant",
-    client: "Client",
-  };
-  return labels[role] ?? role;
 }

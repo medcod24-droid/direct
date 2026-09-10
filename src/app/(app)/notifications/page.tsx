@@ -20,6 +20,7 @@ export default async function NotificationsPage() {
   return (
     <div className="grid gap-5">
       <PageHeader
+        eyebrow="Alertes"
         title="Notifications"
         subtitle={`${unread} non lue(s)`}
         actions={<MarkAllRead unread={unread} />}

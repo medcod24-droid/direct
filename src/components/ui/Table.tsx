@@ -11,7 +11,7 @@ export function TableWrap({ className, children, ...props }: HTMLAttributes<HTML
   return (
     <div
       className={clsx(
-        "w-full overflow-hidden rounded-lg border border-line bg-surface",
+        "w-full overflow-hidden rounded-card border border-line bg-surface shadow-edge",
         className,
       )}
       {...props}
@@ -58,7 +58,10 @@ export function Table({
 
 export function THead({ className, children, ...props }: HTMLAttributes<HTMLTableSectionElement>) {
   return (
-    <thead className={clsx("bg-surface2 text-ink2", className)} {...props}>
+    <thead
+      className={clsx("border-y border-line bg-surface2 text-ink2", className)}
+      {...props}
+    >
       {children}
     </thead>
   );
@@ -102,7 +105,7 @@ export function TH({ numeric = false, scope = "col", className, children, ...pro
     <th
       scope={scope}
       className={clsx(
-        "px-3 py-2 text-start text-xs font-semibold uppercase tracking-wide text-muted",
+        "whitespace-nowrap px-3 py-2.5 text-start text-2xs font-bold uppercase tracking-[0.09em] text-muted",
         numeric && "text-end tabular",
         className,
       )}
@@ -121,7 +124,7 @@ export function TD({ numeric = false, className, children, ...props }: TDProps) 
   return (
     <td
       className={clsx(
-        "px-3 py-2 align-middle text-ink",
+        "px-3 py-3 align-middle text-sm text-ink",
         numeric && "text-end tabular",
         className,
       )}

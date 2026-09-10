@@ -1,9 +1,12 @@
 import { clsx } from "clsx";
 import type { ReactNode } from "react";
 import { getDictionary, t, type Locale } from "@/lib/i18n";
+import { Icon, type IconName } from "./Icon";
 
 export type EmptyStateProps = {
-  /** SVG inline ; une icône neutre est utilisée par défaut. */
+  /** Icône du jeu du produit. Un état vide sans icône n'attire pas l'œil. */
+  iconName?: IconName;
+  /** SVG inline, si le jeu ne couvre pas le cas. */
   icon?: ReactNode;
   title?: string;
   description?: string;
@@ -18,6 +21,7 @@ export type EmptyStateProps = {
 };
 
 export function EmptyState({
+  iconName,
   icon,
   title,
   description,
@@ -40,15 +44,19 @@ export function EmptyState({
       <span
         aria-hidden="true"
         className={clsx(
-          "flex items-center justify-center rounded-full border border-line bg-surface2 text-muted",
+          "flex items-center justify-center rounded-chip border border-line bg-surface2 text-muted",
           compact ? "h-9 w-9 [&>svg]:h-4 [&>svg]:w-4" : "h-12 w-12 [&>svg]:h-5 [&>svg]:w-5",
         )}
       >
-        {icon ?? <DefaultIcon />}
+        {iconName ? (
+          <Icon name={iconName} size={compact ? 17 : 21} />
+        ) : (
+          icon ?? <DefaultIcon />
+        )}
       </span>
 
       <div className="max-w-sm">
-        <p className={clsx("font-semibold text-ink", compact ? "text-sm" : "text-base")}>
+        <p className={clsx("font-650 text-ink", compact ? "text-sm" : "text-base")}>
           {title ?? t(dict, "empty.title")}
         </p>
         <p className="mt-1 text-sm leading-relaxed text-muted">

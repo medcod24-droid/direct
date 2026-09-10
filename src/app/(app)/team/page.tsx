@@ -33,6 +33,7 @@ export default async function TeamPage() {
   return (
     <div className="grid gap-5">
       <PageHeader
+        eyebrow="Cabinet"
         title="Équipe"
         subtitle={`${staff.length} collaborateur(s) · ouvrez une fiche pour voir ses tâches et son historique`}
         actions={canInvite ? <AddMember /> : null}

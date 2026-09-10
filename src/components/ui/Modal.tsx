@@ -102,7 +102,7 @@ export function Modal({
         aria-describedby={description ? descriptionId : undefined}
         tabIndex={-1}
         className={clsx(
-          "relative z-10 my-auto w-full rounded-xl border border-line bg-surface shadow-panel outline-none",
+          "relative z-10 my-auto w-full rounded-card border border-line bg-surface shadow-panel shadow-edge outline-none",
           SIZES[size],
           className,
         )}

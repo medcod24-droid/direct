@@ -24,6 +24,7 @@ export default async function RequestsPage({
   return (
     <div className="grid gap-5">
       <PageHeader
+        eyebrow="Pièces attendues des clients"
         title="Demandes de pièces"
         subtitle={`${toReview.length} à examiner · ${waiting.length} en attente chez les clients`}
       />

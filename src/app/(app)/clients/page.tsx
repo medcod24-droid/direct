@@ -52,6 +52,7 @@ export default async function ClientsPage({
   return (
     <div className="grid gap-5">
       <PageHeader
+        eyebrow="Portefeuille"
         title="Clients"
         subtitle={`${result.total} dossier(s)`}
         actions={
@@ -89,6 +90,7 @@ export default async function ClientsPage({
 
       {result.items.length === 0 ? (
         <EmptyState
+          iconName="clients"
           title="Aucun dossier"
           description={
             params.q

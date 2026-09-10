@@ -19,7 +19,8 @@ export default async function SettingsPage() {
 
   return (
     <div className="grid gap-5">
-      <PageHeader title="Paramètres" subtitle={ctx.cabinet.name} />
+      <PageHeader eyebrow="Cabinet"
+        title="Paramètres" subtitle={ctx.cabinet.name} />
 
       <Card title="Abonnement et usage">
         {entitlements ? (
@@ -63,7 +64,7 @@ export default async function SettingsPage() {
             </TableWrap>
           </div>
         ) : (
-          <Alert tone="warning">Aucun abonnement actif n&apos;est rattaché à ce cabinet.</Alert>
+          <Alert tone="warning" title="Abonnement">Aucun abonnement actif n&apos;est rattaché à ce cabinet.</Alert>
         )}
       </Card>
 

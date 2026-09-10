@@ -1,27 +1,54 @@
 import Link from "next/link";
 import { requireStaff } from "@/lib/authz/guard";
 import { daysUntil, formatDate, formatMad, relativeDays } from "@/lib/format";
-import { PRIORITY_LABELS } from "@/lib/domain/labels";
-import { dayKey, endOf, wallTime } from "@/lib/calendar/month";
+import { dayKey, endOf, MONTH_LABELS, wallTime } from "@/lib/calendar/month";
+import { PRIORITY_LABELS, subtypeLabel } from "@/lib/domain/labels";
 import { listAppointments } from "@/server/services/appointments";
-import { listMyTodos, listTodos } from "@/server/services/todos";
-import { listStaffOptions } from "@/server/services/members";
 import { listClientOptions } from "@/server/services/clients";
-import { getYearResults } from "@/server/services/finances";
-import { TodoCard } from "../todos/TodoCard";
 import {
   getCabinetDashboard,
   getClientsNeedingAttention,
+  getMonthDeadlineSummary,
   getOverdueThisMonth,
   getUrgentTasks,
 } from "@/server/services/dashboard";
-import { Alert, Badge, Card, EmptyState, MonthlyBars, PageHeader } from "@/components/ui";
+import { getYearResults } from "@/server/services/finances";
+import { listStaffOptions } from "@/server/services/members";
+import { listMyTodos, listTodos } from "@/server/services/todos";
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  CountBadge,
+  EmptyState,
+  Gauge,
+  IconChip,
+  MonthlyBars,
+  PageHeader,
+  ProgressBar,
+  SegmentedProgress,
+  StatTile,
+} from "@/components/ui";
+import { TodoCard } from "../todos/TodoCard";
 
 export const metadata = { title: "Tableau de bord — Direct Conseil" };
 export const dynamic = "force-dynamic";
 
+/**
+ * Tableau de bord.
+ *
+ * Il ouvre sur ce qu'il y a à faire aujourd'hui, dans cet ordre : le bandeau de
+ * KPI, les échéances en retard du mois, la santé du cabinet, les rendez-vous du
+ * jour, la to-do — la sienne puis celle de l'équipe —, et le résultat.
+ *
+ * Deux règles y sont tenues partout : aucun ensemble à plusieurs états ne
+ * s'affiche sans son avancement, et aucun compteur sans son total — « 7 » ne dit
+ * rien, « 7 sur 34 » oui.
+ */
 export default async function DashboardPage() {
   const ctx = await requireStaff("cabinet.view");
+
   // Journée en heures murales : les rendez-vous sont enregistrés tels qu'ils ont
   // été saisis, sans conversion de fuseau (voir lib/calendar/month.ts).
   const now = new Date();
@@ -30,6 +57,7 @@ export default async function DashboardPage() {
 
   const [
     data,
+    month,
     overdue,
     attention,
     urgentTasks,
@@ -40,43 +68,64 @@ export default async function DashboardPage() {
     todoClients,
     results,
   ] = await Promise.all([
-      getCabinetDashboard(ctx),
-      getOverdueThisMonth(ctx, now),
-      getClientsNeedingAttention(ctx),
-      ctx.can("task.view") ? getUrgentTasks(ctx) : Promise.resolve([]),
-      ctx.can("appointment.view")
-        ? listAppointments(ctx, { from: dayStart, to: dayEnd })
-        : Promise.resolve([]),
-      ctx.can("todo.view") ? listMyTodos(ctx) : Promise.resolve([]),
-      // `listTodos` borne déjà la lecture : l'administration voit toute
-      // l'équipe, un collaborateur seulement ce qui lui est confié.
-      ctx.can("todo.manage") ? listTodos(ctx) : Promise.resolve([]),
-      // Le formulaire de modification, ouvert depuis une carte, a besoin des
-      // listes de choix.
-      ctx.can("todo.manage") ? listStaffOptions(ctx) : Promise.resolve([]),
-      ctx.can("todo.manage") ? listClientOptions(ctx) : Promise.resolve([]),
-      ctx.can("finance.view")
-        ? getYearResults(ctx, now.getUTCFullYear())
-        : Promise.resolve(null),
-    ]);
+    getCabinetDashboard(ctx),
+    getMonthDeadlineSummary(ctx, now),
+    getOverdueThisMonth(ctx, now),
+    getClientsNeedingAttention(ctx),
+    ctx.can("task.view") ? getUrgentTasks(ctx) : Promise.resolve([]),
+    ctx.can("appointment.view")
+      ? listAppointments(ctx, { from: dayStart, to: dayEnd })
+      : Promise.resolve([]),
+    ctx.can("todo.view") ? listMyTodos(ctx) : Promise.resolve([]),
+    // `listTodos` borne déjà la lecture : l'administration voit toute l'équipe,
+    // un collaborateur seulement ce qui lui est confié.
+    ctx.can("todo.manage") ? listTodos(ctx) : Promise.resolve([]),
+    ctx.can("todo.manage") ? listStaffOptions(ctx) : Promise.resolve([]),
+    ctx.can("todo.manage") ? listClientOptions(ctx) : Promise.resolve([]),
+    ctx.can("finance.view") ? getYearResults(ctx, now.getUTCFullYear()) : Promise.resolve(null),
+  ]);
 
   const canManageTodos = ctx.can("todo.manage");
-  // Regroupement par collaborateur, pour valider sans quitter le tableau de bord.
-  const todoGroups = new Map<string, typeof teamTodos>();
+  const confirmed = teamTodos.filter((todo) => todo.status === "approved").length;
+
+  // Regroupement par collaborateur : ce qui attend une confirmation remonte.
+  const byAssignee = new Map<string, typeof teamTodos>();
   for (const todo of teamTodos) {
     if (todo.status === "approved") continue;
-    const list = todoGroups.get(todo.assigneeId);
+    const list = byAssignee.get(todo.assigneeId);
     if (list) list.push(todo);
-    else todoGroups.set(todo.assigneeId, [todo]);
+    else byAssignee.set(todo.assigneeId, [todo]);
   }
-  const groups = [...todoGroups.entries()]
+  const groups = [...byAssignee.entries()]
     .map(([assigneeId, items]) => ({
       assigneeId,
       name: items[0]?.assigneeName ?? "—",
       items,
-      awaiting: items.filter((item) => item.status === "submitted").length,
+      submitted: items.filter((item) => item.status === "submitted").length,
+      assigned: items.filter((item) => item.status !== "submitted").length,
+      done: teamTodos.filter(
+        (todo) => todo.assigneeId === assigneeId && todo.status === "approved",
+      ).length,
     }))
-    .sort((a, b) => b.awaiting - a.awaiting || a.name.localeCompare(b.name, "fr"));
+    .sort((a, b) => b.submitted - a.submitted || a.name.localeCompare(b.name, "fr"));
+
+  const honored = todayAppointments.filter((row) => row.status === "done").length;
+
+  // Santé du cabinet : trois faits, pas un score opaque.
+  const health = [
+    { label: "Dépôts dans les délais", value: month.deposited, total: month.total },
+    { label: "Dossiers actifs", value: data.clients.active, total: data.clients.total },
+    {
+      label: "Factures sans retard",
+      value: Math.max(0, data.invoices.count - data.invoices.overdueCount),
+      total: data.invoices.count,
+    },
+  ];
+  const measured = health.filter((row) => row.total > 0);
+  const healthRatio =
+    measured.length > 0
+      ? measured.reduce((sum, row) => sum + row.value / row.total, 0) / measured.length
+      : 1;
 
   const trial =
     data.entitlements?.status === "trialing" && data.entitlements.trialEndsAt
@@ -84,14 +133,22 @@ export default async function DashboardPage() {
       : null;
 
   return (
-    <div className="grid gap-6">
+    <div className="flex flex-col gap-[18px]">
       <PageHeader
+        eyebrow={`Exercice ${now.getUTCFullYear()} · ${MONTH_LABELS[now.getUTCMonth()]}`}
         title={`Bonjour, ${ctx.user.name.split(" ")[0]}`}
-        subtitle={`${data.clients.active} dossiers actifs · ${overdue.total} échéance(s) en retard ce mois-ci`}
+        subtitle={`${data.clients.active} dossiers actifs · ${month.total} échéance(s) au titre du mois · ${month.overdue} en retard`}
+        actions={
+          ctx.can("client.create") ? (
+            <Button href="/clients/new" variant="primary" iconName="plus">
+              Nouveau dossier
+            </Button>
+          ) : undefined
+        }
       />
 
       {trial ? (
-        <Alert tone="info">
+        <Alert tone="info" title="Période d'essai">
           Période d&apos;essai du plan {data.entitlements?.planName} : elle se termine {trial}.{" "}
           <Link href="/settings" className="underline underline-offset-2">
             Voir les plans
@@ -100,88 +157,297 @@ export default async function DashboardPage() {
       ) : null}
 
       {data.warnings.map((warning) => (
-        <Alert key={warning} tone="warning">
+        <Alert key={warning} tone="warning" title="Limite du plan">
           Limite bientôt atteinte — {warning}.
         </Alert>
       ))}
 
+      {/* Bandeau de KPI : un fait par tuile, avec son total et sa comparaison. */}
+      <section className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
+        <StatTile
+          label="En retard"
+          icon="alert"
+          value={month.overdue}
+          over={`sur ${month.total} du mois`}
+          tone={month.overdue > 0 ? "danger" : "success"}
+          compare="Gérées par le cabinet, sans preuve de dépôt"
+          href="/deadlines?status=overdue"
+        />
+        <StatTile
+          label="Déposées"
+          icon="check"
+          value={month.deposited}
+          over={`sur ${month.total} du mois`}
+          tone="success"
+          compare={`${month.remaining} encore à déposer`}
+          href="/deadlines"
+        />
+        <StatTile
+          label="Honoraires dus"
+          icon="coins"
+          value={formatMad(data.invoices.outstanding, { currency: false })}
+          over="MAD"
+          tone="gold"
+          compare={`${data.invoices.count} facture(s) · ${data.invoices.overdueCount} en retard`}
+          href="/invoices"
+        />
+        <StatTile
+          label="Rendez-vous"
+          icon="clock"
+          value={todayAppointments.length}
+          over={`${honored} honoré(s) aujourd'hui`}
+          tone="accent"
+          compare={`${data.deadlines.today} échéance(s) tombent aujourd'hui`}
+          href="/appointments"
+        />
+      </section>
 
-      <Card
-        title="Échéances en retard ce mois-ci"
-        description="Gérées par le cabinet, sans preuve de dépôt. Le mois en cours seulement — l'année entière ne dit rien de ce qu'il y a à faire."
-        action={
-          <Link
-            href="/deadlines?status=overdue"
-            className="text-sm text-accent underline underline-offset-2"
-          >
-            Toutes les échéances
-          </Link>
-        }
-      >
-        {overdue.items.length === 0 ? (
-          <EmptyState
-            title="Rien en retard ce mois-ci"
-            description="Les obligations du mois gérées par le cabinet sont à jour."
-          />
-        ) : (
-          <>
-            <ul className="divide-y divide-line">
-              {overdue.items.map((deadline) => (
-                <li key={deadline.id} className="flex items-baseline justify-between gap-3 py-2.5">
-                  <div className="min-w-0">
-                    <div className="text-sm">{deadline.label}</div>
-                    <div className="text-xs text-muted">
-                      <Link
-                        href={`/clients/${deadline.client.id}`}
-                        className="underline underline-offset-2"
-                      >
-                        {deadline.client.legalName}
-                      </Link>
-                      {" · "}
-                      {deadline.periodLabel}
-                    </div>
-                  </div>
-                  <div className="shrink-0 text-end text-xs">
-                    <div className="font-medium text-danger tabular">
-                      {formatDate(deadline.dueDate)}
-                    </div>
-                    <div className="text-danger">{relativeDays(deadline.dueDate)}</div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-            {overdue.total > overdue.items.length ? (
-              <p className="mt-2 text-xs text-muted">
-                {overdue.total - overdue.items.length} autre(s) en retard ce mois-ci.
-              </p>
-            ) : null}
-          </>
-        )}
-      </Card>
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,2.4fr)_minmax(0,1fr)] xl:items-start">
+        {/* Échéances du mois : la progression d'abord, la liste ensuite. */}
+        <Card
+          icon="calendar"
+          title="Échéances en retard ce mois-ci"
+          description={`${month.deposited} déposées sur ${month.total} · ${month.overdue} en retard`}
+          action={
+            <Link
+              href="/deadlines?status=overdue"
+              className="text-sm text-accent underline underline-offset-2"
+            >
+              Toutes les échéances
+            </Link>
+          }
+          padded={false}
+        >
+          <div className="px-4 pb-3.5">
+            <SegmentedProgress
+              height={10}
+              total={month.total}
+              segments={[
+                { label: "Payées", value: month.paid, className: "bg-ok" },
+                { label: "Déclarées", value: month.declared, className: "bg-accent" },
+                { label: "À déposer", value: month.remaining, className: "bg-warn" },
+                { label: "En retard", value: month.overdue, className: "bg-danger" },
+              ]}
+            />
+          </div>
 
+          {overdue.items.length === 0 ? (
+            <EmptyState
+              iconName="check"
+              compact
+              title="Rien en retard ce mois-ci"
+              description="Les obligations du mois gérées par le cabinet sont à jour."
+            />
+          ) : (
+            <div className="scroll-x">
+              <table className="w-full min-w-[36rem] border-collapse">
+                <thead>
+                  <tr className="border-y border-line bg-surface2">
+                    <th className="px-4 py-2.5 text-start text-2xs font-bold uppercase tracking-[0.09em] text-muted">
+                      Client
+                    </th>
+                    <th className="px-3 py-2.5 text-start text-2xs font-bold uppercase tracking-[0.09em] text-muted">
+                      Obligation
+                    </th>
+                    <th className="px-3 py-2.5 text-start text-2xs font-bold uppercase tracking-[0.09em] text-muted">
+                      Période
+                    </th>
+                    <th className="px-3 py-2.5 text-start text-2xs font-bold uppercase tracking-[0.09em] text-muted">
+                      Retard
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {overdue.items.map((deadline) => {
+                    const late = Math.abs(daysUntil(deadline.dueDate) ?? 0);
+                    return (
+                      <tr key={deadline.id} className="border-b border-line last:border-b-0">
+                        <td className="whitespace-nowrap px-4 py-3">
+                          <Link
+                            href={`/clients/${deadline.client.id}`}
+                            className="text-sm font-semibold text-ink transition-colors hover:text-accent"
+                          >
+                            {deadline.client.legalName}
+                          </Link>
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-3 text-sm text-ink2">
+                          {deadline.label}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-3 text-xs text-ink2 tabular">
+                          {deadline.periodLabel}
+                        </td>
+                        <td className="px-3 py-3">
+                          <div className="flex w-[112px] flex-col gap-1">
+                            <span className="text-xs font-semibold text-danger tabular">
+                              {formatDate(deadline.dueDate)} · {late} j
+                            </span>
+                            {/* Plus la barre est pleine, plus le retard est ancien.
+                                Trente jours est le palier au-delà duquel une
+                                pénalité devient probable. */}
+                            <ProgressBar
+                              value={Math.min(late, 30)}
+                              total={30}
+                              tone="danger"
+                              label={`En retard de ${late} jour(s)`}
+                            />
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {overdue.total > overdue.items.length ? (
+            <p className="px-4 py-2.5 text-xs text-muted tabular">
+              {overdue.total - overdue.items.length} autre(s) en retard ce mois-ci.
+            </p>
+          ) : null}
+        </Card>
+
+        <div className="flex flex-col gap-4">
+          {/* Santé : la jauge donne le sentiment, les trois lignes le fondent. */}
+          <Card icon="shield" iconTone="gold" title="Santé du cabinet">
+            <div className="flex items-center gap-4">
+              <Gauge
+                ratio={healthRatio}
+                caption={
+                  healthRatio >= 0.85
+                    ? "CONFORME"
+                    : healthRatio >= 0.6
+                      ? "À SURVEILLER"
+                      : "CRITIQUE"
+                }
+                tone={healthRatio >= 0.85 ? "ok" : healthRatio >= 0.6 ? "gold" : "danger"}
+                size={124}
+              />
+              <dl className="flex min-w-0 flex-col gap-2.5 text-xs">
+                {health.map((row) => (
+                  <div key={row.label} className="flex flex-col gap-0.5">
+                    <dt className="text-muted">{row.label}</dt>
+                    <dd className="font-650 text-ink tabular">
+                      {row.total > 0 ? `${row.value} sur ${row.total}` : "—"}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          </Card>
+
+          {ctx.can("appointment.view") ? (
+            <Card
+              icon="clock"
+              title="Rendez-vous du jour"
+              description={`${honored} honorés sur ${todayAppointments.length}`}
+              action={
+                <Link
+                  href="/appointments"
+                  className="text-sm text-accent underline underline-offset-2"
+                >
+                  Le calendrier
+                </Link>
+              }
+              padded={false}
+            >
+              {todayAppointments.length === 0 ? (
+                <EmptyState
+                  iconName="calendar"
+                  compact
+                  title="Aucun rendez-vous aujourd'hui"
+                  description="Le calendrier reste ouvert pour la suite du mois."
+                />
+              ) : (
+                <ul className="border-t border-line">
+                  {todayAppointments.map((appointment) => (
+                    <li
+                      key={appointment.id}
+                      className="flex items-center gap-3 border-b border-line px-4 py-3 last:border-b-0"
+                    >
+                      <IconChip
+                        name={
+                          appointment.status === "done"
+                            ? "check"
+                            : appointment.status === "no_show"
+                              ? "alert"
+                              : "calendar"
+                        }
+                        tone={
+                          appointment.status === "done"
+                            ? "ok"
+                            : appointment.status === "no_show"
+                              ? "danger"
+                              : "accent"
+                        }
+                        size={32}
+                      />
+                      <div className="flex min-w-0 flex-1 flex-col">
+                        <Link
+                          href={`/clients/${appointment.client.id}`}
+                          className="truncate text-sm font-semibold text-ink transition-colors hover:text-accent"
+                        >
+                          {appointment.client.legalName}
+                        </Link>
+                        <span className="truncate text-xs text-muted">{appointment.title}</span>
+                        {appointment.preparation ? (
+                          <span className="truncate text-xs text-ink2">
+                            À préparer : {appointment.preparation}
+                          </span>
+                        ) : null}
+                      </div>
+                      <span className="shrink-0 text-xs font-650 text-ink2 tabular">
+                        {wallTime(appointment.startsAt)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
+          ) : null}
+        </div>
+      </div>
+
+      {/* Ma to-do : ce que le cabinet attend de moi, quel que soit mon rôle. */}
       {myTodos.length > 0 ? (
         <Card
+          icon="task"
           title="Ce que le cabinet attend de vous"
-          description="Tâches confiées par l'administration. Marquez-les comme faites en laissant une note."
+          description={`${myTodos.length} tâche(s) à rendre`}
           action={
             <Link href="/todos" className="text-sm text-accent underline underline-offset-2">
               Ma to-do
             </Link>
           }
+          padded={false}
         >
-          <ul className="divide-y divide-line">
+          <ul className="border-t border-line">
             {myTodos.map((todo) => (
-              <li key={todo.id} className="flex items-baseline justify-between gap-3 py-2.5">
-                <div className="min-w-0">
+              <li
+                key={todo.id}
+                className="flex items-center gap-3 border-b border-line px-4 py-3 last:border-b-0"
+              >
+                <IconChip
+                  name={todo.status === "returned" ? "alert" : "task"}
+                  tone={todo.status === "returned" ? "danger" : "accent"}
+                  size={32}
+                />
+                <div className="flex min-w-0 flex-1 flex-col">
                   <div className="flex flex-wrap items-center gap-2">
-                    {todo.status === "returned" ? <Badge tone="red">Renvoyée</Badge> : null}
-                    {todo.priority === "urgent" ? (
-                      <Badge tone="red">{PRIORITY_LABELS.urgent}</Badge>
+                    {todo.status === "returned" ? (
+                      <Badge tone="red" iconName="alert">
+                        Renvoyée
+                      </Badge>
                     ) : null}
-                    <span className="text-sm">{todo.title}</span>
+                    {todo.priority === "urgent" ? (
+                      <Badge tone="red" iconName="alert">
+                        {PRIORITY_LABELS.urgent}
+                      </Badge>
+                    ) : null}
+                    <span className="text-sm font-semibold text-ink">{todo.title}</span>
                   </div>
                   {todo.reviewNote ? (
-                    <p className="mt-0.5 text-xs text-ink2">À reprendre : {todo.reviewNote}</p>
+                    <span className="text-xs text-ink2">À reprendre : {todo.reviewNote}</span>
                   ) : null}
                 </div>
                 <div className="shrink-0 text-end text-xs">
@@ -190,8 +456,8 @@ export default async function DashboardPage() {
                       <div
                         className={
                           (daysUntil(todo.dueDate) ?? 0) < 0
-                            ? "font-medium text-danger"
-                            : "text-ink2"
+                            ? "font-650 text-danger tabular"
+                            : "text-ink2 tabular"
                         }
                       >
                         {formatDate(todo.dueDate)}
@@ -208,132 +474,139 @@ export default async function DashboardPage() {
         </Card>
       ) : null}
 
-      {canManageTodos ? (
-        <Card
-          title="To-do de l'équipe"
-          description="Ce qui reste à faire, par collaborateur. Une tâche rendue attend votre confirmation."
-          action={
-            <Link href="/todos" className="text-sm text-accent underline underline-offset-2">
-              Ouvrir la to-do
-            </Link>
-          }
-        >
-          {groups.length === 0 ? (
-            <EmptyState
-              title="Rien en cours"
-              description="Tout ce qui a été confié est confirmé. Ouvrez la to-do pour distribuer le travail du jour."
-            />
-          ) : (
-          <div className="grid gap-4">
-            {groups.map((group) => (
-              <div key={group.assigneeId}>
-                <div className="mb-2 flex items-baseline gap-2">
-                  <Link
-                    href={`/team/${group.assigneeId}`}
-                    className="text-sm font-medium underline underline-offset-2"
-                  >
-                    {group.name}
-                  </Link>
-                  {group.awaiting > 0 ? (
-                    <Badge tone="amber">{group.awaiting} à confirmer</Badge>
-                  ) : null}
-                </div>
-                <div className="grid gap-2">
-                  {group.items.map((todo) => (
-                    <TodoCard
-                      key={todo.id}
-                      todo={todo}
-                      canManage
-                      isMine={todo.assigneeId === ctx.user.id}
-                      staff={staff}
-                      clients={todoClients}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-          )}
-        </Card>
-      ) : null}
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,2.4fr)_minmax(0,1fr)] xl:items-start">
+        {results ? (
+          <Card
+            icon="chart"
+            iconTone="gold"
+            title={`Résultat mensuel du cabinet — ${results.year}`}
+            description={
+              results.totals.monthsFilled === 0
+                ? "Aucun mois saisi. Renseignez vos revenus et vos charges."
+                : `${results.totals.monthsFilled} mois sur 12 renseignés · cumul ${formatMad(results.totals.result)}`
+            }
+            action={
+              <Link href="/resultats" className="text-sm text-accent underline underline-offset-2">
+                Saisir un mois
+              </Link>
+            }
+          >
+            <MonthlyBars months={results.months} />
+          </Card>
+        ) : null}
 
-      {ctx.can("appointment.view") ? (
-        <Card
-          title="Rendez-vous du jour"
-          description="Qui vient aujourd'hui, et ce qu'il faut avoir sorti."
-          action={
-            <Link href="/appointments" className="text-sm text-accent underline underline-offset-2">
-              Le calendrier
-            </Link>
-          }
-        >
-          {todayAppointments.length === 0 ? (
-            <EmptyState
-              title="Aucun rendez-vous aujourd'hui"
-              description="Le calendrier reste ouvert pour la suite du mois."
-            />
-          ) : (
-          <ul className="divide-y divide-line">
-            {todayAppointments.map((appointment) => (
-              <li key={appointment.id} className="flex items-baseline justify-between gap-3 py-2.5">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="tabular text-sm font-medium">
-                      {wallTime(appointment.startsAt)} –{" "}
-                      {wallTime(endOf(appointment.startsAt, appointment.durationMinutes))}
-                    </span>
-                    {appointment.status === "done" ? <Badge tone="green">Validé</Badge> : null}
-                    {appointment.status === "cancelled" ? <Badge>Annulé</Badge> : null}
-                    {appointment.status === "no_show" ? <Badge tone="red">Absent</Badge> : null}
-                    <span className="text-sm">{appointment.title}</span>
+        {canManageTodos ? (
+          <Card
+            icon="team"
+            title="To-do de l'équipe"
+            description={`${confirmed} confirmées sur ${teamTodos.length}`}
+            action={
+              <Link href="/todos" className="text-sm text-accent underline underline-offset-2">
+                Ouvrir la to-do
+              </Link>
+            }
+            padded={false}
+          >
+            {groups.length === 0 ? (
+              <EmptyState
+                iconName="check"
+                compact
+                title="Rien en cours"
+                description="Tout ce qui a été confié est confirmé."
+              />
+            ) : (
+              <div className="border-t border-line">
+                {groups.map((group) => (
+                  <div
+                    key={group.assigneeId}
+                    className="border-b border-line px-4 py-3.5 last:border-b-0"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-chip border border-line bg-surface2 text-[11px] font-bold text-ink2">
+                        {initialsOf(group.name)}
+                      </span>
+                      <Link
+                        href={`/team/${group.assigneeId}`}
+                        className="min-w-0 flex-1 truncate text-sm font-semibold text-ink transition-colors hover:text-accent"
+                      >
+                        {group.name}
+                      </Link>
+                      {group.submitted > 0 ? (
+                        <CountBadge value={group.submitted} tone="warn" />
+                      ) : null}
+                    </div>
+
+                    <div className="mt-2">
+                      <SegmentedProgress
+                        segments={[
+                          { label: "Confirmées", value: group.done, className: "bg-ok" },
+                          { label: "Rendues", value: group.submitted, className: "bg-accent" },
+                          { label: "À faire", value: group.assigned, className: "bg-warn" },
+                        ]}
+                      />
+                    </div>
+
+                    <div className="mt-2.5 grid gap-2">
+                      {group.items.map((todo) => (
+                        <TodoCard
+                          key={todo.id}
+                          todo={todo}
+                          canManage
+                          isMine={todo.assigneeId === ctx.user.id}
+                          staff={staff}
+                          clients={todoClients}
+                        />
+                      ))}
+                    </div>
                   </div>
-                  <div className="mt-0.5 text-xs text-muted">
-                    <Link
-                      href={`/clients/${appointment.client.id}`}
-                      className="underline underline-offset-2"
-                    >
-                      {appointment.client.legalName}
-                    </Link>
-                    {appointment.assignedTo ? ` · reçu par ${appointment.assignedTo.name}` : ""}
-                  </div>
-                  {appointment.preparation ? (
-                    <p className="mt-0.5 whitespace-pre-line text-xs text-ink2">
-                      À préparer : {appointment.preparation}
-                    </p>
-                  ) : null}
-                </div>
-              </li>
-            ))}
-          </ul>
-          )}
-        </Card>
-      ) : null}
+                ))}
+              </div>
+            )}
+          </Card>
+        ) : null}
+      </div>
 
       {urgentTasks.length > 0 ? (
         <Card
+          icon="check"
+          iconTone="warn"
           title="À ne pas oublier"
-          description="Tâches urgentes, en retard, ou à faire sous 48 heures."
+          description={`${urgentTasks.length} tâche(s) urgentes, en retard, ou à faire sous 48 heures`}
           action={
-            <Link href="/tasks?scope=team" className="text-sm text-accent underline underline-offset-2">
+            <Link
+              href="/tasks?scope=team"
+              className="text-sm text-accent underline underline-offset-2"
+            >
               Toutes les tâches
             </Link>
           }
+          padded={false}
         >
-          <ul className="divide-y divide-line">
+          <ul className="border-t border-line">
             {urgentTasks.map((task) => (
-              <li key={task.id} className="flex items-center justify-between gap-3 py-2.5">
-                <div className="min-w-0">
+              <li
+                key={task.id}
+                className="flex items-center gap-3 border-b border-line px-4 py-3 last:border-b-0"
+              >
+                <IconChip
+                  name={task.overdue ? "alert" : "check"}
+                  tone={task.overdue ? "danger" : "warn"}
+                  size={32}
+                />
+                <div className="flex min-w-0 flex-1 flex-col">
                   <div className="flex flex-wrap items-center gap-2">
                     {task.priority === "urgent" ? (
-                      <Badge tone="red">{PRIORITY_LABELS.urgent}</Badge>
+                      <Badge tone="red" iconName="alert">
+                        {PRIORITY_LABELS.urgent}
+                      </Badge>
                     ) : null}
-                    <span className="text-sm">{task.title}</span>
+                    <span className="text-sm font-semibold text-ink">{task.title}</span>
                   </div>
-                  <div className="mt-0.5 text-xs text-muted">
+                  <span className="text-xs text-muted">
                     {task.client ? (
                       <Link
                         href={`/clients/${task.client.id}`}
-                        className="underline underline-offset-2"
+                        className="transition-colors hover:text-accent"
                       >
                         {task.client.legalName}
                       </Link>
@@ -341,12 +614,16 @@ export default async function DashboardPage() {
                       "Tâche interne"
                     )}
                     {task.assignee ? ` · ${task.assignee.name}` : " · non assignée"}
-                  </div>
+                  </span>
                 </div>
                 <div className="shrink-0 text-end text-xs">
                   {task.dueDate ? (
                     <>
-                      <div className={task.overdue ? "font-medium text-danger" : "text-ink2"}>
+                      <div
+                        className={
+                          task.overdue ? "font-650 text-danger tabular" : "text-ink2 tabular"
+                        }
+                      >
                         {formatDate(task.dueDate)}
                       </div>
                       <div className={task.overdue ? "text-danger" : "text-muted"}>
@@ -354,7 +631,7 @@ export default async function DashboardPage() {
                       </div>
                     </>
                   ) : (
-                    <span className="text-muted">sans échéance</span>
+                    <span className="text-muted">sans date</span>
                   )}
                 </div>
               </li>
@@ -363,95 +640,99 @@ export default async function DashboardPage() {
         </Card>
       ) : null}
 
-      <section className="grid gap-4 lg:grid-cols-3">
-        <Card title="Dossiers à surveiller" className="lg:col-span-2">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,2.4fr)_minmax(0,1fr)] xl:items-start">
+        <Card
+          icon="clients"
+          title="Dossiers à surveiller"
+          description={`${attention.length} dossier(s) avec des échéances en retard`}
+          padded={false}
+        >
           {attention.length === 0 ? (
             <EmptyState
+              iconName="check"
+              compact
               title="Aucun dossier en retard"
               description="Toutes les échéances gérées par le cabinet sont à jour."
             />
           ) : (
-            <ul className="divide-y divide-line">
-              {attention.map(({ client, overdue }) => (
-                <li key={client.id} className="py-2.5 flex items-center justify-between gap-3">
-                  <Link
-                    href={`/clients/${client.id}`}
-                    className="text-sm font-medium hover:underline underline-offset-2"
-                  >
-                    {client.legalName}
-                  </Link>
-                  <span className="text-sm text-danger tabular">{overdue} en retard</span>
+            <ul className="border-t border-line">
+              {attention.map((row) => (
+                <li
+                  key={row.client.id}
+                  className="flex items-center gap-3 border-b border-line px-4 py-3 last:border-b-0"
+                >
+                  <IconChip name="building" tone="neutral" size={32} />
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <Link
+                      href={`/clients/${row.client.id}`}
+                      className="truncate text-sm font-semibold text-ink transition-colors hover:text-accent"
+                    >
+                      {row.client.legalName}
+                    </Link>
+                    <span className="text-xs text-muted">
+                      {subtypeLabel(row.client.subtype)}
+                    </span>
+                  </div>
+                  <Badge tone="red" iconName="alert">
+                    {row.overdue} en retard
+                  </Badge>
                 </li>
               ))}
             </ul>
           )}
         </Card>
 
-        <Card title="Activité récente">
+        <Card
+          icon="clock"
+          iconTone="neutral"
+          title="Journal du cabinet"
+          description="Trace automatique des actions enregistrées"
+          padded={false}
+        >
           {data.activity.length === 0 ? (
-            <EmptyState title="Rien pour l'instant" description="L'activité du cabinet apparaîtra ici." />
+            <EmptyState iconName="clock" compact title="Aucun événement" />
           ) : (
-            <ul className="grid gap-2.5">
-              {data.activity.map((item) => (
-                <li key={item.id} className="text-sm">
-                  <div className="text-ink2">{item.summary}</div>
-                  <div className="text-xs text-muted">
+            <ol className="border-t border-line">
+              {data.activity.slice(0, 8).map((item) => (
+                <li key={item.id} className="border-b border-line px-4 py-2.5 last:border-b-0">
+                  <p className="text-sm text-ink">{item.summary}</p>
+                  <p className="text-xs text-muted">
                     {item.client ? `${item.client.legalName} · ` : ""}
-                    {/* Qui a fait quoi : l'auteur est enregistré depuis le début,
-                        il n'était simplement pas affiché. */}
                     {item.actorName ? `${item.actorName} · ` : ""}
                     {relativeDays(item.createdAt)}
-                  </div>
+                  </p>
                 </li>
               ))}
-            </ul>
+            </ol>
           )}
         </Card>
-      </section>
+      </div>
 
-      {results ? (
-        <Card
-          title={`Résultat du cabinet — ${results.year}`}
-          description={
-            results.totals.monthsFilled === 0
-              ? "Aucun mois saisi. Renseignez vos revenus et vos charges pour suivre où va le cabinet."
-              : `${results.totals.monthsFilled} mois saisi(s) · cumul ${formatMad(results.totals.result)}`
-          }
-          action={
-            <Link href="/resultats" className="text-sm text-accent underline underline-offset-2">
-              Saisir un mois
-            </Link>
-          }
-        >
-          <MonthlyBars months={results.months} />
-        </Card>
-      ) : null}
-
-      <Card title="Le cabinet en chiffres" padded={false}>
-        <dl className="grid grid-cols-2 divide-line sm:grid-cols-4 sm:divide-x">
+      <Card icon="dash" iconTone="neutral" title="Le cabinet en chiffres" padded={false}>
+        <dl className="grid grid-cols-2 border-t border-line sm:grid-cols-4 sm:divide-x sm:divide-line">
           <Figure
             href="/clients"
             label="Clients"
             value={data.clients.total}
-            hint={`+${data.clients.newThisMonth} ce mois`}
+            hint={`${data.clients.newThisMonth} ce mois-ci`}
           />
           <Figure
             href="/tasks"
-            label="Mes tâches"
-            value={data.tasks.mine}
-            hint={`${data.tasks.overdue} en retard au cabinet`}
+            label="Tâches ouvertes"
+            value={data.tasks.open}
+            hint={`${data.tasks.overdue} en retard`}
           />
           <Figure
             href="/documents"
             label="Documents ce mois"
             value={data.documents.thisMonth}
+            hint={`${data.documents.expiringSoon} expirent bientôt`}
           />
           <Figure
-            href="/documents"
-            label="Pièces qui expirent"
-            value={data.documents.expiringSoon}
-            hint="Dans les 30 jours"
-            tone={data.documents.expiringSoon > 0 ? "warn" : undefined}
+            href="/requests"
+            label="Pièces demandées"
+            value={data.requests.pending}
+            hint={`${data.requests.toReview} à examiner`}
           />
         </dl>
       </Card>
@@ -459,35 +740,36 @@ export default async function DashboardPage() {
   );
 }
 
-/**
- * Chiffre de contexte : même information qu'une tuile, poids visuel moindre.
- * Réservé aux valeurs qui ne demandent pas d'action immédiate.
- */
 function Figure({
+  href,
   label,
   value,
   hint,
-  href,
-  tone,
 }: {
+  href: string;
   label: string;
   value: number;
-  hint?: string;
-  href: string;
-  tone?: "warn";
+  hint: string;
 }) {
   return (
     <Link
       href={href}
-      className="block border-b border-line p-4 transition-colors last:border-b-0 hover:bg-surface2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:border-b-0"
+      className="flex flex-col gap-0.5 px-4 py-3.5 transition-colors hover:bg-surface2"
     >
-      <dt className="text-xs font-medium uppercase tracking-wide text-muted">{label}</dt>
-      <dd
-        className={`mt-1 text-xl font-semibold tabular ${tone === "warn" ? "text-warn" : "text-ink"}`}
-      >
-        {value}
-      </dd>
-      {hint ? <p className="mt-0.5 text-xs text-muted">{hint}</p> : null}
+      <dt className="text-2xs font-bold uppercase tracking-[0.12em] text-muted">{label}</dt>
+      <dd className="text-xl font-650 text-ink tabular">{value}</dd>
+      <span className="text-xs text-muted tabular">{hint}</span>
     </Link>
   );
+}
+
+/** « Nawal Assistante » → « NA ». Deux lettres suffisent dans une puce de 28 px. */
+function initialsOf(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => word[0] ?? "")
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
 }

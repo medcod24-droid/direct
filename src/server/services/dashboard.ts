@@ -223,6 +223,49 @@ export async function namesFor(userIds: (string | null)[]): Promise<Map<string, 
 }
 
 /**
+ * Bilan des échéances du mois : où en est le cabinet.
+ *
+ * Les quatre parts sont exclusives et couvrent le mois entier, si bien que la
+ * barre segmentée et la jauge se lisent sans arithmétique de la part du lecteur.
+ * Seules les obligations gérées par le cabinet comptent : ce qui relève du
+ * client ou d'un tiers n'est pas son retard.
+ */
+export async function getMonthDeadlineSummary(ctx: AuthContext, now = new Date()) {
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const monthEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+  const inMonth = { managedBy: "cabinet", dueDate: { gte: monthStart, lt: monthEnd } };
+
+  const [total, paid, declared, overdue] = await Promise.all([
+    ctx.db.deadline.count({ where: { ...inMonth, status: { not: "not_applicable" } } }),
+    ctx.db.deadline.count({ where: { ...inMonth, status: "paid" } }),
+    ctx.db.deadline.count({ where: { ...inMonth, status: "declared" } }),
+    ctx.db.deadline.count({
+      where: {
+        ...inMonth,
+        status: { in: ["upcoming", "in_progress", "declared"] },
+        dueDate: { gte: monthStart, lt: now },
+      },
+    }),
+  ]);
+
+  // Une échéance déclarée mais en retard ne compte qu'une fois, du côté du
+  // retard : c'est là qu'il faut agir.
+  const declaredOnTime = Math.max(0, declared - Math.max(0, overdue - (total - paid - declared)));
+  const remaining = Math.max(0, total - paid - declaredOnTime - overdue);
+
+  return {
+    total,
+    paid,
+    declared: declaredOnTime,
+    overdue,
+    remaining,
+    /** Dépôts effectués dans les délais, sur le mois. */
+    deposited: paid + declaredOnTime,
+    ratio: total > 0 ? (paid + declaredOnTime) / total : 1,
+  };
+}
+
+/**
  * Échéances en retard du **mois en cours**.
  *
  * Le compte annuel n'aidait pas : un calendrier généré pour l'année affiche des
@@ -255,4 +298,68 @@ export async function getOverdueThisMonth(ctx: AuthContext, now = new Date(), li
   ]);
 
   return { total, items, since: monthStart };
+}
+
+/**
+ * Compteurs de la navigation.
+ *
+ * Chaque entrée de la barre latérale porte le nombre d'éléments qui demandent
+ * une action — pas le volume total, qui ne dit rien. Une seule série d'agrégats,
+ * exécutée en parallèle : la barre latérale s'affiche sur chaque page, elle ne
+ * peut pas coûter une requête par entrée.
+ */
+export async function getNavCounts(ctx: AuthContext, now = new Date()) {
+  const dayStart = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  );
+  const dayEnd = new Date(dayStart.getTime() + DAY);
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+
+  const [
+    clients,
+    deadlinesOverdue,
+    appointmentsToday,
+    myTodos,
+    todosToApprove,
+    tasksOpen,
+    requestsToReview,
+    documentsToReview,
+    resultMonths,
+  ] = await Promise.all([
+    ctx.db.client.count({ where: { status: { not: "archived" } } }),
+    ctx.db.deadline.count({
+      where: {
+        managedBy: "cabinet",
+        status: { in: ["upcoming", "in_progress", "declared"] },
+        dueDate: { gte: monthStart, lt: now },
+      },
+    }),
+    ctx.db.appointment.count({ where: { startsAt: { gte: dayStart, lt: dayEnd } } }),
+    ctx.db.todo.count({
+      where: { assigneeId: ctx.user.id, status: { in: ["assigned", "returned"] } },
+    }),
+    ctx.can("todo.manage")
+      ? ctx.db.todo.count({ where: { status: "submitted" } })
+      : Promise.resolve(0),
+    ctx.db.task.count({ where: { status: { notIn: ["done", "cancelled"] } } }),
+    ctx.db.documentRequest.count({ where: { status: "submitted" } }),
+    ctx.db.document.count({ where: { status: "received" } }),
+    ctx.can("finance.view")
+      ? ctx.db.monthlyResult.count({ where: { month: { gte: monthStart } } })
+      : Promise.resolve(0),
+  ]);
+
+  return {
+    clients,
+    deadlinesOverdue,
+    appointmentsToday,
+    // Ce qui m'attend, plus ce qui attend ma confirmation : c'est la même action
+    // à mes yeux — ouvrir la to-do.
+    todos: myTodos + todosToApprove,
+    todosToApprove,
+    tasksOpen,
+    requestsToReview,
+    documentsToReview,
+    resultMissing: ctx.can("finance.view") && resultMonths === 0 ? 1 : 0,
+  };
 }
