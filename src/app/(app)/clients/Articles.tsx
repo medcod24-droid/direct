@@ -61,8 +61,8 @@ export function Articles({ value, fieldError, clientId, scans }: ArticlesProps) 
       {rows.map((row, index) => {
         const prefix = `articles.${index}`;
         return (
-          <fieldset key={row.key} className="rounded-md border border-line bg-surface2 p-3">
-            <legend className="px-1 text-[13px] font-medium text-ink2">Article {index + 1}</legend>
+          <fieldset key={row.key} className="rounded-card border border-line bg-surface2 p-3.5">
+            <legend className="px-1 text-sm font-650 text-ink2">Article {index + 1}</legend>
             <input type="hidden" name={`${prefix}.id`} value={row.id} />
 
             <div className="grid gap-3 sm:grid-cols-2">
@@ -149,6 +149,7 @@ export function Articles({ value, fieldError, clientId, scans }: ArticlesProps) 
           <Button
             type="button"
             variant="ghost"
+            iconName="plus"
             onClick={() =>
               setRows((current) => [
                 ...current,
@@ -163,7 +164,7 @@ export function Articles({ value, fieldError, clientId, scans }: ArticlesProps) 
               ])
             }
           >
-            + Ajouter un article
+            Ajouter un article
           </Button>
         </div>
       ) : null}

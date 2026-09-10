@@ -65,11 +65,16 @@ export default async function InvoicesPage() {
           tone="success"
           compare={`${summary.paidCount} facture(s)`}
         />
-        <StatTile label="Factures ouvertes" value={invoices.length} />
+        <StatTile
+          label="Factures ouvertes"
+          icon="doc"
+          value={invoices.length}
+          compare={`${summary.paidCount} encaissée(s) au total`}
+        />
       </section>
 
       {invoices.length === 0 ? (
-        <EmptyState title="Aucune facture ouverte" description="Tout est encaissé." />
+        <EmptyState iconName="check" title="Aucune facture ouverte" description="Tout est encaissé." />
       ) : (
         <TableWrap>
           <Table>

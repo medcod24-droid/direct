@@ -78,8 +78,8 @@ export function Registrations({ value, fieldError, clientId, scans }: Registrati
       {rows.map((registration, index) => {
         const prefix = `registrations.${index}`;
         return (
-          <fieldset key={registration.key} className="rounded-md border border-line bg-surface2 p-3">
-            <legend className="px-1 text-[13px] font-medium text-ink2">
+          <fieldset key={registration.key} className="rounded-card border border-line bg-surface2 p-3.5">
+            <legend className="px-1 text-sm font-650 text-ink2">
               {index === 0 ? "Immatriculation principale" : `Immatriculation ${index + 1}`}
             </legend>
 
@@ -128,7 +128,7 @@ export function Registrations({ value, fieldError, clientId, scans }: Registrati
             />
 
             <div className="mt-3 grid gap-2 border-t border-line pt-3">
-              <p className="text-[13px] font-medium text-ink2">Succursales</p>
+              <p className="text-sm font-650 text-ink2">Succursales</p>
               {registration.branches.length === 0 ? (
                 <p className="text-xs text-muted">
                   Aucun établissement rattaché à cette immatriculation.
@@ -151,7 +151,7 @@ export function Registrations({ value, fieldError, clientId, scans }: Registrati
                 return (
                   <div
                     key={branch.key}
-                    className="rounded-md border border-line bg-surface p-3"
+                    className="rounded-chip border border-line bg-surface p-3"
                   >
                     <input type="hidden" name={`${branchPrefix}.id`} value={branch.id} />
                     <div className="grid gap-3 sm:grid-cols-2">
@@ -221,6 +221,7 @@ export function Registrations({ value, fieldError, clientId, scans }: Registrati
                     type="button"
                     variant="ghost"
                     size="sm"
+                    iconName="plus"
                     onClick={() =>
                       patch(index, {
                         branches: [
@@ -230,7 +231,7 @@ export function Registrations({ value, fieldError, clientId, scans }: Registrati
                       })
                     }
                   >
-                    + Ajouter une succursale
+                    Ajouter une succursale
                   </Button>
                 </div>
               ) : null}
@@ -255,6 +256,7 @@ export function Registrations({ value, fieldError, clientId, scans }: Registrati
           <Button
             type="button"
             variant="ghost"
+            iconName="plus"
             onClick={() =>
               setRows((current) => [
                 ...current,
@@ -262,7 +264,7 @@ export function Registrations({ value, fieldError, clientId, scans }: Registrati
               ])
             }
           >
-            + Ajouter un registre de commerce
+            Ajouter un registre de commerce
           </Button>
         </div>
       ) : null}
@@ -289,7 +291,7 @@ function TaxList({
 }) {
   return (
     <div className="mt-3 grid gap-2">
-      <p className="text-[13px] font-medium text-ink2">{label}</p>
+      <p className="text-sm font-650 text-ink2">{label}</p>
       <input type="hidden" name={`${prefix}.taxProfNos.count`} value={rows.length} />
 
       {rows.length === 0 ? <p className="text-xs text-muted">Aucun numéro.</p> : null}
@@ -339,9 +341,10 @@ function TaxList({
             type="button"
             variant="ghost"
             size="sm"
+            iconName="plus"
             onClick={() => onChange([...rows, { key: key(), id: newId(), value: "" }])}
           >
-            + Ajouter un numéro
+            Ajouter un numéro
           </Button>
         </div>
       ) : null}

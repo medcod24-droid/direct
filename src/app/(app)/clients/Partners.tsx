@@ -63,8 +63,8 @@ export function Partners({ value, fieldError, clientId, scans, cinAllowed }: Par
       {rows.map((row, index) => {
         const prefix = `partners.${index}`;
         return (
-          <fieldset key={row.key} className="rounded-md border border-line bg-surface2 p-3">
-            <legend className="px-1 text-[13px] font-medium text-ink2">
+          <fieldset key={row.key} className="rounded-card border border-line bg-surface2 p-3.5">
+            <legend className="px-1 text-sm font-650 text-ink2">
               {row.role === "gerant" ? "Gérant" : "Associé"} {index + 1}
             </legend>
             <input type="hidden" name={`${prefix}.id`} value={row.id} />
@@ -159,6 +159,7 @@ export function Partners({ value, fieldError, clientId, scans, cinAllowed }: Par
           <Button
             type="button"
             variant="ghost"
+            iconName="plus"
             onClick={() =>
               setRows((current) => [
                 ...current,
@@ -174,7 +175,7 @@ export function Partners({ value, fieldError, clientId, scans, cinAllowed }: Par
               ])
             }
           >
-            + Ajouter un gérant ou un associé
+            Ajouter un gérant ou un associé
           </Button>
         </div>
       ) : null}

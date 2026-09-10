@@ -25,7 +25,9 @@ export function AddMember() {
 
   return (
     <>
-      <Button onClick={() => setOpen(true)}>Ajouter un collaborateur</Button>
+      <Button variant="primary" iconName="plus" onClick={() => setOpen(true)}>
+        Ajouter un collaborateur
+      </Button>
 
       <Modal open={open} onClose={() => setOpen(false)} title="Ajouter un collaborateur" size="lg">
         <form action={action} className="grid gap-3">

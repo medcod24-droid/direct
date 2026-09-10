@@ -13,7 +13,7 @@ export function UploadForm({ clientId }: { clientId: string }) {
 
   return (
     <>
-      <Button variant="secondary" size="sm" onClick={() => setOpen(true)}>
+      <Button variant="secondary" size="sm" iconName="upload" onClick={() => setOpen(true)}>
         Ajouter un document
       </Button>
       <Modal open={open} onClose={() => setOpen(false)} title="Ajouter un document">

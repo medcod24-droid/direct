@@ -39,7 +39,7 @@ export function NewInvoice({
     return (
       <div className="flex items-center gap-3">
         {state.ok ? <span className="text-sm text-muted">{state.message}</span> : null}
-        <Button onClick={() => setOpen(true)} disabled={clients.length === 0}>
+        <Button variant="primary" iconName="plus" onClick={() => setOpen(true)} disabled={clients.length === 0}>
           Nouvelle facture
         </Button>
       </div>

@@ -13,7 +13,7 @@ export function RequestForm({ clientId }: { clientId: string }) {
 
   return (
     <>
-      <Button variant="secondary" size="sm" onClick={() => setOpen(true)}>
+      <Button variant="secondary" size="sm" iconName="inbox" onClick={() => setOpen(true)}>
         Demander une pièce
       </Button>
       <Modal open={open} onClose={() => setOpen(false)} title="Demander une pièce au client">

@@ -68,7 +68,7 @@ export function Repeatable({
       {rows.map((row, position) => (
         <div
           key={row.id}
-          className="flex flex-wrap items-end gap-2 rounded-md border border-line bg-surface2 p-2"
+          className="flex flex-wrap items-end gap-2 rounded-chip border border-line bg-surface2 p-2.5"
         >
           {columns.map((column) => {
             const field = `${name}.${position}.${column.key}`;
@@ -108,6 +108,7 @@ export function Repeatable({
           <Button
             type="button"
             variant="ghost"
+            iconName="plus"
             onClick={() => setRows((current) => current.filter((item) => item.id !== row.id))}
           >
             Retirer
@@ -120,9 +121,10 @@ export function Repeatable({
           <Button
             type="button"
             variant="ghost"
+            iconName="plus"
             onClick={() => setRows((current) => [...current, { id: nextId++, index: null }])}
           >
-            + {addLabel}
+            {addLabel}
           </Button>
         </div>
       ) : null}

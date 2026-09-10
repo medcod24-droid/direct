@@ -5,6 +5,7 @@ import { listClients, ratingsForClients } from "@/server/services/clients";
 import {
   Badge,
   Button,
+  CountBadge,
   EmptyState,
   PageHeader,
   Pagination,
@@ -57,7 +58,9 @@ export default async function ClientsPage({
         subtitle={`${result.total} dossier(s)`}
         actions={
           ctx.can("client.create") ? (
-            <Button href="/clients/new">Nouveau dossier</Button>
+            <Button href="/clients/new" variant="primary" iconName="plus">
+              Nouveau dossier
+            </Button>
           ) : null
         }
       />
@@ -83,7 +86,7 @@ export default async function ClientsPage({
           <option value="suspended">Suspendus</option>
           <option value="archived">Archivés</option>
         </select>
-        <Button type="submit" variant="secondary">
+        <Button type="submit" variant="secondary" iconName="search">
           Rechercher
         </Button>
       </form>
@@ -97,7 +100,13 @@ export default async function ClientsPage({
               ? "Aucun résultat pour cette recherche."
               : "Créez votre premier dossier client, ou importez votre fichier Excel."
           }
-          action={ctx.can("client.create") ? <Button href="/clients/new">Nouveau dossier</Button> : null}
+          action={
+            ctx.can("client.create") ? (
+              <Button href="/clients/new" variant="primary" iconName="plus">
+                Nouveau dossier
+              </Button>
+            ) : null
+          }
         />
       ) : (
         <>
@@ -144,7 +153,16 @@ export default async function ClientsPage({
                         />
                       </TD>
                     ) : null}
-                    <TD numeric>{client.openDeadlines}</TD>
+                    <TD numeric>
+                      {client.openDeadlines > 0 ? (
+                        <CountBadge
+                          value={client.openDeadlines}
+                          tone={client.health.status === "red" ? "danger" : "accent"}
+                        />
+                      ) : (
+                        <span className="text-muted">—</span>
+                      )}
+                    </TD>
                   </TR>
                 ))}
               </TBody>

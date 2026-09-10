@@ -33,7 +33,7 @@ export function NewTaskForm({
   if (!expanded) {
     return (
       <div className="flex items-center gap-3">
-        <Button onClick={() => setOpen(true)}>Nouvelle tâche</Button>
+        <Button variant="primary" iconName="plus" onClick={() => setOpen(true)}>Nouvelle tâche</Button>
         {state.ok ? <span className="text-sm text-muted">{state.message}</span> : null}
       </div>
     );
