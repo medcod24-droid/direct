@@ -101,7 +101,9 @@ réellement, il focalise le champ), bascule de thème, cloche avec pastille, ide
 ## Impression
 
 `@media print` masque la navigation et les boutons, force fond blanc et encre noire, et empêche
-les sections de se couper entre deux pages. La fiche client (`/clients/<id>/fiche`) est faite pour
+les sections de se couper entre deux pages. Les `<header>` sont masqués — ce sont ceux du cadre de
+l'application — **sauf ceux qui portent `print-keep`** : l'en-tête de la fiche client, avec le nom
+du dossier en grand (24 pt) et le cadre photo, fait partie du document imprimé. La fiche client (`/clients/<id>/fiche`) est faite pour
 ça : elle s'imprime en A4 et se classe dans le dossier papier.
 
 ## Ce qu'on ne fait pas

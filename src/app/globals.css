@@ -330,8 +330,11 @@
     color: #000 !important;
   }
 
+  /* Le cadre de l'application disparaît. Un en-tête qui fait partie du document
+     imprimé — celui de la fiche client, avec le nom du dossier et la photo —
+     porte `print-keep` : sans cette exception, il disparaissait avec le reste. */
   aside,
-  header,
+  header:not(.print-keep),
   nav,
   .no-print {
     display: none !important;

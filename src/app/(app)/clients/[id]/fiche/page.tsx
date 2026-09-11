@@ -160,13 +160,18 @@ export default async function ClientFichePage({
       </div>
 
       <article className="rounded-card border border-line bg-surface p-8 text-ink shadow-edge print:border-0 print:bg-white print:p-0 print:text-black print:shadow-none">
-        <header className="print-bloc flex items-start justify-between gap-6 border-b border-line pb-4">
+        {/* `print-keep` : l'impression masque les en-têtes du cadre de
+            l'application ; celui-ci fait partie du document. Le nom du dossier
+            est ce qu'on cherche des yeux en ouvrant le classeur : il domine. */}
+        <header className="print-keep print-bloc flex items-start justify-between gap-6 border-b-2 border-ink pb-5 print:border-black">
           <div className="min-w-0">
-            <p className="text-xs uppercase tracking-wide text-muted print:text-black">
-              {ctx.cabinet.name}
+            <p className="text-xs uppercase tracking-[0.14em] text-muted print:text-black">
+              {ctx.cabinet.name} · fiche client
             </p>
-            <h1 className="mt-1 text-xl font-semibold">{client.legalName}</h1>
-            <p className="text-sm text-muted print:text-black">
+            <h1 className="mt-2 text-[30px] font-bold leading-tight text-ink print:text-[24pt] print:text-black">
+              {client.legalName}
+            </h1>
+            <p className="mt-1 text-base text-ink2 print:text-[12pt] print:text-black">
               {[clientFormLabel(client), client.tradeName, client.city]
                 .filter(Boolean)
                 .join(" · ")}
