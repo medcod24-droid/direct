@@ -151,8 +151,14 @@ model Membership {
   userId    String
   cabinetId String
 
-  role   String  @default("accountant") // owner | admin | accountant | assistant | client
+  role   String  @default("accountant") // owner | admin | accountant | assistant | custom | client
   status String  @default("active") // active | suspended
+  /// Rôle « custom » : le nom que l'administration lui a donné (« Stagiaire », « Secrétaire »…)
+  roleLabel String?
+  /// Droits cochés par l'administration, en JSON (liste de permissions).
+  /// Nul : ceux du rôle, tels que définis dans le code — un rôle non ajusté
+  /// suit donc les évolutions de son modèle.
+  permissions String?
   /// true = l'utilisateur ne voit que les clients qui lui sont assignés
   restrictedToAssigned Boolean @default(false)
   /// Pour le rôle « client » : le dossier client auquel ce compte est rattaché

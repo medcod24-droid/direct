@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ADJUSTABLE_ROLES, ALWAYS_GRANTED, PERMISSIONS } from "@/lib/authz/permissions";
 import {
   ACTIVITY_STATES,
   CLIENT_KINDS,
@@ -342,15 +343,55 @@ export const paymentSchema = z.object({
  * recopier une adresse à la main pour le même résultat. Le mot de passe initial
  * suit la même politique que les autres — il ouvre les dossiers du cabinet.
  */
-export const addMemberSchema = z.object({
-  name: trimmed(120).min(2, "Nom du collaborateur requis."),
-  email: z.string().trim().toLowerCase().email("Adresse e-mail invalide."),
-  password: z.string().min(12, "Au moins 12 caractères."),
-  role: z.enum(["admin", "accountant", "assistant"], {
-    errorMap: () => ({ message: "Rôle invalide." }),
-  }),
+/**
+ * Rôle et droits d'un collaborateur.
+ *
+ * `permissions` absent signifie « le modèle du rôle » ; présent, c'est la grille
+ * cochée à l'écran, qui peut être vide. Les droits inconnus sont refusés par le
+ * service, pas ici : il doit pouvoir le dire à l'administration.
+ */
+const memberRightsFields = {
+  role: z.enum(ADJUSTABLE_ROLES, { errorMap: () => ({ message: "Rôle invalide." }) }),
+  roleLabel: trimmed(60).optional(),
+  permissions: z.array(z.string().max(40)).max(PERMISSIONS.length).optional(),
   restrictedToAssigned: z.coerce.boolean().default(false),
-});
+};
+
+function checkRights(
+  data: { role: string; roleLabel?: string; permissions?: string[] },
+  issues: z.RefinementCtx,
+) {
+  if (data.role !== "custom") return;
+  if (!data.roleLabel || data.roleLabel.length < 2) {
+    issues.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["roleLabel"],
+      message: "Nommez ce rôle : « Stagiaire », « Secrétaire »…",
+    });
+  }
+  const chosen = (data.permissions ?? []).filter(
+    (permission) => !(ALWAYS_GRANTED as string[]).includes(permission),
+  );
+  if (chosen.length === 0) {
+    issues.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["permissions"],
+      message: "Cochez au moins un droit pour ce rôle.",
+    });
+  }
+}
+
+export const memberRightsSchema = z.object(memberRightsFields).superRefine(checkRights);
+export type MemberRights = z.infer<typeof memberRightsSchema>;
+
+export const addMemberSchema = z
+  .object({
+    name: trimmed(120).min(2, "Nom du collaborateur requis."),
+    email: z.string().trim().toLowerCase().email("Adresse e-mail invalide."),
+    password: z.string().min(12, "Au moins 12 caractères."),
+    ...memberRightsFields,
+  })
+  .superRefine(checkRights);
 
 export const messageSchema = z.object({
   clientId: z.string().min(1),

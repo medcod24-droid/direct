@@ -925,8 +925,7 @@ export async function addMemberAction(_prev: ActionState, form: FormData): Promi
       name: str(form, "name"),
       email: str(form, "email"),
       password: str(form, "password"),
-      role: str(form, "role"),
-      restrictedToAssigned: form.get("restrictedToAssigned") === "on",
+      ...memberRightsInput(form),
     });
     revalidatePath("/team");
     return {
@@ -940,15 +939,29 @@ export async function addMemberAction(_prev: ActionState, form: FormData): Promi
   }
 }
 
-export async function updateMemberAction(
-  membershipId: string,
-  role: string,
-  restrictedToAssigned: boolean,
-): Promise<ActionState> {
+/**
+ * Rôle et grille de droits, tels que l'écran les envoie.
+ *
+ * Le marqueur `rights` distingue « aucune case cochée » de « grille absente » :
+ * une case décochée n'est pas envoyée, et un formulaire sans grille laisserait
+ * sinon croire que l'administration a tout retiré.
+ */
+function memberRightsInput(form: FormData) {
+  return {
+    role: str(form, "role"),
+    roleLabel: str(form, "roleLabel"),
+    permissions: form.has("rights")
+      ? form.getAll("permissions").filter((value): value is string => typeof value === "string")
+      : undefined,
+    restrictedToAssigned: form.get("restrictedToAssigned") === "on",
+  };
+}
+
+export async function updateMemberAction(_prev: ActionState, form: FormData): Promise<ActionState> {
   try {
     const ctx = await requireStaff("member.manage");
-    await updateMember(ctx, membershipId, { role, restrictedToAssigned });
-    revalidatePath("/team");
+    await updateMember(ctx, str(form, "membershipId") ?? "", memberRightsInput(form));
+    revalidatePath("/team", "layout");
     return { ok: true, message: "Droits mis à jour." };
   } catch (error) {
     return fail(error);

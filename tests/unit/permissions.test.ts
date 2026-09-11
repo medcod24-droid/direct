@@ -1,10 +1,24 @@
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { ROLES, type Role } from "@/lib/domain/enums";
 import {
+  ADJUSTABLE_ROLES,
+  ALWAYS_GRANTED,
+  GRANTABLE,
   PERMISSIONS,
+  PERMISSION_GROUPS,
+  REQUIRES,
   ROLE_PERMISSIONS,
   can,
+  dependentsOf,
+  effectivePermissions,
   isStaffRole,
+  normalizePermissions,
+  presetPermissions,
+  readGranted,
+  requirementsOf,
+  storedPermissions,
   type Permission,
 } from "@/lib/authz/permissions";
 
@@ -229,7 +243,130 @@ describe("isStaffRole", () => {
     expect(isStaffRole("admin")).toBe(true);
     expect(isStaffRole("accountant")).toBe(true);
     expect(isStaffRole("assistant")).toBe(true);
+    expect(isStaffRole("custom")).toBe(true);
     expect(isStaffRole("client")).toBe(false);
     expect(ROLES.filter((role) => !isStaffRole(role))).toEqual(["client"]);
+  });
+});
+
+/** Fichiers source hors de la matrice elle-même. */
+function sourceFiles(dir = join(process.cwd(), "src")): string[] {
+  return readdirSync(dir).flatMap((entry) => {
+    const path = join(dir, entry);
+    if (statSync(path).isDirectory()) return sourceFiles(path);
+    if (!/\.tsx?$/.test(entry) || path.endsWith(join("authz", "permissions.ts"))) return [];
+    return [path];
+  });
+}
+
+describe("grille des droits", () => {
+  const sources = sourceFiles().map((path) => readFileSync(path, "utf8"));
+  const corpus = sources.join("\n");
+
+  it("chaque case de la grille est vérifiée quelque part dans le code", () => {
+    // Une case sans effet ferait croire à un retrait d'accès qui n'a pas eu lieu.
+    const mortes = GRANTABLE.filter((permission) => !corpus.includes(`"${permission}"`));
+    expect(mortes).toEqual([]);
+  });
+
+  it("tout droit vérifié par le code a sa case", () => {
+    const pattern =
+      /(?:can|requireStaff|requirePermission)\(\s*"([a-z]+\.[a-z_]+)"|permission: "([a-z]+\.[a-z_]+)"/g;
+    const verifies = new Set<string>();
+    for (const match of corpus.matchAll(pattern)) verifies.add(match[1] ?? match[2] ?? "");
+    const horsGrille = [...verifies].filter(
+      (permission) => !GRANTABLE.includes(permission as Permission) && permission !== "portal.access",
+    );
+    expect(horsGrille).toEqual([]);
+  });
+
+  it("ne propose ni la suppression du cabinet, ni les droits du portail client", () => {
+    expect(GRANTABLE).not.toContain("cabinet.delete");
+    expect(GRANTABLE).not.toContain("portal.access");
+    expect(GRANTABLE).not.toContain("request.submit");
+  });
+
+  it("ne liste aucun droit deux fois", () => {
+    expect(new Set(GRANTABLE).size).toBe(GRANTABLE.length);
+    for (const group of PERMISSION_GROUPS) expect(group.items.length).toBeGreaterThan(0);
+  });
+
+  it("les dépendances restent dans la grille et ne bouclent pas", () => {
+    for (const [permission, required] of Object.entries(REQUIRES)) {
+      expect(GRANTABLE).toContain(permission);
+      for (const item of required ?? []) expect(GRANTABLE).toContain(item);
+      expect(requirementsOf(permission as Permission)).not.toContain(permission);
+    }
+  });
+
+  it("les modèles de rôle respectent déjà les dépendances", () => {
+    // Sinon un rôle non ajusté aurait des droits qu'on ne pourrait pas recocher tels quels.
+    for (const role of ADJUSTABLE_ROLES) {
+      const cochables = ROLE_PERMISSIONS[role].filter((p) => GRANTABLE.includes(p));
+      expect(presetPermissions(role)).toEqual(GRANTABLE.filter((p) => cochables.includes(p)));
+    }
+  });
+});
+
+describe("normalisation d'une sélection", () => {
+  it("écarte l'inconnu et le non cochable, ajoute ce qui est supposé", () => {
+    const result = normalizePermissions(["document.approve", "cabinet.delete", "portal.access", "x.y"]);
+    expect(result).toEqual(["cabinet.view", "document.view", "document.approve"]);
+  });
+
+  it("accorde toujours l'accès au tableau de bord", () => {
+    expect(normalizePermissions([])).toEqual(ALWAYS_GRANTED);
+  });
+
+  it("décocher un droit décoche ce qui en dépend, même indirectement", () => {
+    const dependants = dependentsOf("client.view");
+    expect(dependants).toContain("client.update");
+    expect(dependants).toContain("request.create");
+    expect(dependants).toContain("intervention.manage");
+    expect(dependants).not.toContain("document.view");
+  });
+});
+
+describe("droits effectifs", () => {
+  it("un rôle non ajusté garde ceux de son modèle", () => {
+    expect(effectivePermissions("accountant", null)).toEqual(new Set(ROLE_PERMISSIONS.accountant));
+  });
+
+  it("un rôle ajusté n'a que ce qui a été coché", () => {
+    const droits = effectivePermissions("accountant", ["document.view"]);
+    expect([...droits]).toEqual(["cabinet.view", "document.view"]);
+    expect(droits.has("client.view")).toBe(false);
+  });
+
+  it("une colonne forgée ne fait pas entrer un droit hors grille", () => {
+    expect(effectivePermissions("custom", ["cabinet.delete", "portal.access"]).has("cabinet.delete")).toBe(false);
+  });
+
+  it("le propriétaire et le compte client ignorent la colonne", () => {
+    expect(effectivePermissions("owner", ["document.view"]).has("cabinet.delete")).toBe(true);
+    expect(effectivePermissions("client", ["member.manage"]).has("member.manage")).toBe(false);
+  });
+
+  it("une colonne illisible vaut « non ajusté »", () => {
+    expect(readGranted("pas du json")).toBeNull();
+    expect(readGranted('{"a":1}')).toBeNull();
+    expect(readGranted(null)).toBeNull();
+    expect(readGranted('["document.view", 3]')).toEqual(["document.view"]);
+  });
+});
+
+describe("enregistrement des droits", () => {
+  it("n'enregistre rien quand la sélection est celle du modèle", () => {
+    expect(storedPermissions("accountant", presetPermissions("accountant"))).toBeNull();
+    expect(storedPermissions("admin", GRANTABLE)).toBeNull();
+  });
+
+  it("enregistre un modèle ajusté", () => {
+    const sansSuppression = presetPermissions("accountant").filter((p) => p !== "document.delete");
+    expect(readGranted(storedPermissions("accountant", sansSuppression))).toEqual(sansSuppression);
+  });
+
+  it("enregistre toujours un rôle « Autre », même réduit au minimum", () => {
+    expect(storedPermissions("custom", [])).toBe(JSON.stringify(ALWAYS_GRANTED));
   });
 });

@@ -1,6 +1,10 @@
 /** Valeurs métier. SQLite ne supporte pas les enums Prisma : la contrainte est ici. */
 
-export const ROLES = ["owner", "admin", "accountant", "assistant", "client"] as const;
+/**
+ * `custom` est le rôle « Autre » : l'administration le nomme et coche ses
+ * droits un à un (voir `PERMISSION_GROUPS`).
+ */
+export const ROLES = ["owner", "admin", "accountant", "assistant", "custom", "client"] as const;
 export type Role = (typeof ROLES)[number];
 
 export const CLIENT_KINDS = ["company", "individual"] as const;

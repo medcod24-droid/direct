@@ -1,6 +1,11 @@
 import { cookies, headers } from "next/headers";
 import { readSession, SESSION_COOKIE } from "@/lib/auth/session";
-import { can, isStaffRole, type Permission } from "@/lib/authz/permissions";
+import {
+  effectivePermissions,
+  isStaffRole,
+  readGranted,
+  type Permission,
+} from "@/lib/authz/permissions";
 import { platformDb, tenantDb, type TenantClient, type TenantScope } from "@/lib/db/tenant";
 import type { Role } from "@/lib/domain/enums";
 import { ForbiddenError, NotFoundError, UnauthenticatedError } from "@/lib/errors";
@@ -15,7 +20,14 @@ export type AuthContext = {
   sessionId: string;
   user: { id: string; email: string; name: string; locale: string };
   cabinet: { id: string; name: string; slug: string; cndpMode: string };
-  membership: { id: string; role: Role; restrictedToAssigned: boolean; clientId: string | null };
+  membership: {
+    id: string;
+    role: Role;
+    restrictedToAssigned: boolean;
+    clientId: string | null;
+    /** Nom du rôle « Autre », tel que l'administration l'a saisi. */
+    roleLabel?: string | null;
+  };
   scope: TenantScope;
   db: TenantClient;
   ip: string | null;
@@ -89,6 +101,9 @@ export async function getAuthContext(): Promise<AuthContext | null> {
 
   const scope: TenantScope = { cabinetId: membership.cabinetId, clientIds };
   const meta = await requestMeta();
+  // Les droits cochés par l'administration priment sur le modèle du rôle ;
+  // le rôle ne décide seul que pour le propriétaire et le compte client.
+  const granted = effectivePermissions(role, readGranted(membership.permissions));
 
   return {
     sessionId: session.id,
@@ -109,12 +124,13 @@ export async function getAuthContext(): Promise<AuthContext | null> {
       role,
       restrictedToAssigned: membership.restrictedToAssigned,
       clientId: membership.clientId,
+      roleLabel: membership.roleLabel,
     },
     scope,
     db: tenantDb(scope),
     ip: meta.ip,
     userAgent: meta.userAgent,
-    can: (permission: Permission) => can(role, permission),
+    can: (permission: Permission) => granted.has(permission),
   };
 }
 

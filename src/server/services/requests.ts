@@ -1,6 +1,8 @@
 import { recordAudit } from "@/lib/audit";
 import type { AuthContext } from "@/lib/authz/guard";
 import { requireClient } from "@/lib/authz/guard";
+import { effectivePermissions, readGranted } from "@/lib/authz/permissions";
+import type { Role } from "@/lib/domain/enums";
 import { NotFoundError, ValidationError } from "@/lib/errors";
 import { notify } from "@/lib/notifications/service";
 import { documentRequestSchema, reviewSchema } from "@/lib/validation/schemas";
@@ -208,11 +210,19 @@ async function notifyCabinetOwners(
   payload: { type: string; title: string; body: string; link: string },
 ) {
   const staff = await ctx.db.membership.findMany({
-    where: { role: { in: ["owner", "admin", "accountant"] }, status: "active" },
-    select: { userId: true },
-    take: 20,
+    where: { role: { not: "client" }, status: "active" },
+    select: { userId: true, role: true, permissions: true },
   });
+  // L'avis va à qui peut traiter la pièce, quel que soit le nom de son rôle :
+  // un rôle « Autre » à qui l'on a confié les demandes doit le recevoir.
+  const reviewers = staff
+    .filter((member) =>
+      effectivePermissions(member.role as Role, readGranted(member.permissions)).has(
+        "request.review",
+      ),
+    )
+    .slice(0, 20);
   await Promise.all(
-    staff.map((member) => notify(ctx.cabinet.id, member.userId, payload).catch(() => undefined)),
+    reviewers.map((member) => notify(ctx.cabinet.id, member.userId, payload).catch(() => undefined)),
   );
 }

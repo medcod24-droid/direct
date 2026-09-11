@@ -53,8 +53,15 @@ export const ROLE_LABELS: Record<string, string> = {
   admin: "Administrateur",
   accountant: "Comptable",
   assistant: "Assistant",
+  custom: "Autre",
   client: "Accès client",
 };
+
+/** Nom affiché d'un rôle : pour « Autre », celui que l'administration a saisi. */
+export function roleName(role: string, roleLabel?: string | null): string {
+  if (role === "custom") return roleLabel?.trim() || "Rôle personnalisé";
+  return ROLE_LABELS[role] ?? role;
+}
 
 export function subtypeLabel(subtype: string): string {
   return SUBTYPE_LABELS[subtype] ?? subtype;

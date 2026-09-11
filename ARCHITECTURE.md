@@ -156,6 +156,28 @@ les rôles et l'historique de chacun. Savoir qui compose son cabinet n'en dépen
 sélecteurs « reçu par », « assigné à » passent par `listStaffOptions`, autorisé par la permission
 de l'écran qui les affiche.
 
+**Les droits se cochent un à un.** Un collaborateur reçoit un modèle — Comptable, Assistant,
+Administrateur — ou « Autre », que l'administration nomme (« Stagiaire », « Secrétaire »…) ; dans
+tous les cas, la grille de `PERMISSION_GROUPS` s'affiche, pré-remplie par le modèle, et chaque case
+peut être ajustée. `Membership.permissions` enregistre la sélection en JSON, ou reste nulle quand
+elle est exactement celle du modèle : un comptable non ajusté suit ainsi les évolutions du rôle
+Comptable. `ctx.can` lit les droits effectifs (`effectivePermissions`), jamais le seul nom du rôle
+— y compris pour choisir qui reçoit l'avis de dépôt d'une pièce.
+
+Trois garde-fous côté service, que l'écran se contente de refléter :
+
+- **la grille ne contient que ce que le code vérifie.** Une case sans effet ferait croire à un
+  retrait d'accès qui n'a pas eu lieu ; un test parcourt `src/` dans les deux sens (toute case est
+  lue quelque part, tout droit lu a sa case). Le propriétaire et le compte client restent hors
+  grille ;
+- **les dépendances sont automatiques** (`REQUIRES`) : cocher « Valider une pièce » coche « Ouvrir
+  la section Documents », décocher la seconde décoche la première ;
+- **on n'accorde que ce qu'on détient, et on ne touche pas à qui détient plus que soi.** Sans la
+  seconde règle, un collaborateur à qui l'on confie l'équipe pourrait rétrograder l'administrateur.
+
+Le journal garde, pour chaque modification, les droits accordés et retirés : la question qu'on se
+pose après coup est « depuis quand peut-il supprimer ? », pas « quel était son rôle ? ».
+
 La fiche d'un collaborateur (`/team/<userId>`) montre ses tâches et **son historique**, construit
 depuis le **journal d'audit** et non depuis le fil d'activité : l'audit enregistre tout, y compris
 les modifications, qui sont précisément ce que l'administrateur veut relire. Les noms de dossiers

@@ -1,31 +1,44 @@
-import { z } from "zod";
 import { recordAudit } from "@/lib/audit";
 import { assertPasswordPolicy, hashPassword } from "@/lib/auth/password";
 import type { AuthContext } from "@/lib/authz/guard";
+import {
+  GRANTABLE,
+  effectivePermissions,
+  isAdjustableRole,
+  isGrantable,
+  normalizePermissions,
+  permissionLabel,
+  presetPermissions,
+  readGranted,
+  storedPermissions,
+  type AdjustableRole,
+  type Permission,
+} from "@/lib/authz/permissions";
 import { assertWithinLimit } from "@/lib/billing/entitlements";
 import { platformDb } from "@/lib/db/tenant";
 import type { Role } from "@/lib/domain/enums";
 import { ForbiddenError, NotFoundError, ValidationError } from "@/lib/errors";
 import { buildSearchKey } from "@/lib/search";
-import { addMemberSchema, cabinetSettingsSchema } from "@/lib/validation/schemas";
+import {
+  addMemberSchema,
+  cabinetSettingsSchema,
+  memberRightsSchema,
+  type MemberRights,
+} from "@/lib/validation/schemas";
 
 /**
  * Équipe du cabinet : collaborateurs, droits et portée d'accès.
  *
- * Deux règles tiennent tout le fichier :
- * - le rôle « propriétaire » ne s'invite pas et ne se retire jamais au dernier
+ * Quatre règles tiennent tout le fichier :
+ * - le rôle « propriétaire » ne s'attribue pas et ne se retire jamais au dernier
  *   qui le porte, sinon le cabinet devient ingérable ;
  * - personne ne modifie ses propres droits, sinon un administrateur pourrait se
- *   verrouiller ou s'élever seul.
+ *   verrouiller ou s'élever seul ;
+ * - on n'accorde que ce qu'on détient soi-même : un collaborateur à qui l'on a
+ *   confié l'équipe ne peut pas fabriquer un compte plus puissant que le sien ;
+ * - on ne touche pas à qui détient plus que soi, pour la même raison en sens
+ *   inverse — sans quoi il suffirait de rétrograder l'administrateur.
  */
-
-
-const memberUpdateSchema = z.object({
-  role: z
-    .enum(["admin", "accountant", "assistant"] as const)
-    .describe("Le rôle propriétaire se transmet, il ne s'attribue pas ici."),
-  restrictedToAssigned: z.coerce.boolean().default(false),
-});
 
 export type TeamMember = {
   membershipId: string;
@@ -33,10 +46,90 @@ export type TeamMember = {
   name: string;
   email: string;
   role: Role;
+  /** Nom du rôle « Autre ». */
+  roleLabel: string | null;
+  /** Droits cochables effectivement détenus, dans l'ordre de la grille. */
+  permissions: Permission[];
+  /** Rôle modèle dont l'administration a ajusté les cases. */
+  adjusted: boolean;
   restrictedToAssigned: boolean;
   lastLoginAt: Date | null;
   isSelf: boolean;
 };
+
+/** Ce que la grille de droits reçoit pour un collaborateur réglable. */
+export type EditableMember = {
+  membershipId: string;
+  name: string;
+  role: AdjustableRole;
+  roleLabel: string | null;
+  permissions: Permission[];
+  restrictedToAssigned: boolean;
+};
+
+/** Le collaborateur au format de la grille, ou `null` s'il n'a pas de droits réglables. */
+export function editableMember(member: TeamMember): EditableMember | null {
+  if (!isAdjustableRole(member.role)) return null;
+  return {
+    membershipId: member.membershipId,
+    name: member.name,
+    role: member.role,
+    roleLabel: member.roleLabel,
+    permissions: member.permissions,
+    restrictedToAssigned: member.restrictedToAssigned,
+  };
+}
+
+type MembershipRights = { role: string; permissions: string | null };
+
+/** Droits cochables détenus par une adhésion. */
+function grantedOf(membership: MembershipRights): Permission[] {
+  const effective = effectivePermissions(membership.role as Role, readGranted(membership.permissions));
+  return GRANTABLE.filter((permission) => effective.has(permission));
+}
+
+/**
+ * Droits demandés, contrôlés contre ceux de la personne qui les accorde.
+ * Renvoie ce qu'il faut enregistrer et la sélection normalisée.
+ */
+function resolveRights(ctx: AuthContext, data: MemberRights) {
+  const unknown = (data.permissions ?? []).filter((permission) => !isGrantable(permission));
+  if (unknown.length > 0) {
+    throw new ValidationError(`Droit inconnu : ${unknown.join(", ")}.`);
+  }
+
+  const selection = data.permissions
+    ? normalizePermissions(data.permissions)
+    : presetPermissions(data.role);
+
+  const beyond = selection.filter((permission) => !ctx.can(permission));
+  if (beyond.length > 0) {
+    throw new ForbiddenError(
+      "Élévation de droits",
+      `Vous ne pouvez pas accorder un droit que vous n'avez pas vous-même : ${beyond
+        .map(permissionLabel)
+        .join(", ")}.`,
+    );
+  }
+
+  return {
+    role: data.role,
+    roleLabel: data.role === "custom" ? (data.roleLabel ?? "").trim() : null,
+    permissions: storedPermissions(data.role, selection),
+    selection,
+  };
+}
+
+/** Refuse d'agir sur un collaborateur qui détient des droits qu'on n'a pas. */
+function assertNotBetterEndowed(ctx: AuthContext, membership: MembershipRights) {
+  const beyond = grantedOf(membership).filter((permission) => !ctx.can(permission));
+  if (beyond.length > 0) {
+    throw new ForbiddenError(
+      "Collaborateur mieux doté",
+      "Ce collaborateur détient des droits que vous n'avez pas : seul quelqu'un qui les détient peut modifier son accès.",
+    );
+  }
+}
 
 /** Collaborateurs du cabinet, comptes clients exclus. */
 export async function listMembers(ctx: AuthContext): Promise<TeamMember[]> {
@@ -60,6 +153,12 @@ export async function listMembers(ctx: AuthContext): Promise<TeamMember[]> {
       name: user?.name ?? "—",
       email: user?.email ?? "—",
       role: membership.role as Role,
+      roleLabel: membership.roleLabel,
+      permissions: grantedOf(membership),
+      adjusted:
+        membership.role !== "custom" &&
+        isAdjustableRole(membership.role) &&
+        readGranted(membership.permissions) !== null,
       restrictedToAssigned: membership.restrictedToAssigned,
       lastLoginAt: user?.lastLoginAt ?? null,
       isSelf: membership.userId === ctx.user.id,
@@ -69,6 +168,7 @@ export async function listMembers(ctx: AuthContext): Promise<TeamMember[]> {
 
 export async function addMember(ctx: AuthContext, input: unknown) {
   const data = addMemberSchema.parse(input);
+  const rights = resolveRights(ctx, data);
   await assertWithinLimit(ctx.cabinet.id, "users");
   assertPasswordPolicy(data.password, data.email);
 
@@ -82,7 +182,13 @@ export async function addMember(ctx: AuthContext, input: unknown) {
       if (already.status !== "active") {
         await platformDb.membership.update({
           where: { id: already.id },
-          data: { status: "active", role: data.role, restrictedToAssigned: data.restrictedToAssigned },
+          data: {
+            status: "active",
+            role: rights.role,
+            roleLabel: rights.roleLabel,
+            permissions: rights.permissions,
+            restrictedToAssigned: data.restrictedToAssigned,
+          },
         });
         return { user: existing, created: false };
       }
@@ -106,7 +212,9 @@ export async function addMember(ctx: AuthContext, input: unknown) {
     data: {
       userId: user.id,
       cabinetId: ctx.cabinet.id,
-      role: data.role,
+      role: rights.role,
+      roleLabel: rights.roleLabel,
+      permissions: rights.permissions,
       restrictedToAssigned: data.restrictedToAssigned,
     },
   });
@@ -117,7 +225,13 @@ export async function addMember(ctx: AuthContext, input: unknown) {
     userId: ctx.user.id,
     resourceType: "User",
     resourceId: user.id,
-    metadata: { email: data.email, role: data.role, reusedAccount: Boolean(existing) },
+    metadata: {
+      email: data.email,
+      role: rights.role,
+      roleLabel: rights.roleLabel,
+      permissions: rights.selection,
+      reusedAccount: Boolean(existing),
+    },
     ip: ctx.ip,
     userAgent: ctx.userAgent,
   });
@@ -125,9 +239,9 @@ export async function addMember(ctx: AuthContext, input: unknown) {
   return { user, created: !existing };
 }
 
-/** Modifie le rôle et la portée d'un collaborateur. */
+/** Modifie le rôle, les droits et la portée d'un collaborateur. */
 export async function updateMember(ctx: AuthContext, membershipId: string, input: unknown) {
-  const data = memberUpdateSchema.parse(input);
+  const data = memberRightsSchema.parse(input);
 
   const membership = await ctx.db.membership.findFirst({ where: { id: membershipId } });
   if (!membership) throw new NotFoundError("Collaborateur");
@@ -147,12 +261,23 @@ export async function updateMember(ctx: AuthContext, membershipId: string, input
       "Le rôle propriétaire ne se retire pas ici : transmettez-le d'abord.",
     );
   }
+  assertNotBetterEndowed(ctx, membership);
+
+  const rights = resolveRights(ctx, data);
+  const before = grantedOf(membership);
 
   const updated = await ctx.db.membership.update({
     where: { id: membershipId },
-    data: { role: data.role, restrictedToAssigned: data.restrictedToAssigned },
+    data: {
+      role: rights.role,
+      roleLabel: rights.roleLabel,
+      permissions: rights.permissions,
+      restrictedToAssigned: data.restrictedToAssigned,
+    },
   });
 
+  // Le journal garde le détail des cases, pas seulement le nom du rôle : c'est
+  // la question qu'on se pose après coup — « depuis quand peut-il supprimer ? ».
   await recordAudit({
     action: "member.updated",
     cabinetId: ctx.cabinet.id,
@@ -160,8 +285,18 @@ export async function updateMember(ctx: AuthContext, membershipId: string, input
     resourceType: "Membership",
     resourceId: membershipId,
     metadata: {
-      from: { role: membership.role, restrictedToAssigned: membership.restrictedToAssigned },
-      to: { role: data.role, restrictedToAssigned: data.restrictedToAssigned },
+      from: {
+        role: membership.role,
+        roleLabel: membership.roleLabel,
+        restrictedToAssigned: membership.restrictedToAssigned,
+      },
+      to: {
+        role: rights.role,
+        roleLabel: rights.roleLabel,
+        restrictedToAssigned: data.restrictedToAssigned,
+      },
+      granted: rights.selection.filter((permission) => !before.includes(permission)),
+      revoked: before.filter((permission) => !rights.selection.includes(permission)),
     },
     ip: ctx.ip,
   });
@@ -189,6 +324,7 @@ export async function removeMember(ctx: AuthContext, membershipId: string) {
       );
     }
   }
+  assertNotBetterEndowed(ctx, membership);
 
   await ctx.db.membership.update({ where: { id: membershipId }, data: { status: "revoked" } });
 
@@ -325,6 +461,7 @@ const ACTION_LABELS: Record<string, string> = {
   "invoice.created": "a émis une facture",
   "invoice.payment": "a enregistré un règlement",
   "member.invited": "a invité un collaborateur",
+  "member.added": "a ajouté un collaborateur",
   "member.updated": "a modifié un collaborateur",
   "member.removed": "a retiré un collaborateur",
   "auth.login": "s'est connecté",

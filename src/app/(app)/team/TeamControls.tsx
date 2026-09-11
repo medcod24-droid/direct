@@ -1,15 +1,18 @@
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useEffect, useState, useTransition } from "react";
 import {
   addMemberAction,
   removeMemberAction,
   updateMemberAction,
   type ActionState,
 } from "@/app/actions/app";
-import { Alert, Button, Card, Field, Input, Modal, Select } from "@/components/ui";
+import { Alert, Button, Field, Input, Modal } from "@/components/ui";
+import type { Permission } from "@/lib/authz/permissions";
+import type { EditableMember } from "@/server/services/members";
+import { RightsEditor } from "./RightsEditor";
 
-const initial: ActionState & { inviteUrl?: string } = {};
+const initial: ActionState = {};
 
 /**
  * Ajout d'un collaborateur, directement.
@@ -19,9 +22,10 @@ const initial: ActionState & { inviteUrl?: string } = {};
  * courriel, il fallait de toute façon le recopier à la main pour le même
  * résultat, et la personne est en général dans le bureau d'à côté.
  */
-export function AddMember() {
+export function AddMember({ grantable }: { grantable: Permission[] }) {
   const [state, action, pending] = useActionState(addMemberAction, initial);
   const [open, setOpen] = useState(false);
+  const fieldError = (name: string) => state.fieldErrors?.[name]?.[0];
 
   return (
     <>
@@ -29,59 +33,53 @@ export function AddMember() {
         Ajouter un collaborateur
       </Button>
 
-      <Modal open={open} onClose={() => setOpen(false)} title="Ajouter un collaborateur" size="lg">
-        <form action={action} className="grid gap-3">
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Ajouter un collaborateur"
+        description="Identité, rôle et droits. Tout reste modifiable ensuite depuis l'équipe."
+        size="xl"
+      >
+        <form action={action} className="grid gap-5">
           {state.error ? <Alert tone="danger">{state.error}</Alert> : null}
           {state.ok ? <Alert tone="success">{state.message}</Alert> : null}
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Nom et prénom" htmlFor="name" error={state.fieldErrors?.name?.[0]}>
-              <Input
-                id="name"
-                name="name"
-                required
-                autoFocus
-                defaultValue={state.values?.name ?? ""}
-              />
-            </Field>
-            <Field label="Adresse e-mail" htmlFor="email" error={state.fieldErrors?.email?.[0]}>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                required
-                defaultValue={state.values?.email ?? ""}
-              />
-            </Field>
-          </div>
+          <section className="grid gap-3">
+            <h3 className="text-2xs font-650 uppercase tracking-[0.08em] text-muted">Identité</h3>
+            <div className="grid gap-3 md:grid-cols-3">
+              <Field label="Nom et prénom" htmlFor="name" error={fieldError("name")}>
+                <Input
+                  id="name"
+                  name="name"
+                  required
+                  autoFocus
+                  defaultValue={state.values?.name ?? ""}
+                />
+              </Field>
+              <Field label="Adresse e-mail" htmlFor="email" error={fieldError("email")}>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  defaultValue={state.values?.email ?? ""}
+                />
+              </Field>
+              <Field
+                label="Mot de passe initial"
+                htmlFor="password"
+                hint="12 caractères au moins, à lui communiquer."
+                error={fieldError("password")}
+              >
+                <Input id="password" name="password" type="text" required />
+              </Field>
+            </div>
+          </section>
 
-          <Field
-            label="Mot de passe initial"
-            htmlFor="password"
-            hint="Au moins 12 caractères. Communiquez-le au collaborateur : il pourra le changer."
-            error={state.fieldErrors?.password?.[0]}
-          >
-            <Input id="password" name="password" type="text" required />
-          </Field>
+          <RightsEditor grantable={grantable} fieldError={fieldError} />
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Rôle" htmlFor="role" error={state.fieldErrors?.role?.[0]}>
-              <Select id="role" name="role" defaultValue={state.values?.role ?? "accountant"}>
-                <option value="accountant">Comptable</option>
-                <option value="assistant">Assistant</option>
-                <option value="admin">Administrateur</option>
-              </Select>
-            </Field>
-            <Field label="Portée" htmlFor="restrictedToAssigned">
-              <label className="flex h-9 items-center gap-2 text-sm">
-                <input id="restrictedToAssigned" name="restrictedToAssigned" type="checkbox" />
-                <span>Dossiers assignés seulement</span>
-              </label>
-            </Field>
-          </div>
-
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+          <div className="flex justify-end gap-2 border-t border-line pt-3">
+            <Button variant="ghost" onClick={() => setOpen(false)}>
               {state.ok ? "Fermer" : "Annuler"}
             </Button>
             <Button type="submit" variant="primary" disabled={pending}>
@@ -93,18 +91,73 @@ export function AddMember() {
     </>
   );
 }
+
+/** Rôle et droits d'un collaborateur existant, dans la même grille qu'à l'ajout. */
+export function EditRights({
+  member,
+  grantable,
+}: {
+  member: EditableMember;
+  grantable: Permission[];
+}) {
+  const [state, action, pending] = useActionState(updateMemberAction, initial);
+  const [open, setOpen] = useState(false);
+  const fieldError = (name: string) => state.fieldErrors?.[name]?.[0];
+
+  // Chaque envoi produit un nouvel état : la fenêtre se ferme à chaque succès,
+  // et reste ouverte quand on la rouvre ensuite.
+  useEffect(() => {
+    if (state.ok) setOpen(false);
+  }, [state]);
+
+  return (
+    <>
+      <Button size="sm" iconName="shield" onClick={() => setOpen(true)}>
+        Modifier les droits
+      </Button>
+
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title={`Rôle et droits de ${member.name}`}
+        description="Le changement s'applique dès sa prochaine page. Il est inscrit à l'historique."
+        size="xl"
+      >
+        <form action={action} className="grid gap-4">
+          <input type="hidden" name="membershipId" value={member.membershipId} />
+          {state.error ? <Alert tone="danger">{state.error}</Alert> : null}
+
+          <RightsEditor
+            defaultRole={member.role}
+            defaultLabel={member.roleLabel ?? ""}
+            defaultPermissions={member.permissions}
+            defaultRestricted={member.restrictedToAssigned}
+            grantable={grantable}
+            fieldError={fieldError}
+          />
+
+          <div className="flex justify-end gap-2 border-t border-line pt-3">
+            <Button variant="ghost" onClick={() => setOpen(false)}>
+              Annuler
+            </Button>
+            <Button type="submit" variant="primary" disabled={pending}>
+              {pending ? "Enregistrement…" : "Enregistrer les droits"}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+    </>
+  );
+}
+
 export function MemberControls({
-  membershipId,
-  name,
-  role,
-  restrictedToAssigned,
+  member,
+  grantable,
   locked,
   lockedReason,
 }: {
-  membershipId: string;
-  name: string;
-  role: string;
-  restrictedToAssigned: boolean;
+  member: EditableMember | null;
+  grantable: Permission[];
   locked: boolean;
   lockedReason?: string;
 }) {
@@ -112,42 +165,14 @@ export function MemberControls({
   const [error, setError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
 
-  if (locked) {
+  if (locked || !member) {
     return <span className="text-xs text-muted">{lockedReason}</span>;
-  }
-
-  function apply(nextRole: string, nextScope: boolean) {
-    setError(null);
-    start(async () => {
-      const result = await updateMemberAction(membershipId, nextRole, nextScope);
-      if (result.error) setError(result.error);
-    });
   }
 
   return (
     <div className="grid gap-1.5">
       <div className="flex flex-wrap items-center gap-2">
-        <Select
-          aria-label="Rôle"
-          value={role}
-          disabled={pending}
-          onChange={(event) => apply(event.target.value, restrictedToAssigned)}
-          className="h-8 min-w-40 text-[13px]"
-        >
-          <option value="admin">Administrateur</option>
-          <option value="accountant">Comptable</option>
-          <option value="assistant">Assistant</option>
-        </Select>
-
-        <label className="flex items-center gap-1.5 whitespace-nowrap text-xs text-ink2">
-          <input
-            type="checkbox"
-            checked={restrictedToAssigned}
-            disabled={pending}
-            onChange={(event) => apply(role, event.target.checked)}
-          />
-          Dossiers assignés seulement
-        </label>
+        <EditRights member={member} grantable={grantable} />
 
         {/* Retirer coupe l'accès immédiatement : la confirmation est obligatoire,
             un clic malheureux mettrait un collaborateur dehors en pleine journée. */}
@@ -173,7 +198,7 @@ export function MemberControls({
               onClick={() => {
                 setError(null);
                 start(async () => {
-                  const result = await removeMemberAction(membershipId);
+                  const result = await removeMemberAction(member.membershipId);
                   if (result.error) setError(result.error);
                   setConfirming(false);
                 });
@@ -185,8 +210,8 @@ export function MemberControls({
         }
       >
         <p>
-          <strong>{name}</strong> perdra immédiatement l&apos;accès au cabinet, à ses dossiers et
-          à ses documents.
+          <strong>{member.name}</strong> perdra immédiatement l&apos;accès au cabinet, à ses dossiers
+          et à ses documents.
         </p>
         <p className="mt-2 text-xs text-muted">
           Son compte n&apos;est pas supprimé, et le travail déjà effectué reste attribué à son
@@ -197,4 +222,3 @@ export function MemberControls({
     </div>
   );
 }
-

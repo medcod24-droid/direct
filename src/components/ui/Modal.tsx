@@ -5,7 +5,7 @@ import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 
 import { createPortal } from "react-dom";
 import { getDictionary, t, type Locale } from "@/lib/i18n";
 
-export type ModalSize = "sm" | "md" | "lg";
+export type ModalSize = "sm" | "md" | "lg" | "xl";
 
 export type ModalProps = {
   open: boolean;
@@ -26,6 +26,8 @@ const SIZES: Record<ModalSize, string> = {
   sm: "max-w-md",
   md: "max-w-xl",
   lg: "max-w-3xl",
+  // Grilles de droits : deux colonnes de groupes doivent tenir sans se tasser.
+  xl: "max-w-5xl",
 };
 
 export function Modal({

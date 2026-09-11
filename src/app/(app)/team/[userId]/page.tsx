@@ -1,14 +1,21 @@
+import { clsx } from "clsx";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireStaff } from "@/lib/authz/guard";
-import { ROLE_LABELS } from "@/lib/domain/labels";
+import { GRANTABLE, PERMISSION_GROUPS } from "@/lib/authz/permissions";
+import { roleName } from "@/lib/domain/labels";
 import { formatDate, formatDateTime } from "@/lib/format";
-import { listMemberActivity, listMembers } from "@/server/services/members";
+import {
+  editableMember,
+  listMemberActivity,
+  listMembers,
+  listStaffOptions,
+} from "@/server/services/members";
 import { listClientOptions } from "@/server/services/clients";
-import { listStaffOptions } from "@/server/services/members";
 import { listTodos, todoCounts } from "@/server/services/todos";
-import { Badge, Button, Card, EmptyState, PageHeader, StatTile } from "@/components/ui";
+import { Badge, Button, Card, EmptyState, Icon, PageHeader, StatTile } from "@/components/ui";
 import { TodoCard, TodoForm } from "../../todos/TodoCard";
+import { EditRights } from "../TeamControls";
 
 export const metadata = { title: "Collaborateur — Direct Conseil" };
 export const dynamic = "force-dynamic";
@@ -30,6 +37,16 @@ export default async function MemberPage({ params }: { params: Promise<{ userId:
   if (!member) notFound();
 
   const canManageTodos = ctx.can("todo.manage");
+  const grantable = GRANTABLE.filter((permission) => ctx.can(permission));
+  const held = new Set(member.permissions);
+  const editable = editableMember(member);
+  // Mêmes verrous que le tableau de l'équipe, que le service applique de toute façon.
+  const canEditRights =
+    ctx.can("member.manage") &&
+    !member.isSelf &&
+    editable !== null &&
+    member.permissions.every((permission) => ctx.can(permission));
+
   const [activity, todos, counts, staff, clients] = await Promise.all([
     listMemberActivity(ctx, userId),
     canManageTodos ? listTodos(ctx, { assigneeId: userId }) : Promise.resolve([]),
@@ -42,7 +59,7 @@ export default async function MemberPage({ params }: { params: Promise<{ userId:
     <div className="grid gap-5">
       <PageHeader
         title={member.name}
-        subtitle={`${ROLE_LABELS[member.role] ?? member.role} · ${member.email}`}
+        subtitle={`${roleName(member.role, member.roleLabel)} · ${member.email}`}
         actions={
           <div className="flex items-center gap-2">
             {member.restrictedToAssigned ? <Badge>Dossiers assignés seulement</Badge> : null}
@@ -71,6 +88,56 @@ export default async function MemberPage({ params }: { params: Promise<{ userId:
           <StatTile label="Confirmées" icon="check" value={String(counts.approved)} tone="success" />
         </section>
       ) : null}
+
+      <Card
+        icon="shield"
+        title="Rôle et droits"
+        description={
+          member.role === "owner"
+            ? "Propriétaire : tous les droits, y compris la suppression du cabinet. Ils se transmettent, ils ne se retirent pas."
+            : `${roleName(member.role, member.roleLabel)}${member.adjusted ? " (ajusté)" : ""} · ${member.permissions.length} droits sur ${GRANTABLE.length} · ${member.restrictedToAssigned ? "dossiers assignés seulement" : "tous les dossiers"}`
+        }
+        action={
+          canEditRights && editable ? <EditRights member={editable} grantable={grantable} /> : null
+        }
+      >
+        <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+          {PERMISSION_GROUPS.map((group) => {
+            const count = group.items.filter((item) => held.has(item.permission)).length;
+            return (
+              <div key={group.key} className="rounded-chip border border-line p-2.5">
+                <p className="mb-1.5 flex items-center justify-between gap-2 text-xs font-650 text-ink2">
+                  {group.title}
+                  <span className="tabular font-normal text-muted">
+                    {count}/{group.items.length}
+                  </span>
+                </p>
+                <ul className="grid gap-1">
+                  {group.items.map((item) => {
+                    const has = held.has(item.permission);
+                    return (
+                      <li
+                        key={item.permission}
+                        className={clsx("flex items-start gap-1.5 text-xs", has ? "text-ink" : "text-muted")}
+                      >
+                        <Icon
+                          name={has ? "check" : "x"}
+                          size={13}
+                          className={clsx("mt-px shrink-0", has ? "text-accent" : "text-muted")}
+                        />
+                        <span>
+                          <span className="sr-only">{has ? "Accordé : " : "Non accordé : "}</span>
+                          {item.label}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
 
       {canManageTodos ? (
         <Card

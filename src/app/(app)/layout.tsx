@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { logoutAction } from "@/app/actions/auth";
 import { getAuthContext } from "@/lib/authz/guard";
 import type { Permission } from "@/lib/authz/permissions";
-import { ROLE_LABELS } from "@/lib/domain/labels";
+import { roleName } from "@/lib/domain/labels";
 import { getNavCounts } from "@/server/services/dashboard";
 import { Avatar, CountBadge, Icon, Logo, ThemeToggle } from "@/components/ui";
 import { MobileNav, SidebarNav, type NavGroup, type NavItem } from "./AppNav";
@@ -186,7 +186,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               <div className="hidden leading-tight lg:block">
                 <div className="text-[12.5px] font-semibold text-ink">{ctx.user.name}</div>
                 <div className="text-[11px] text-muted">
-                  {ROLE_LABELS[ctx.membership.role] ?? ctx.membership.role}
+                  {roleName(ctx.membership.role, ctx.membership.roleLabel)}
                 </div>
               </div>
             </div>
