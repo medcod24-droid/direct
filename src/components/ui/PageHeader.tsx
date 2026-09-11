@@ -13,6 +13,8 @@ export type PageHeaderProps = {
   eyebrow?: ReactNode;
   /** Filtres ou onglets collés sous l'en-tête. */
   children?: ReactNode;
+  /** Image placée devant le titre : la photo ou le logo d'un dossier. */
+  media?: ReactNode;
   className?: string;
 };
 
@@ -28,19 +30,23 @@ export function PageHeader({
   actions,
   eyebrow,
   children,
+  media,
   className,
 }: PageHeaderProps) {
   return (
     <header className={clsx("flex flex-col gap-4", className)}>
       <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
-        <div className="min-w-0 flex flex-col gap-1">
-          {eyebrow ? (
-            <span className="text-xs font-bold uppercase tracking-[0.12em] text-gold">
-              {eyebrow}
-            </span>
-          ) : null}
-          <h1 className="truncate text-2xl font-650 text-ink">{title}</h1>
-          {subtitle ? <p className="text-sm text-muted tabular">{subtitle}</p> : null}
+        <div className="flex min-w-0 items-center gap-3.5">
+          {media ?? null}
+          <div className="min-w-0 flex flex-col gap-1">
+            {eyebrow ? (
+              <span className="text-xs font-bold uppercase tracking-[0.12em] text-gold">
+                {eyebrow}
+              </span>
+            ) : null}
+            <h1 className="truncate text-2xl font-650 text-ink">{title}</h1>
+            {subtitle ? <p className="text-sm text-muted tabular">{subtitle}</p> : null}
+          </div>
         </div>
         {actions ? <div className="flex shrink-0 items-center gap-2.5">{actions}</div> : null}
       </div>

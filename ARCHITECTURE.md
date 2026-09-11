@@ -331,6 +331,24 @@ enregistrées qu'en mode CNDP « autorisation » (loi 09-08, art. 12-1-e). Le fi
 dans `server/services/clients.ts`, à un seul endroit, et non dans le formulaire — une liste non
 filtrée serait devenue la voie par laquelle des numéros entrent malgré le mode « déclaration ».
 
+### Photo ou logo du dossier
+
+Logo pour une société, photo pour une personne : elle identifie le dossier à l'écran et
+s'imprime en tête de la fiche, dans un cadre au format photo d'identité (32 × 40 mm). **Sans
+image, le cadre reste vide et pointillé** : on y colle une photo sur la fiche papier.
+
+C'est une pièce de champ comme les justificatifs (clé `photo`) — même stockage chiffré, une seule
+active par dossier — mais elle ne compte pas parmi les pièces attendues. Elle voyage **avec le
+formulaire**, pas par dépôt immédiat : réduite à 640 px dans le navigateur et transmise en data
+URL dans un champ caché, elle peut être jointe dès la création, quand il n'existe encore aucun
+dossier auquel rattacher un dépôt. Le serveur la vérifie avant d'écrire le dossier (PNG ou JPEG,
+premiers octets contrôlés, 2 Mo au plus), pour qu'une image refusée ne laisse pas un dossier créé
+derrière un formulaire en erreur.
+
+Elle s'affiche par `/api/clients/<id>/photo`, qui ne demande que le droit de voir le dossier et ne
+journalise pas chaque affichage — la route de téléchargement l'aurait fait à chaque ouverture de
+fiche.
+
 ## Moteur d'échéances
 
 `src/lib/deadlines/engine.ts` est un module pur, sans base de données, couvert par 75 tests.

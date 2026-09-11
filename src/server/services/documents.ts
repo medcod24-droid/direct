@@ -4,6 +4,7 @@ import type { AuthContext } from "@/lib/authz/guard";
 import { requireClient } from "@/lib/authz/guard";
 import { assertWithinLimit } from "@/lib/billing/entitlements";
 import { platformDb } from "@/lib/db/tenant";
+import { PHOTO_FIELD, type ClientPhoto } from "@/lib/clients/photo";
 import { NotFoundError, ValidationError } from "@/lib/errors";
 import { deleteFile, fileExists, putFile, readFileStream } from "@/lib/storage";
 import { documentSearchKey, normalizeSearch } from "@/lib/search";
@@ -289,6 +290,60 @@ export async function replaceFieldScan(ctx: AuthContext, input: unknown, file: U
   }
 
   return document;
+}
+
+/**
+ * Photo ou logo du dossier.
+ *
+ * Une pièce de champ comme les autres (clé « photo ») : elle profite du même
+ * stockage chiffré et du même remplacement — une seule photo active par
+ * dossier. Elle n'entre pas dans les pièces attendues : un dossier sans photo
+ * n'est pas incomplet.
+ */
+export async function setClientPhoto(ctx: AuthContext, clientId: string, photo: ClientPhoto) {
+  return replaceFieldScan(
+    ctx,
+    { clientId, fieldKey: PHOTO_FIELD },
+    {
+      name: photo.type === "image/png" ? "photo.png" : "photo.jpg",
+      type: photo.type,
+      buffer: photo.buffer,
+    },
+  );
+}
+
+export async function removeClientPhoto(ctx: AuthContext, clientId: string) {
+  await requireClient(ctx, clientId);
+  const rows = await ctx.db.document.findMany({
+    where: { clientId, fieldKey: PHOTO_FIELD },
+    select: { id: true },
+  });
+  for (const row of rows) await deleteDocument(ctx, row.id);
+}
+
+/**
+ * Photo à afficher.
+ *
+ * Lue sans passer par `openDocument` : afficher la photo à chaque ouverture du
+ * dossier n'est pas un téléchargement, et le journal d'audit en aurait été
+ * inondé. La portée est la même — un dossier hors de portée reste introuvable —
+ * et seul un fichier image est servi, quel que soit ce qui a été déposé sous
+ * cette clé.
+ */
+export async function openClientPhoto(ctx: AuthContext, clientId: string) {
+  await requireClient(ctx, clientId);
+  const document = await ctx.db.document.findFirst({
+    where: { clientId, fieldKey: PHOTO_FIELD },
+    orderBy: { createdAt: "desc" },
+  });
+  if (
+    !document ||
+    !document.mimeType.startsWith("image/") ||
+    !(await fileExists(document.storageKey))
+  ) {
+    throw new NotFoundError("Photo");
+  }
+  return { document, stream: await readFileStream(document.storageKey) };
 }
 
 /**

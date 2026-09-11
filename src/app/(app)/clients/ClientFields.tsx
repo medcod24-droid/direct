@@ -6,6 +6,7 @@ import type { PickerOption } from "@/components/ui";
 import { subtypesFor, type ClientKind } from "@/lib/domain/enums";
 import { subtypeLabel } from "@/lib/domain/labels";
 import { Articles } from "./Articles";
+import { ClientPhoto } from "./ClientPhoto";
 import { FieldScan, type ScanInfo } from "./FieldScan";
 import { Partners } from "./Partners";
 import { Registrations } from "./Registrations";
@@ -84,6 +85,9 @@ export function ClientFields({
             : "Personne morale : les pièces sont au nom de la société."
         }
       >
+        <div className="mb-4 border-b border-line pb-4">
+          <ClientPhoto clientId={clientId} current={scans.photo} error={fieldError("photo")} />
+        </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Type" htmlFor="kind" error={fieldError("kind")}>
             <Select

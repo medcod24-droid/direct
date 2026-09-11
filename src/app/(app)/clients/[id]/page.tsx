@@ -11,6 +11,7 @@ import {
 import { getClientOverview, ratingsForClients } from "@/server/services/clients";
 import { listAppointments } from "@/server/services/appointments";
 import { expectedScans, fieldScans } from "@/server/services/documents";
+import { PHOTO_FIELD } from "@/lib/clients/photo";
 import { listInterventions } from "@/server/services/interventions";
 import { listClientAssignees, listMembers } from "@/server/services/members";
 import {
@@ -111,6 +112,16 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   return (
     <div className="grid gap-5">
       <PageHeader
+        media={
+          scans.get(PHOTO_FIELD) ? (
+            // eslint-disable-next-line @next/next/no-img-element -- image privée, servie par une route authentifiée
+            <img
+              src={`/api/clients/${id}/photo?v=${scans.get(PHOTO_FIELD)?.id}`}
+              alt="Photo ou logo du dossier"
+              className="h-14 w-14 shrink-0 rounded-card border border-line bg-white object-contain"
+            />
+          ) : null
+        }
         title={client.legalName}
         subtitle={[client.tradeName, client.city, client.activity].filter(Boolean).join(" · ")}
         actions={

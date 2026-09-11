@@ -8,7 +8,15 @@ import { toPublicError } from "@/lib/errors";
 import { parseMadInput } from "@/lib/format";
 import { markAllNotificationsRead, markNotificationRead } from "@/lib/notifications/service";
 import { archiveClient, assignCollaborator, createClient, updateClient } from "@/server/services/clients";
-import { deleteDocument, replaceFieldScan, setDocumentStatus, uploadDocument } from "@/server/services/documents";
+import {
+  deleteDocument,
+  removeClientPhoto,
+  replaceFieldScan,
+  setClientPhoto,
+  setDocumentStatus,
+  uploadDocument,
+} from "@/server/services/documents";
+import { parsePhotoDataUrl, type ClientPhoto } from "@/lib/clients/photo";
 import { generateForYear, logOutageAttempt, setManagedBy, updateDeadlineStatus } from "@/server/services/deadlines";
 import { createInvoice, recordPayment } from "@/server/services/invoices";
 import { createRequest, reviewRequest, submitRequest } from "@/server/services/requests";
@@ -68,6 +76,9 @@ function formValues(form: FormData): Record<string, string> {
   for (const [key, value] of form.entries()) {
     if (typeof value !== "string") continue;
     if (key.startsWith("$ACTION")) continue;
+    // L'image réduite pèse quelques centaines de Ko : le composant la garde dans
+    // son propre état, inutile de la renvoyer avec les valeurs.
+    if (key === "photoData") continue;
     values[key] = value;
   }
   return values;
@@ -215,11 +226,35 @@ function clientInput(form: FormData) {
   };
 }
 
+/**
+ * Photo ou logo envoyé avec la fiche.
+ *
+ * Lue et vérifiée **avant** d'écrire le dossier : refusée après la création,
+ * elle aurait renvoyé le formulaire avec son erreur alors que le dossier
+ * existait déjà, et le second envoi l'aurait créé en double.
+ */
+function photoChange(form: FormData): { remove: true } | { photo: ClientPhoto } | null {
+  if (form.get("photoRemove") === "1") return { remove: true };
+  const data = str(form, "photoData");
+  return data ? { photo: parsePhotoDataUrl(data) } : null;
+}
+
+async function applyPhoto(
+  ctx: Awaited<ReturnType<typeof requireStaff>>,
+  clientId: string,
+  change: ReturnType<typeof photoChange>,
+) {
+  if (!change) return;
+  if ("remove" in change) await removeClientPhoto(ctx, clientId);
+  else await setClientPhoto(ctx, clientId, change.photo);
+}
+
 export async function createClientAction(_prev: ActionState, form: FormData): Promise<ActionState> {
   let id: string;
   try {
     const ctx = await requireStaff("client.create");
     const input = clientInput(form);
+    const photo = photoChange(form);
     const client = await createClient(ctx, {
       ...input,
       fiscalYearEndMonth: input.fiscalYearEndMonth ?? 12,
@@ -227,6 +262,11 @@ export async function createClientAction(_prev: ActionState, form: FormData): Pr
       takeoverDate: input.takeoverDate ?? new Date().toISOString(),
     });
     id = client.id;
+    // Le dossier est créé : un incident de stockage sur la photo ne doit pas le
+    // faire paraître refusé. Elle se rajoute depuis la modification.
+    await applyPhoto(ctx, id, photo).catch((error: unknown) => {
+      console.error("[photo du dossier]", error);
+    });
   } catch (error) {
     return { ...fail(error), values: formValues(form) };
   }
@@ -241,7 +281,9 @@ export async function updateClientAction(
 ): Promise<ActionState> {
   try {
     const ctx = await requireStaff("client.update");
+    const photo = photoChange(form);
     await updateClient(ctx, clientId, clientInput(form));
+    await applyPhoto(ctx, clientId, photo);
     revalidatePath(`/clients/${clientId}`);
     revalidatePath("/clients");
     return { ok: true, message: "Dossier mis à jour." };

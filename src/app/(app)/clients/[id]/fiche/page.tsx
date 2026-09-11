@@ -7,7 +7,9 @@ import {
   VAT_REGIME_LABELS,
 } from "@/lib/domain/labels";
 import { formatDate, formatMad } from "@/lib/format";
+import { PHOTO_FIELD } from "@/lib/clients/photo";
 import { getClientOverview } from "@/server/services/clients";
+import { fieldScans } from "@/server/services/documents";
 import { listInterventions } from "@/server/services/interventions";
 import { Button } from "@/components/ui";
 import { PrintButton } from "./PrintButton";
@@ -53,10 +55,12 @@ export default async function ClientFichePage({
 }) {
   const ctx = await requireStaff("client.view");
   const { id } = await params;
-  const [{ client, contacts, referrer }, interventions] = await Promise.all([
+  const [{ client, contacts, referrer }, interventions, scans] = await Promise.all([
     getClientOverview(ctx, id),
     ctx.can("intervention.view") ? listInterventions(ctx, id) : Promise.resolve([]),
+    fieldScans(ctx, id),
   ]);
+  const photo = scans.get(PHOTO_FIELD);
 
   const individual = client.kind === "individual";
   const activities = parse<string>(client.declaredActivities);
@@ -156,8 +160,8 @@ export default async function ClientFichePage({
       </div>
 
       <article className="rounded-card border border-line bg-surface p-8 text-ink shadow-edge print:border-0 print:bg-white print:p-0 print:text-black print:shadow-none">
-        <header className="print-bloc flex items-baseline justify-between gap-4 border-b border-line pb-3">
-          <div>
+        <header className="print-bloc flex items-start justify-between gap-6 border-b border-line pb-4">
+          <div className="min-w-0">
             <p className="text-xs uppercase tracking-wide text-muted print:text-black">
               {ctx.cabinet.name}
             </p>
@@ -167,10 +171,26 @@ export default async function ClientFichePage({
                 .filter(Boolean)
                 .join(" · ")}
             </p>
+            <p className="mt-3 text-xs text-muted print:text-black">
+              Fiche éditée le {formatDate(new Date())}
+            </p>
           </div>
-          <p className="shrink-0 text-xs text-muted print:text-black">
-            Fiche éditée le {formatDate(new Date())}
-          </p>
+
+          {/* Format d'une photo d'identité : le même cadre accueille un logo, et
+              reste vide à l'impression pour qu'on y colle une photo. */}
+          {photo ? (
+            // eslint-disable-next-line @next/next/no-img-element -- image privée, servie par une route authentifiée
+            <img
+              src={`/api/clients/${id}/photo?v=${photo.id}`}
+              alt="Photo ou logo du dossier"
+              className="h-[40mm] w-[32mm] shrink-0 rounded-chip border border-line bg-white object-contain print:border-black/30"
+            />
+          ) : (
+            <div className="grid h-[40mm] w-[32mm] shrink-0 place-items-center rounded-chip border-2 border-dashed border-line p-2 text-center text-[10px] leading-snug text-muted print:border-black/40 print:text-black/60">
+              Photo ou logo
+              <br />à coller ici
+            </div>
+          )}
         </header>
 
         <Section title="Identité" rows={identity} />
@@ -332,8 +352,8 @@ export default async function ClientFichePage({
         ) : null}
 
         <footer className="mt-8 border-t border-line pt-2 text-[11px] text-muted print:text-black">
-          Direct Conseil · {ctx.cabinet.name} · document interne au cabinet, contenant des
-          données personnelles (loi 09-08).
+          {ctx.cabinet.name} · document interne au cabinet, contenant des données personnelles
+          (loi 09-08).
         </footer>
       </article>
 
