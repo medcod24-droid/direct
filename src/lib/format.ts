@@ -50,6 +50,23 @@ export function formatMad(centimes: number, options: FormatMadOptions = {}): str
 }
 
 /** Variante compacte pour les tuiles de KPI : « 1,2 M MAD ». */
+/**
+ * Montant saisi en dirhams → centimes.
+ *
+ * Le comptable tape « 1 500,50 » : la virgule décimale et les espaces de milliers
+ * sont admis. L'arrondi au centime est explicite — `19.99 * 100` vaut
+ * 1998,9999… en virgule flottante, et un montant non entier était refusé.
+ * Renvoie `undefined` pour une saisie vide et `NaN` pour une saisie illisible,
+ * que le schéma refuse alors avec son propre message.
+ */
+export function parseMadInput(value: string | undefined | null): number | undefined {
+  if (value === undefined || value === null) return undefined;
+  const normalized = value.replace(/[\s  ]/g, "").replace(",", ".");
+  if (normalized === "") return undefined;
+  if (!/^-?\d+(\.\d+)?$/.test(normalized)) return Number.NaN;
+  return Math.round(Number(normalized) * 100);
+}
+
 export function formatMadCompact(centimes: number): string {
   if (!Number.isFinite(centimes)) return `—${NBSP}MAD`;
 

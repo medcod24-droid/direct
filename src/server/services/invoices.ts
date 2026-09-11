@@ -19,12 +19,30 @@ export async function listInvoices(
   if (filters.status === "unpaid") where.status = { in: ["pending", "partial", "overdue"] };
   else if (filters.status && filters.status !== "all") where.status = filters.status;
 
-  return ctx.db.clientInvoice.findMany({
+  const now = new Date();
+  const rows = await ctx.db.clientInvoice.findMany({
     where,
     orderBy: { dueDate: "asc" },
     include: { client: { select: { id: true, legalName: true } } },
     take: 300,
   });
+  return rows.map((row) => ({ ...row, status: invoiceStatus(row, now) }));
+}
+
+/**
+ * Statut affiché d'une facture.
+ *
+ * Le retard se lit sur la date, pas sur une colonne qu'une tâche de fond
+ * devrait tenir à jour : une facture non soldée dont l'échéance est passée est
+ * en retard dès le lendemain, qu'on ait ou non relancé un traitement. C'est la
+ * même règle que le total « en retard » de `invoiceSummary`.
+ */
+export function invoiceStatus(
+  invoice: { status: string; dueDate: Date },
+  now: Date = new Date(),
+): string {
+  const unpaid = invoice.status === "pending" || invoice.status === "partial";
+  return unpaid && invoice.dueDate < now ? "overdue" : invoice.status;
 }
 
 export async function invoiceSummary(ctx: AuthContext) {
@@ -157,13 +175,4 @@ export async function recordPayment(ctx: AuthContext, input: unknown) {
   ]);
 
   return updated;
-}
-
-/** Passe en « overdue » les factures échues. Appelé par la tâche de fond quotidienne. */
-export async function markOverdueInvoices(ctx: AuthContext) {
-  const { count } = await ctx.db.clientInvoice.updateMany({
-    where: { status: { in: ["pending", "partial"] }, dueDate: { lt: new Date() } },
-    data: { status: "overdue" },
-  });
-  return count;
 }

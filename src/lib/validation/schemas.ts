@@ -1,4 +1,5 @@
 import { z } from "zod";
+import "./zod-fr";
 import { ADJUSTABLE_ROLES, ALWAYS_GRANTED, PERMISSIONS } from "@/lib/authz/permissions";
 import {
   ACTIVITY_STATES,

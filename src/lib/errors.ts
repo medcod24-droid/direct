@@ -1,10 +1,20 @@
 import { ZodError } from "zod";
+// Messages de validation en français pour tout le serveur : chaque action passe
+// par ce module pour rendre ses erreurs.
+import "@/lib/validation/zod-fr";
 
 /**
  * Erreurs applicatives. Le message `publicMessage` est le seul texte montré à
  * l'utilisateur : aucune trace technique ne doit fuiter en production.
  */
 export class AppError extends Error {
+  /**
+   * Repris tel quel par Next.js jusqu'à la page d'erreur, où le message est
+   * masqué en production : c'est ce qui permet d'y distinguer un accès refusé
+   * d'un élément introuvable (voir `components/ErrorScreen.tsx`).
+   */
+  readonly digest: string;
+
   constructor(
     message: string,
     readonly status: number,
@@ -13,6 +23,7 @@ export class AppError extends Error {
   ) {
     super(message);
     this.name = new.target.name;
+    this.digest = `direct:${code}`;
   }
 }
 

@@ -133,11 +133,17 @@ export default async function DashboardPage() {
   const health = [
     { label: "Dépôts dans les délais", value: month.deposited, total: month.total },
     { label: "Dossiers actifs", value: data.clients.active, total: data.clients.total },
-    {
-      label: "Factures sans retard",
-      value: Math.max(0, data.invoices.count - data.invoices.overdueCount),
-      total: data.invoices.count,
-    },
+    // Les factures ne comptent que pour qui peut ouvrir les honoraires : pour un
+    // assistant, la santé du cabinet se lit sur les dépôts et les dossiers.
+    ...(ctx.can("invoice.view")
+      ? [
+          {
+            label: "Factures sans retard",
+            value: Math.max(0, data.invoices.count - data.invoices.overdueCount),
+            total: data.invoices.count,
+          },
+        ]
+      : []),
   ];
   const measured = health.filter((row) => row.total > 0);
   const healthRatio =
@@ -200,15 +206,19 @@ export default async function DashboardPage() {
           compare={`${month.remaining} encore à déposer`}
           href="/deadlines"
         />
-        <StatTile
-          label="Honoraires dus"
-          icon="coins"
-          value={formatMad(data.invoices.outstanding, { currency: false })}
-          over="MAD"
-          tone="gold"
-          compare={`${data.invoices.count} facture(s) · ${data.invoices.overdueCount} en retard`}
-          href="/invoices"
-        />
+        {/* Les honoraires sont une information financière : réservée à qui peut
+            ouvrir la section Honoraires, comme la page vers laquelle la tuile mène. */}
+        {ctx.can("invoice.view") ? (
+          <StatTile
+            label="Honoraires dus"
+            icon="coins"
+            value={formatMad(data.invoices.outstanding, { currency: false })}
+            over="MAD"
+            tone="gold"
+            compare={`${data.invoices.count} facture(s) · ${data.invoices.overdueCount} en retard`}
+            href="/invoices"
+          />
+        ) : null}
         <StatTile
           label="Rendez-vous"
           icon="clock"

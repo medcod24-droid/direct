@@ -57,6 +57,9 @@ soit rouge à tort :
   d'obligations récurrentes.
 
 Tous les montants sont des entiers en **centimes de dirham**. Aucun flottant pour l'argent.
+La conversion d'une saisie passe par `parseMadInput` (`lib/format.ts`) et nulle part ailleurs :
+elle admet « 1 500,50 » — virgule décimale, espaces de milliers — et arrondit au centime, là où
+`19.99 * 100` donnait 1998,999… et faisait refuser le montant.
 
 ### Fiche client : deux formes
 
@@ -195,6 +198,22 @@ depuis le **journal d'audit** et non depuis le fil d'activité : l'audit enregis
 les modifications, qui sont précisément ce que l'administrateur veut relire. Les noms de dossiers
 y sont résolus à travers le client Prisma du contexte — un dossier hors de portée reste anonyme
 plutôt que de fuir par l'historique.
+
+### Erreurs et messages
+
+**Une page refusée n'est pas une panne.** Un assistant qui ouvre l'adresse d'une page réservée
+voit « Accès réservé » et qui en décide ; un dossier inconnu donne « Introuvable ». Next.js ne
+transmet au navigateur que le `digest` d'une erreur, le message étant masqué en production :
+`AppError` y inscrit donc son code (`direct:forbidden`, `direct:not_found`…), que
+`components/ErrorScreen.tsx` traduit. Les 404 de Next.js, en anglais, sont remplacés par des
+pages `not-found.tsx` en français.
+
+**Aucun message de validation en anglais.** `lib/validation/zod-fr.ts` fixe les messages par
+défaut de Zod (« Champ requis. », « Nombre invalide. », « Date invalide. »…). Les messages
+propres à un schéma restent prioritaires ; la table ne sert qu'à défaut.
+
+Le statut « en retard » d'une facture se **lit sur la date** (`invoiceStatus`), comme le total
+en retard du tableau de bord : aucune tâche de fond n'a à le tenir à jour.
 
 ### Couche visuelle
 

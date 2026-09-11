@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { requirePermission, requirePortal, requireStaff } from "@/lib/authz/guard";
 import { env } from "@/lib/env";
 import { toPublicError } from "@/lib/errors";
+import { parseMadInput } from "@/lib/format";
 import { markAllNotificationsRead, markNotificationRead } from "@/lib/notifications/service";
 import { archiveClient, assignCollaborator, createClient, updateClient } from "@/server/services/clients";
 import { deleteDocument, replaceFieldScan, setDocumentStatus, uploadDocument } from "@/server/services/documents";
@@ -177,7 +178,7 @@ function clientInput(form: FormData) {
     fiscalYearEndMonth: str(form, "fiscalYearEndMonth"),
     fiscalYearEndDay: str(form, "fiscalYearEndDay"),
     takeoverDate: str(form, "takeoverDate"),
-    feeAmount: str(form, "feeAmount") ? Number(str(form, "feeAmount")) * 100 : undefined,
+    feeAmount: parseMadInput(str(form, "feeAmount")),
     feeFrequency: str(form, "feeFrequency"),
     referredById: str(form, "referredById"),
 
@@ -358,8 +359,7 @@ export async function uploadFieldScanAction(
  * Les montants sont tapés en dirhams et stockés en centimes, comme partout
  * ailleurs : la conversion se fait ici, au bord, jamais dans le service.
  */
-const toCentimes = (value: string | undefined) =>
-  value ? Math.round(Number(value.replace(",", ".")) * 100) : 0;
+const toCentimes = (value: string | undefined) => parseMadInput(value) ?? 0;
 
 export async function saveMonthlyResultAction(
   _prev: ActionState,
@@ -862,7 +862,7 @@ export async function createInvoiceAction(
       clientId: str(form, "clientId"),
       reference: str(form, "reference"),
       label: str(form, "label"),
-      amount: Number(str(form, "amount") ?? 0) * 100,
+      amount: parseMadInput(str(form, "amount")) ?? 0,
       vatRate: str(form, "vatRate") ?? 20,
       issuedAt: str(form, "issuedAt") ?? new Date().toISOString(),
       dueDate: str(form, "dueDate") ?? new Date().toISOString(),
@@ -883,7 +883,7 @@ export async function recordPaymentAction(
     const ctx = await requireStaff("invoice.manage");
     await recordPayment(ctx, {
       invoiceId: str(form, "invoiceId"),
-      amount: Number(str(form, "amount") ?? 0) * 100,
+      amount: parseMadInput(str(form, "amount")) ?? 0,
       paidAt: str(form, "paidAt") ?? new Date().toISOString(),
       paymentMode: str(form, "paymentMode") ?? "transfer",
     });
