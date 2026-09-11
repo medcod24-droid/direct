@@ -116,17 +116,22 @@ function textList(form: FormData, name: string): string[] {
  * plates, et une convention explicite vaut mieux qu'un balayage de clés.
  */
 function registrationList(form: FormData) {
-  return rows(form, "registrations", ["id", "number", "court"])
+  const keys = ["id", "number", "court", "address", "authorizationNo"];
+  return rows(form, "registrations", keys)
     .map((registration, index) => ({
       id: registration.id,
       number: registration.number,
       court: registration.court,
+      address: registration.address,
+      authorizationNo: registration.authorizationNo,
       taxProfNos: taxList(form, `registrations.${index}.taxProfNos`),
-      branches: rows(form, `registrations.${index}.branches`, ["id", "number", "court"])
+      branches: rows(form, `registrations.${index}.branches`, keys)
         .map((branch, branchIndex) => ({
           id: branch.id,
           number: branch.number,
           court: branch.court,
+          address: branch.address,
+          authorizationNo: branch.authorizationNo,
           taxProfNos: taxList(form, `registrations.${index}.branches.${branchIndex}.taxProfNos`),
         }))
         .filter((branch) => branch.number),

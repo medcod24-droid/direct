@@ -13,6 +13,7 @@ import {
   getUrgentTasks,
 } from "@/server/services/dashboard";
 import { getYearResults } from "@/server/services/finances";
+import { listInterventionsBetween } from "@/server/services/interventions";
 import { listStaffOptions } from "@/server/services/members";
 import { listMyTodos, listTodos } from "@/server/services/todos";
 import {
@@ -67,6 +68,7 @@ export default async function DashboardPage() {
     staff,
     todoClients,
     results,
+    todayInterventions,
   ] = await Promise.all([
     getCabinetDashboard(ctx),
     getMonthDeadlineSummary(ctx, now),
@@ -83,9 +85,25 @@ export default async function DashboardPage() {
     ctx.can("todo.manage") ? listStaffOptions(ctx) : Promise.resolve([]),
     ctx.can("todo.manage") ? listClientOptions(ctx) : Promise.resolve([]),
     ctx.can("finance.view") ? getYearResults(ctx, now.getUTCFullYear()) : Promise.resolve(null),
+    // Même journée que les rendez-vous : la date d'un service est un jour, sans heure.
+    ctx.can("intervention.view")
+      ? listInterventionsBetween(ctx, dayStart, dayEnd)
+      : Promise.resolve([]),
   ]);
 
   const canManageTodos = ctx.can("todo.manage");
+
+  // La liste d'activité du jour se lit dossier par dossier : ce qu'on a fait pour
+  // le client 1, puis pour le client 2, dans l'ordre où on l'a fait.
+  const activityGroups: {
+    client: { id: string; legalName: string };
+    rows: typeof todayInterventions;
+  }[] = [];
+  for (const row of todayInterventions) {
+    const group = activityGroups.find((entry) => entry.client.id === row.client.id);
+    if (group) group.rows.push(row);
+    else activityGroups.push({ client: row.client, rows: [row] });
+  }
   const confirmed = teamTodos.filter((todo) => todo.status === "approved").length;
 
   // Regroupement par collaborateur : ce qui attend une confirmation remonte.
@@ -407,6 +425,68 @@ export default async function DashboardPage() {
           ) : null}
         </div>
       </div>
+
+      {ctx.can("intervention.view") ? (
+        <Card
+          icon="folder"
+          title="Liste d'activité du jour"
+          description={
+            todayInterventions.length === 0
+              ? "Les services rendus aujourd'hui, tous dossiers confondus."
+              : `${todayInterventions.length} service(s) rendu(s) aujourd'hui · ${activityGroups.length} dossier(s)`
+          }
+          padded={false}
+        >
+          {todayInterventions.length === 0 ? (
+            <EmptyState
+              iconName="folder"
+              compact
+              title="Aucun service enregistré aujourd'hui"
+              description="Chaque service s'inscrit depuis la fiche du dossier, rubrique « Liste d'activité », et apparaît ici le jour même."
+            />
+          ) : (
+            <ul className="grid border-t border-line lg:grid-cols-2">
+              {activityGroups.map(({ client, rows }) => (
+                <li
+                  key={client.id}
+                  className="border-b border-line px-4 py-3 lg:odd:border-e"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <IconChip name="folder" size={28} />
+                    <Link
+                      href={`/clients/${client.id}`}
+                      className="min-w-0 flex-1 truncate text-sm font-semibold text-ink transition-colors hover:text-accent"
+                    >
+                      {client.legalName}
+                    </Link>
+                    <span className="shrink-0 text-xs text-muted tabular">
+                      {rows.length} service{rows.length > 1 ? "s" : ""}
+                    </span>
+                  </div>
+                  <ol className="mt-2 grid gap-2.5 ps-[38px]">
+                    {rows.map((row) => (
+                      <li key={row.id} className="grid gap-0.5">
+                        <span className="text-sm font-550 text-ink">{row.service}</span>
+                        {row.reason ? (
+                          <span className="text-xs text-ink2">Motif : {row.reason}</span>
+                        ) : null}
+                        {row.report ? (
+                          <span className="line-clamp-2 text-xs text-muted">
+                            Compte rendu : {row.report}
+                          </span>
+                        ) : null}
+                        {row.createdBy ? (
+                          <span className="text-2xs text-muted">Par {row.createdBy.name}</span>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ol>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      ) : null}
 
       {/* Ma to-do : ce que le cabinet attend de moi, quel que soit mon rôle. */}
       {myTodos.length > 0 ? (

@@ -324,25 +324,45 @@ export function expectedScans(
         { key: "siege", label: "Titre d'occupation du siège" },
       ];
 
-  if (client.cnssNo) base.push({ key: "cnssAffiliation", label: "Affiliation CNSS" });
-  if (client.authorizationNo) base.push({ key: "authorization", label: "Autorisation" });
-
-  const rows = base.map((row) => ({ ...row, attached: has(row.key) }));
-
-  // Registre de commerce : une pièce par immatriculation et par succursale.
+  // Registre de commerce : une pièce par immatriculation et par succursale, et
+  // une autorisation par établissement qui en déclare une.
   const registrations = parseJson<{
     id?: string;
     number?: string;
-    branches?: { id?: string; number?: string }[];
+    authorizationNo?: string;
+    branches?: { id?: string; number?: string; authorizationNo?: string }[];
   }>(client.registrations);
 
-  for (const registration of registrations) {
+  if (client.cnssNo) base.push({ key: "cnssAffiliation", label: "Affiliation CNSS" });
+  // Tant qu'aucun établissement ne porte d'autorisation, celle du dossier reste
+  // la seule : sans registre, ou saisie avant le découpage par établissement.
+  const treeAuthorized = registrations.some(
+    (registration) =>
+      Boolean(registration.authorizationNo) ||
+      Boolean(registration.branches?.some((branch) => branch.authorizationNo)),
+  );
+  if (client.authorizationNo && !treeAuthorized) {
+    base.push({ key: "authorization", label: "Autorisation" });
+  }
+
+  const rows = base.map((row) => ({ ...row, attached: has(row.key) }));
+
+  registrations.forEach((registration, index) => {
     if (registration.id) {
       rows.push({
         key: `rc:${registration.id}`,
         label: `Registre ${registration.number ?? ""}`.trim(),
         attached: has(`rc:${registration.id}`),
       });
+      if (registration.authorizationNo) {
+        rows.push({
+          key: `auth:${registration.id}`,
+          label: `Autorisation — registre ${registration.number ?? ""}`.trim(),
+          // Une pièce déposée quand l'autorisation valait pour tout le dossier
+          // compte pour le premier registre, qui l'a reprise.
+          attached: has(`auth:${registration.id}`) || (index === 0 && has("authorization")),
+        });
+      }
     }
     for (const branch of registration.branches ?? []) {
       if (!branch.id) continue;
@@ -351,8 +371,15 @@ export function expectedScans(
         label: `Succursale ${branch.number ?? ""}`.trim(),
         attached: has(`branch:${branch.id}`),
       });
+      if (branch.authorizationNo) {
+        rows.push({
+          key: `auth:${branch.id}`,
+          label: `Autorisation — succursale ${branch.number ?? ""}`.trim(),
+          attached: has(`auth:${branch.id}`),
+        });
+      }
     }
-  }
+  });
 
   return rows;
 }

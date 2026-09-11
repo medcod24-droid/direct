@@ -291,13 +291,15 @@ export async function ratingsForClients(
 
 type WithId = { id?: string };
 type TaxProf = WithId & { value: string };
-type Branch = WithId & { number: string; court?: string; taxProfNos: TaxProf[] };
-type Registration = WithId & {
-  number: string;
-  court?: string;
-  taxProfNos: TaxProf[];
-  branches: Branch[];
-};
+type Establishment = { address?: string; authorizationNo?: string };
+type Branch = WithId & Establishment & { number: string; court?: string; taxProfNos: TaxProf[] };
+type Registration = WithId &
+  Establishment & {
+    number: string;
+    court?: string;
+    taxProfNos: TaxProf[];
+    branches: Branch[];
+  };
 
 type ClientLists = Partial<{
   activities: string[];
@@ -375,6 +377,19 @@ function listColumns(data: ClientLists, cndpMode: string) {
     ]);
     columns.taxProfNos = JSON.stringify(taxProfNos);
     columns.taxProfNo = taxProfNos[0] ?? "";
+
+    // L'autorisation d'exploiter vit dans chaque registre et chaque succursale.
+    // La colonne n'en garde que la première, pour la recherche et les listes ;
+    // un dossier sans registre la saisit à part, et elle n'est alors pas touchée.
+    if (registrations.length > 0) {
+      const authorizations = registrations
+        .flatMap((registration) => [
+          registration.authorizationNo,
+          ...registration.branches.map((branch) => branch.authorizationNo),
+        ])
+        .filter((value): value is string => Boolean(value));
+      columns.authorizationNo = authorizations[0] ?? null;
+    }
   }
 
   if (data.partners) {

@@ -73,8 +73,16 @@ export default async function ClientFichePage({
   const registrations = parse<{
     number?: string;
     court?: string;
+    address?: string;
+    authorizationNo?: string;
     taxProfNos?: { value?: string }[];
-    branches?: { number?: string; court?: string; taxProfNos?: { value?: string }[] }[];
+    branches?: {
+      number?: string;
+      court?: string;
+      address?: string;
+      authorizationNo?: string;
+      taxProfNos?: { value?: string }[];
+    }[];
   }>(client.registrations);
 
   const identity = filled([
@@ -83,7 +91,18 @@ export default async function ClientFichePage({
     ["Identifiant fiscal", client.if],
     ["ICE", client.ice],
     ["Délégation", client.taxDistrict],
-    ["N° d'autorisation", client.authorizationNo],
+    // Dès qu'un établissement porte la sienne, l'autorisation s'imprime avec lui ;
+    // jusque-là, celle du dossier reste la seule.
+    [
+      "N° d'autorisation",
+      registrations.some(
+        (registration) =>
+          registration.authorizationNo ||
+          registration.branches?.some((branch) => branch.authorizationNo),
+      )
+        ? null
+        : client.authorizationNo,
+    ],
     ["Nom commercial", client.tradeName],
     ["N° d'enseigne", client.signNo],
     ["Enseigne — date de référence", date(client.signRefDate)],
@@ -176,9 +195,17 @@ export default async function ClientFichePage({
                       <span className="text-muted print:text-black"> (principale)</span>
                     ) : null}
                   </div>
+                  {registration.address ? (
+                    <div className="ps-4 text-[13px]">Adresse : {registration.address}</div>
+                  ) : null}
+                  {registration.authorizationNo ? (
+                    <div className="ps-4 text-[13px]">
+                      Autorisation : <span className="tabular">{registration.authorizationNo}</span>
+                    </div>
+                  ) : null}
                   {registration.taxProfNos?.length ? (
                     <div className="ps-4 text-[13px]">
-                      Taxe professionnelle :{" "}
+                      Patente (taxe professionnelle) :{" "}
                       <span className="tabular">
                         {registration.taxProfNos.map((tax) => tax.value).filter(Boolean).join(", ")}
                       </span>
@@ -188,10 +215,17 @@ export default async function ClientFichePage({
                     <div key={`${branch.number}-${branchIndex}`} className="ps-4 text-[13px]">
                       Succursale <span className="tabular">{branch.number}</span>
                       {branch.court ? <span> — {branch.court}</span> : null}
+                      {branch.address ? <span> · {branch.address}</span> : null}
+                      {branch.authorizationNo ? (
+                        <span>
+                          {" "}
+                          · autorisation <span className="tabular">{branch.authorizationNo}</span>
+                        </span>
+                      ) : null}
                       {branch.taxProfNos?.length ? (
                         <span>
                           {" "}
-                          · taxe prof.{" "}
+                          · patente{" "}
                           <span className="tabular">
                             {branch.taxProfNos.map((tax) => tax.value).filter(Boolean).join(", ")}
                           </span>

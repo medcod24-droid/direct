@@ -176,16 +176,6 @@ export function ClientFields({
               <Input id="taxDistrict" name="taxDistrict" defaultValue={value("taxDistrict")} />
             </Field>
           ) : null}
-
-          <Field
-            label="N° d'autorisation"
-            htmlFor="authorizationNo"
-            hint="Si l'activité est réglementée."
-            error={fieldError("authorizationNo")}
-          >
-            <Input id="authorizationNo" name="authorizationNo" defaultValue={value("authorizationNo")} />
-            {scan("authorization")}
-          </Field>
         </div>
 
         {!cinAllowed ? (
@@ -253,7 +243,7 @@ export function ClientFields({
 
       <Card
         title="Registre de commerce"
-        description="Une immatriculation principale, plus une immatriculation secondaire par ressort où le client exploite. La taxe professionnelle se rattache à l'établissement."
+        description="Une immatriculation principale, plus une immatriculation secondaire par ressort où le client exploite. Chaque registre et chaque succursale porte son adresse, son numéro de patente et, si l'activité en exige une, son autorisation."
       >
         <Registrations value={value} fieldError={fieldError} clientId={clientId} scans={scans} />
       </Card>

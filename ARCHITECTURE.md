@@ -80,7 +80,19 @@ en SQLite : `declaredActivities`, `registrations`, `partners` et `employees`.
 - la taxe professionnelle est établie au lieu de **chaque établissement** et son numéro
   d'identification doit y être affiché (loi 47-06, art. 8 et 14) — d'où des numéros de taxe par
   établissement, **y compris le principal**, sans quoi le dossier le plus courant, un local
-  unique sans succursale, n'aurait nulle part où inscrire le sien.
+  unique sans succursale, n'aurait nulle part où inscrire le sien. L'écran l'appelle « patente »,
+  le nom que les comptables lui donnent toujours ;
+- l'**adresse** et le **numéro d'autorisation** sont eux aussi propres à chaque établissement,
+  registre ou succursale : l'adresse fixe le tribunal et la commune de la patente, et
+  l'autorisation d'exploiter est délivrée par la commune pour un local donné.
+
+`Client.authorizationNo` devient à son tour une projection — la première autorisation trouvée
+dans l'arbre — dès qu'un registre est saisi. Un dossier **sans** registre (profession libérale)
+garde un numéro saisi à part, affiché tant qu'aucun registre n'existe et repris par le premier
+qu'on ajoute. Les autorisations saisies avant ce découpage rejoignent le premier registre à
+l'ouverture de la fiche, et leur pièce y reste rattachée : rien ne se perd au premier
+enregistrement. D'ici là, tant qu'aucun établissement ne porte d'autorisation, celle du
+dossier reste affichée, imprimée et attendue comme avant.
 
 `rc`, `rcCourt`, `taxProfNo`, `taxProfNos` et `branches` sont des **projections plates** de cet
 arbre, reconstruites à chaque écriture : la recherche et les listes n'ont ainsi pas à le
@@ -264,6 +276,11 @@ Le modèle est déclaré dans `TENANT_MODELS` **et** `STRICT_CLIENT_MODELS` : sa
 entrée, un collaborateur restreint à ses dossiers assignés aurait lu les comptes rendus des
 autres. Les permissions `intervention.view` / `intervention.manage` séparent la lecture de
 l'écriture — l'assistant lit, il n'écrit pas.
+
+Le tableau de bord en montre **la journée**, tous dossiers confondus et groupée par client
+(`listInterventionsBetween`) : ce que le cabinet a fait aujourd'hui pour le client 1, puis le
+client 2, dans l'ordre de saisie. La date d'un service est un jour sans heure ; la journée est
+donc bornée comme celle des rendez-vous, en heures murales.
 
 `Client.referredById` désigne le dossier du cabinet qui a apporté celui-ci. La relation est
 vérifiée côté service, à travers le client Prisma du contexte : un dossier d'un autre cabinet est

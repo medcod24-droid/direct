@@ -99,24 +99,54 @@ function flattenRegistrations(values: Record<string, string>, client: Record<str
     ];
   }
 
+  // L'autorisation était saisie une fois pour tout le dossier. Tant qu'aucun
+  // établissement ne porte la sienne, elle rejoint le premier registre : sans
+  // cela, le premier enregistrement de la fiche l'aurait effacée.
+  const authorized = registrations.some(
+    (registration: Record<string, unknown>) =>
+      Boolean(registration.authorizationNo) ||
+      (Array.isArray(registration.branches) &&
+        registration.branches.some((branch: Record<string, unknown>) =>
+          Boolean(branch.authorizationNo),
+        )),
+  );
+  if (!authorized && client.authorizationNo && registrations.length > 0) {
+    registrations[0] = { ...registrations[0], authorizationNo: client.authorizationNo };
+  }
+
   values["registrations.count"] = String(registrations.length);
   registrations.forEach((registration, index) => {
     const prefix = `registrations.${index}`;
-    values[`${prefix}.id`] = String(registration.id ?? "");
+    values[`${prefix}.id`] = rowId(registration.id);
     values[`${prefix}.number`] = String(registration.number ?? "");
     values[`${prefix}.court`] = String(registration.court ?? "");
+    values[`${prefix}.address`] = String(registration.address ?? "");
+    values[`${prefix}.authorizationNo`] = String(registration.authorizationNo ?? "");
     flattenTaxes(values, prefix, registration.taxProfNos);
 
     const branches = Array.isArray(registration.branches) ? registration.branches : [];
     values[`${prefix}.branches.count`] = String(branches.length);
     branches.forEach((branch: Record<string, unknown>, branchIndex: number) => {
       const branchPrefix = `${prefix}.branches.${branchIndex}`;
-      values[`${branchPrefix}.id`] = String(branch.id ?? "");
+      values[`${branchPrefix}.id`] = rowId(branch.id);
       values[`${branchPrefix}.number`] = String(branch.number ?? "");
       values[`${branchPrefix}.court`] = String(branch.court ?? "");
+      values[`${branchPrefix}.address`] = String(branch.address ?? "");
+      values[`${branchPrefix}.authorizationNo`] = String(branch.authorizationNo ?? "");
       flattenTaxes(values, branchPrefix, branch.taxProfNos);
     });
   });
+}
+
+/**
+ * Identifiant d'une ligne saisie avant qu'elles en aient un.
+ *
+ * Il est émis ici, côté serveur, et transmis avec les valeurs : laissé au
+ * formulaire, il était tiré deux fois — au rendu serveur puis à l'hydratation —
+ * et les deux ne concordaient pas, pas plus que le justificatif qu'on y joignait.
+ */
+function rowId(raw: unknown): string {
+  return typeof raw === "string" && raw.length > 0 ? raw : crypto.randomUUID().slice(0, 8);
 }
 
 function flattenTaxes(values: Record<string, string>, prefix: string, raw: unknown) {
@@ -126,7 +156,7 @@ function flattenTaxes(values: Record<string, string>, prefix: string, raw: unkno
     // Les numéros étaient de simples chaînes avant d'avoir un identifiant de ligne.
     const row: Record<string, unknown> =
       tax !== null && typeof tax === "object" ? (tax as Record<string, unknown>) : { value: tax };
-    values[`${prefix}.taxProfNos.${index}.id`] = String(row.id ?? "");
+    values[`${prefix}.taxProfNos.${index}.id`] = rowId(row.id);
     values[`${prefix}.taxProfNos.${index}.value`] = String(row.value ?? "");
   });
 }

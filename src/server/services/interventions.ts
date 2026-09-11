@@ -42,6 +42,23 @@ export async function listInterventions(ctx: AuthContext, clientId: string) {
   });
 }
 
+/**
+ * Services rendus sur une période, tous dossiers confondus : la journée, pour le
+ * tableau de bord. La portée du contexte s'applique comme ailleurs — un
+ * collaborateur restreint ne voit que les dossiers qui lui sont assignés.
+ */
+export async function listInterventionsBetween(ctx: AuthContext, from: Date, to: Date) {
+  return ctx.db.intervention.findMany({
+    where: { performedAt: { gte: from, lt: to } },
+    orderBy: [{ createdAt: "asc" }],
+    include: {
+      client: { select: { id: true, legalName: true } },
+      createdBy: { select: { id: true, name: true } },
+    },
+    take: 200,
+  });
+}
+
 export async function createIntervention(ctx: AuthContext, input: unknown) {
   const data = interventionSchema.parse(input);
   await requireClient(ctx, data.clientId);

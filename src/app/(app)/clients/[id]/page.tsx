@@ -53,12 +53,36 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
     address?: string;
     usage?: string;
   }>(client.articles);
+  type TaxValue = string | { value?: string };
   const registrations = jsonList<{
     number?: string;
     court?: string;
-    taxProfNos?: string[];
-    branches?: { number?: string; court?: string; taxProfNos?: string[] }[];
+    address?: string;
+    authorizationNo?: string;
+    taxProfNos?: TaxValue[];
+    branches?: {
+      number?: string;
+      court?: string;
+      address?: string;
+      authorizationNo?: string;
+      taxProfNos?: TaxValue[];
+    }[];
   }>(client.registrations);
+  // Les numéros de patente portent un identifiant de ligne depuis qu'on peut y
+  // joindre un justificatif ; les plus anciens sont de simples chaînes.
+  const taxValues = (list?: TaxValue[]) =>
+    (list ?? [])
+      .map((tax) => (typeof tax === "string" ? tax : (tax.value ?? "")))
+      .filter(Boolean)
+      .join(", ");
+  // Tant qu'aucun établissement ne porte d'autorisation, celle du dossier reste
+  // la seule — saisie avant le découpage, elle ne rejoint le registre qu'au
+  // prochain enregistrement de la fiche.
+  const treeAuthorized = registrations.some(
+    (registration) =>
+      Boolean(registration.authorizationNo) ||
+      Boolean(registration.branches?.some((branch) => branch.authorizationNo)),
+  );
 
   // La note résume un comportement de paiement : c'est une information financière,
   // réservée à qui peut déjà voir les honoraires (report.view exclut l'assistant
@@ -209,7 +233,8 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
                 </dd>
               </>
             )}
-            {client.authorizationNo ? (
+            {/* Dès qu'un établissement porte la sienne, l'autorisation s'affiche avec lui. */}
+            {client.authorizationNo && !treeAuthorized ? (
               <>
                 <dt className="text-muted">Autorisation</dt>
                 <dd className="tabular">{client.authorizationNo}</dd>
@@ -329,9 +354,22 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
                       <span className="text-muted"> · principale</span>
                     ) : null}
                   </div>
-                  {registration.taxProfNos?.length ? (
+                  {registration.address ? (
+                    <div className="text-xs text-ink2 ps-3">{registration.address}</div>
+                  ) : null}
+                  {registration.authorizationNo || registration.taxProfNos?.length ? (
                     <div className="text-xs text-muted ps-3">
-                      Taxe prof. : <span className="tabular">{registration.taxProfNos.join(", ")}</span>
+                      {registration.taxProfNos?.length ? (
+                        <>
+                          Patente : <span className="tabular">{taxValues(registration.taxProfNos)}</span>
+                        </>
+                      ) : null}
+                      {registration.authorizationNo && registration.taxProfNos?.length ? " · " : null}
+                      {registration.authorizationNo ? (
+                        <>
+                          Autorisation : <span className="tabular">{registration.authorizationNo}</span>
+                        </>
+                      ) : null}
                     </div>
                   ) : null}
                   {registration.branches?.map((branch, branchIndex) => (
@@ -339,10 +377,17 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
                       <span className="text-muted">Succursale </span>
                       <span className="tabular">{branch.number}</span>
                       {branch.court ? <span className="text-muted"> — {branch.court}</span> : null}
+                      {branch.address ? <span className="text-ink2"> · {branch.address}</span> : null}
                       {branch.taxProfNos?.length ? (
                         <span className="text-muted">
                           {" "}
-                          · taxe prof. <span className="tabular">{branch.taxProfNos.join(", ")}</span>
+                          · patente <span className="tabular">{taxValues(branch.taxProfNos)}</span>
+                        </span>
+                      ) : null}
+                      {branch.authorizationNo ? (
+                        <span className="text-muted">
+                          {" "}
+                          · autorisation <span className="tabular">{branch.authorizationNo}</span>
                         </span>
                       ) : null}
                     </div>

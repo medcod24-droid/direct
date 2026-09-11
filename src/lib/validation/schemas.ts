@@ -114,10 +114,17 @@ const taxProfSchema = z.object({
 });
 const taxProfList = z.array(taxProfSchema).max(20).default([]);
 
+/**
+ * Adresse et autorisation se rattachent à l'établissement, pas au dossier :
+ * l'adresse fixe le tribunal du registre et la commune de la patente, et
+ * l'autorisation d'exploiter est délivrée pour un local donné.
+ */
 export const branchSchema = z.object({
   id: rowIdSchema,
   number: trimmed(40).min(1, "Numéro de succursale requis."),
   court: optionalText(80),
+  address: optionalText(300),
+  authorizationNo: optionalText(40),
   taxProfNos: taxProfList,
 });
 
@@ -125,6 +132,8 @@ export const registrationSchema = z.object({
   id: rowIdSchema,
   number: trimmed(40).min(1, "Numéro de registre de commerce requis."),
   court: optionalText(80),
+  address: optionalText(300),
+  authorizationNo: optionalText(40),
   taxProfNos: taxProfList,
   branches: z.array(branchSchema).max(20).default([]),
 });
