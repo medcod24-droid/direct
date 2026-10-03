@@ -16,7 +16,8 @@
     "test:watch": "vitest",
     "start:hosted": "prisma db push --skip-generate --accept-data-loss && tsx prisma/seed.ts && next start",
     "vercel-build": "node prisma/set-provider.mjs postgresql && prisma generate && prisma db push --skip-generate && tsx prisma/seed.ts && next build",
-    "db:demo": "tsx prisma/demo-clients.ts"
+    "db:demo": "tsx prisma/demo-clients.ts",
+    "mail:test": "tsx --env-file=.env scripts/test-mail.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",

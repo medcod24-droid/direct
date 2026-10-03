@@ -95,7 +95,17 @@ EMAIL_FROM=Direct Conseil <no-reply@votre-domaine.ma>
 ```
 
 Sans ces trois dernières, laissez `EMAIL_PROVIDER=console` : rien ne part, et les
-messages s'écrivent dans les logs. **Pour envoyer réellement, l'adresse de
+messages s'écrivent dans les logs.
+
+**Pour voir arriver un courriel sans attendre de vérifier un domaine**, Resend
+accepte l'expéditeur d'essai `onboarding@resend.dev` : `EMAIL_FROM="Direct
+Conseil <onboarding@resend.dev>"`. Il ne livre qu'à **l'adresse du compte
+Resend** — assez pour vérifier l'installation, pas pour écrire aux
+collaborateurs ni aux clients, ce qui demande un domaine vérifié.
+
+`npm run mail:test -- vous@exemple.ma` envoie un message d'essai par le
+transport configuré, sans passer par l'application : c'est le moyen le plus
+court de savoir si la clé et l'expéditeur sont acceptés. **Pour envoyer réellement, l'adresse de
 `EMAIL_FROM` doit appartenir à un domaine vérifié chez le fournisseur** — sinon
 les courriels partent en indésirables, quand ils partent.
 
