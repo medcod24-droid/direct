@@ -42,6 +42,9 @@ export async function GET() {
       database,
       config,
       email,
+      // Nom du transport tel que le serveur le lit — jamais la clé. Sans lui, une
+      // variable enregistrée vide ne se distingue pas d'une variable absente.
+      emailProvider: config === "ok" ? env().EMAIL_PROVIDER : "inconnu",
       ...(invalid.length ? { invalidEnv: invalid } : {}),
       latencyMs: Date.now() - startedAt,
     },
