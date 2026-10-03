@@ -28,10 +28,10 @@ export default function ForgotPasswordPage() {
       {envoiPossible ? (
         <ForgotForm />
       ) : (
-        <Alert tone="warning" title="Envoi de courriels non configuré">
-          Cette installation n&apos;envoie pas encore de courriels : le lien ne peut pas vous
-          parvenir. Demandez à l&apos;administration de votre cabinet de réinitialiser votre mot de
-          passe, ou de configurer l&apos;envoi (voir DEPLOIEMENT.md).
+        <Alert tone="warning" title="L'envoi de courriels n'est pas encore activé">
+          Le lien ne peut pas vous parvenir tant qu&apos;un service d&apos;envoi n&apos;est pas
+          branché sur la plateforme. En attendant, demandez votre mot de passe à
+          l&apos;administration de votre cabinet.
         </Alert>
       )}
       <p className="text-sm text-muted mt-6">
