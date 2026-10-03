@@ -73,6 +73,13 @@ Plusieurs champs sont des **listes**, sérialisées en JSON comme `tags`, faute 
 en SQLite : `declaredActivities`, `registrations`, `partners` et `employees`.
 `Client.activities` est déjà la relation vers le journal, d'où le nom `declaredActivities`.
 
+**Les numéros de téléphone sont une liste.** Un dossier en a rarement un seul — le gérant, la
+comptabilité, l'atelier —, et chacun porte le libellé qui dit lequel appeler. `phone` reste la
+colonne plate que lisent les listes : c'est le premier de la liste. À la différence des autres
+listes, `phones` n'a **pas** de valeur par défaut dans le schéma : `phone` est une colonne saisie,
+et une liste absente (mise à jour partielle) doit laisser le numéro en place, là où une liste
+vide est un retrait demandé. La recherche indexe tous les numéros, pas seulement le premier.
+
 **Les immatriculations sont un arbre**, et cette forme vient du droit, pas de l'écran :
 
 - un commerçant n'a qu'une immatriculation **principale** (code de commerce, art. 39), mais il

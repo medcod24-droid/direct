@@ -79,6 +79,13 @@ export default async function ClientDetailPage({
   }>(client.registrations);
   // Les numéros de patente portent un identifiant de ligne depuis qu'on peut y
   // joindre un justificatif ; les plus anciens sont de simples chaînes.
+  // Numéros du dossier, ou le numéro unique des fiches saisies avant la liste.
+  const phones = (() => {
+    const enregistres = jsonList<{ value?: string; label?: string }>(client.phones);
+    if (enregistres.length > 0) return enregistres;
+    return client.phone ? [{ value: client.phone, label: undefined }] : [];
+  })();
+
   const taxValues = (list?: TaxValue[]) =>
     (list ?? [])
       .map((tax) => (typeof tax === "string" ? tax : (tax.value ?? "")))
@@ -309,6 +316,16 @@ export default async function ClientDetailPage({
               {client.address ?? "—"}
               {!individual && client.isDomiciled ? " (domiciliation)" : ""}
             </dd>
+            {phones.length > 0 ? (
+              <>
+                <dt className="text-muted">Téléphone{phones.length > 1 ? "s" : ""}</dt>
+                <dd className="tabular">
+                  {phones
+                    .map((row) => (row.label ? `${row.value} (${row.label})` : row.value))
+                    .join(" · ")}
+                </dd>
+              </>
+            ) : null}
             {activities.length > 0 ? (
               <>
                 <dt className="text-muted">{individual ? "Activités" : "Objet social"}</dt>

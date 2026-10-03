@@ -245,7 +245,11 @@ model Client {
 
   address  String?
   city     String?
+  /// Numéro principal : projection de la première ligne de `phones`.
   phone    String?
+  /// Numéros du dossier, en JSON : [{ value, label }]. Un client en a souvent
+  /// plusieurs — le gérant, la comptabilité, l'atelier.
+  phones   String  @default("[]")
   email    String?
   website  String?
   activity String?

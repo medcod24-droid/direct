@@ -213,6 +213,8 @@ function clientInput(form: FormData) {
     activities: textList(form, "activities"),
     // Une ligne sans son champ identifiant est une ligne ajoutée puis laissée
     // vide : elle est écartée plutôt que refusée, la corriger n'apporterait rien.
+    // Les lignes vidées à l'écran sont ignorées : un numéro effacé disparaît.
+    phones: rows(form, "phones", ["value", "label"]).filter((row) => row.value),
     registrations: registrationList(form),
     partners: rows(form, "partners", ["id", "role", "name", "cin", "phone", "address"]).filter(
       (row) => row.name,

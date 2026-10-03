@@ -303,6 +303,7 @@ type Registration = WithId &
 
 type ClientLists = Partial<{
   activities: string[];
+  phones: { value: string; label?: string }[];
   registrations: Registration[];
   partners: (WithId & { role: string; name: string; cin?: string; address?: string; phone?: string })[];
   employees: { name: string; cin?: string; cnssNo?: string }[];
@@ -350,6 +351,13 @@ function listColumns(data: ClientLists, cndpMode: string) {
   if (data.activities) {
     columns.declaredActivities = JSON.stringify(data.activities);
     columns.activity = data.activities[0] ?? "";
+  }
+
+  if (data.phones) {
+    // `phone` reste la colonne plate que lisent les listes et la recherche : le
+    // premier numéro est celui qu'on compose, les autres suivent dans la fiche.
+    columns.phones = JSON.stringify(data.phones);
+    columns.phone = data.phones[0]?.value ?? "";
   }
 
   if (data.registrations) {
@@ -498,10 +506,10 @@ export async function createClient(ctx: AuthContext, input: unknown) {
   await assertReferrer(ctx, data.referredById);
   const managerCin = ctx.cabinet.cndpMode === "authorization" ? data.managerCin : undefined;
 
-  const { activities, registrations, partners, employees, articles, ...scalars } = data;
+  const { activities, phones, registrations, partners, employees, articles, ...scalars } = data;
   const columns = {
     ...scalars,
-    ...listColumns({ activities, registrations, partners, employees, articles }, ctx.cabinet.cndpMode),
+    ...listColumns({ activities, phones, registrations, partners, employees, articles }, ctx.cabinet.cndpMode),
     managerCin,
   };
   const created = await ctx.db.client.create({
@@ -545,10 +553,10 @@ export async function updateClient(ctx: AuthContext, clientId: string, input: un
   assertCinAllowed(data, ctx.cabinet.cndpMode);
   await assertReferrer(ctx, data.referredById, clientId);
 
-  const { activities, registrations, partners, employees, articles, ...scalars } = data;
+  const { activities, phones, registrations, partners, employees, articles, ...scalars } = data;
   const columns = {
     ...scalars,
-    ...listColumns({ activities, registrations, partners, employees, articles }, ctx.cabinet.cndpMode),
+    ...listColumns({ activities, phones, registrations, partners, employees, articles }, ctx.cabinet.cndpMode),
   };
 
   // La clé est reconstruite sur la ligne telle qu'elle sera, valeurs conservées

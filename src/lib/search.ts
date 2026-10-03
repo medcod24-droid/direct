@@ -121,6 +121,7 @@ export function clientSearchKey(row: Record<string, unknown>): string {
     text(row.cnssRegNo),
     text(row.authorizationNo),
     text(row.phone),
+    jsonValues(row.phones),
     text(row.email),
     text(row.city),
     jsonValues(row.taxProfNos),

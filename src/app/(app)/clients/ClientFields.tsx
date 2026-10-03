@@ -409,11 +409,34 @@ export function ClientFields({
         </div>
       </Card>
 
-      <Card title="Coordonnées">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Téléphone" htmlFor="phone" error={fieldError("phone")}>
-            <Input id="phone" name="phone" type="tel" defaultValue={value("phone")} />
-          </Field>
+      <Card
+        title="Coordonnées"
+        description="Un dossier a souvent plusieurs numéros : le gérant, la comptabilité, l'atelier. Le libellé dit lequel appeler."
+      >
+        <Repeatable
+          name="phones"
+          value={value}
+          fieldError={fieldError}
+          addLabel="Ajouter un numéro"
+          emptyLabel="Aucun numéro enregistré."
+          max={10}
+          columns={[
+            {
+              key: "value",
+              label: "Téléphone",
+              placeholder: "06 12 34 56 78",
+              className: "min-w-44 flex-1",
+            },
+            {
+              key: "label",
+              label: "À qui ?",
+              placeholder: "Gérant, comptabilité, atelier…",
+              className: "min-w-44 flex-1",
+            },
+          ]}
+        />
+
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <Field label="E-mail" htmlFor="email" error={fieldError("email")}>
             <Input id="email" name="email" type="email" defaultValue={value("email")} />
           </Field>

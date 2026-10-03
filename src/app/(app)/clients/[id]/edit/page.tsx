@@ -73,6 +73,7 @@ function toFormValues(client: Record<string, unknown>): Record<string, string> {
   flatten(values, "partners", parseList(client.partners));
   flatten(values, "employees", parseList(client.employees));
   flatten(values, "articles", parseList(client.articles));
+  flattenPhones(values, client);
   flattenRegistrations(values, client);
 
   return values;
@@ -86,6 +87,28 @@ function toFormValues(client: Record<string, unknown>): Record<string, string> {
  * l'arborescence : sans lui, leur fiche s'ouvrirait sans aucune immatriculation
  * et le premier enregistrement effacerait le numéro déjà saisi.
  */
+/**
+ * Numéros du dossier.
+ *
+ * Repli sur `phone` pour les dossiers saisis avant la liste : sans lui, leur
+ * fiche s'ouvrirait sans numéro et le premier enregistrement l'effacerait.
+ */
+function flattenPhones(values: Record<string, string>, client: Record<string, unknown>) {
+  const enregistres = parseList(client.phones);
+  const lignes =
+    enregistres.length > 0
+      ? enregistres
+      : typeof client.phone === "string" && client.phone
+        ? [{ value: client.phone }]
+        : [];
+
+  values["phones.count"] = String(lignes.length);
+  lignes.forEach((ligne: Record<string, unknown>, index: number) => {
+    values[`phones.${index}.value`] = String(ligne.value ?? "");
+    values[`phones.${index}.label`] = String(ligne.label ?? "");
+  });
+}
+
 function flattenRegistrations(values: Record<string, string>, client: Record<string, unknown>) {
   let registrations = parseList(client.registrations);
   if (registrations.length === 0 && client.rc) {

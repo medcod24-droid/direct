@@ -188,6 +188,18 @@ export const articleSchema = z.object({
   usage: z.enum(PROPERTY_USAGES).default("principale"),
 });
 
+/**
+ * Numéro de téléphone du dossier.
+ *
+ * Un client en a rarement un seul : le gérant, la comptabilité, l'atelier. Le
+ * libellé dit à qui l'on parle — sans lui, la fiche aligne des numéros sans
+ * savoir lequel appeler.
+ */
+const phoneSchema = z.object({
+  value: trimmed(40).min(1, "Numéro vide."),
+  label: optionalText(40),
+});
+
 export const clientSchema = z.object({
   kind: z.enum(CLIENT_KINDS),
   subtype: z.enum(CLIENT_SUBTYPES),
@@ -247,6 +259,13 @@ export const clientSchema = z.object({
 
   // Listes
   activities: list(trimmed(200).min(1, "Activité vide.")),
+  /**
+   * Volontairement sans valeur par défaut, à la différence des autres listes :
+   * `phone` est une colonne saisie, pas seulement dérivée. Une liste absente
+   * (API, mise à jour partielle) doit laisser le numéro en place ; une liste
+   * vide, elle, est un retrait demandé et vide la colonne.
+   */
+  phones: z.array(phoneSchema).max(10).optional(),
   registrations: list(registrationSchema),
   partners: list(partnerSchema),
   employees: list(employeeSchema, 200),

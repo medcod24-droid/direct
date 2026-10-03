@@ -121,7 +121,17 @@ export default async function ClientFichePage({
     [individual ? "Adresse professionnelle" : "Siège social", client.address],
     ["Domiciliation", !individual && client.isDomiciled ? "Oui" : ""],
     ["Ville", client.city],
-    ["Téléphone", client.phone],
+    [
+      "Téléphone",
+      (() => {
+        const lignes = parse<{ value?: string; label?: string }>(client.phones);
+        if (lignes.length === 0) return client.phone;
+        return lignes
+          .map((row) => (row.label ? `${row.value} (${row.label})` : row.value))
+          .filter(Boolean)
+          .join(" · ");
+      })(),
+    ],
     ["E-mail", client.email],
     ["Site web", client.website],
   ]);
