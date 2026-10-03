@@ -7,8 +7,9 @@ import { getAuthContext } from "@/lib/authz/guard";
 import { recordAudit } from "@/lib/audit";
 import { toPublicError } from "@/lib/errors";
 import { login, signupCabinet } from "@/server/services/auth";
+import { requestPasswordReset, resetPassword } from "@/server/services/password-reset";
 
-export type ActionState = { error?: string; fieldErrors?: Record<string, string[]> };
+export type ActionState = { error?: string; fieldErrors?: Record<string, string[]>; ok?: boolean };
 
 async function requestMeta() {
   const h = await headers();
@@ -57,6 +58,46 @@ export async function signupAction(_prev: ActionState, formData: FormData): Prom
     return { error: toPublicError(error).message };
   }
   redirect("/dashboard");
+}
+
+/**
+ * Demande de réinitialisation.
+ *
+ * La réponse est la même que l'adresse existe ou non : l'écran affiche « si un
+ * compte existe à cette adresse, le courriel part ». Dire le contraire aurait
+ * fait de ce formulaire un annuaire du cabinet.
+ */
+export async function requestPasswordResetAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    const meta = await requestMeta();
+    await requestPasswordReset({ email: formData.get("email") }, meta);
+    return { ok: true };
+  } catch (error) {
+    const { message, fieldErrors } = toPublicError(error);
+    return { error: message, fieldErrors };
+  }
+}
+
+/** Choix du nouveau mot de passe, depuis le lien reçu par courriel. */
+export async function resetPasswordAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    const meta = await requestMeta();
+    await resetPassword(
+      { token: formData.get("jeton"), password: formData.get("password") },
+      meta,
+    );
+  } catch (error) {
+    const { message, fieldErrors } = toPublicError(error);
+    return { error: message, fieldErrors };
+  }
+  // Les sessions ont été fermées : on repart de l'écran de connexion.
+  redirect("/login?reinitialise=1");
 }
 
 export async function logoutAction() {

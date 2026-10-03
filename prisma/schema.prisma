@@ -125,6 +125,7 @@ model User {
 
   memberships   Membership[]
   sessions      Session[]
+  passwordResets PasswordReset[]
   assignments   ClientAssignment[]
   uploads       Document[]         @relation("DocumentUploader")
   reviewed      DocumentRequest[]  @relation("RequestReviewer")
@@ -182,6 +183,27 @@ model Session {
   userId    String
   cabinetId String? // cabinet actif de la session
   expiresAt DateTime
+  ip        String?
+  userAgent String?
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+/// Demande de réinitialisation de mot de passe.
+///
+/// Même principe que la session : le jeton en clair part dans le courriel et
+/// n'est jamais stocké, seule son empreinte l'est. Un jeton ne sert qu'une fois
+/// (`usedAt`) et vit une heure.
+model PasswordReset {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
   ip        String?
   userAgent String?
 

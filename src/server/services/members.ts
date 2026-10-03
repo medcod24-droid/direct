@@ -16,6 +16,9 @@ import {
 } from "@/lib/authz/permissions";
 import { assertWithinLimit } from "@/lib/billing/entitlements";
 import { platformDb } from "@/lib/db/tenant";
+import { env } from "@/lib/env";
+import { sendMail } from "@/lib/mail/send";
+import { bienvenueCollaborateur } from "@/lib/mail/templates";
 import type { Role } from "@/lib/domain/enums";
 import { ForbiddenError, NotFoundError, ValidationError } from "@/lib/errors";
 import { buildSearchKey } from "@/lib/search";
@@ -218,6 +221,20 @@ export async function addMember(ctx: AuthContext, input: unknown) {
       restrictedToAssigned: data.restrictedToAssigned,
     },
   });
+
+  // Le collaborateur apprend par courriel qu'un compte existe à son nom, et par
+  // quelle adresse il se connecte. Le mot de passe initial ne voyage pas ici :
+  // l'administration le communique de vive voix, et le lien « mot de passe
+  // oublié » suffit s'il ne lui est jamais parvenu.
+  await sendMail(
+    bienvenueCollaborateur({
+      nom: user.name,
+      cabinet: ctx.cabinet.name,
+      email: user.email,
+      lienConnexion: `${env().APP_URL}/login`,
+      lienMotDePasse: `${env().APP_URL}/mot-de-passe-oublie`,
+    }),
+  );
 
   await recordAudit({
     action: "member.added",

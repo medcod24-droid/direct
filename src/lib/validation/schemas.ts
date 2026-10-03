@@ -403,6 +403,21 @@ export const addMemberSchema = z
   })
   .superRefine(checkRights);
 
+/**
+ * Mot de passe oublié.
+ *
+ * Le jeton vient du lien reçu par courriel ; sa longueur est vérifiée ici pour
+ * écarter une adresse tronquée avant même d'interroger la base.
+ */
+export const forgotPasswordSchema = z.object({
+  email: z.string().trim().toLowerCase().email("Adresse e-mail invalide."),
+});
+
+export const resetPasswordSchema = z.object({
+  token: z.string().trim().min(20, "Lien incomplet : recopiez-le entièrement."),
+  password: z.string().min(12, "Au moins 12 caractères."),
+});
+
 export const messageSchema = z.object({
   clientId: z.string().min(1),
   body: trimmed(4000).min(1, "Message vide."),

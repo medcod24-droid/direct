@@ -1,5 +1,6 @@
 import { platformDb } from "@/lib/db/tenant";
 import { env, invalidEnvNames } from "@/lib/env";
+import { mailStatus } from "@/lib/mail/send";
 
 /**
  * Sonde de santé pour la supervision. N'expose aucune donnée métier.
@@ -30,13 +31,17 @@ export async function GET() {
     database = "unreachable";
   }
 
-  const healthy = config === "ok" && database === "ok";
+  // « console » en production n'est pas une panne : c'est un choix, signalé mais
+  // pas alarmant. Un fournisseur sans sa clé, en revanche, est une erreur.
+  const email = config === "ok" ? mailStatus() : "incomplet";
+  const healthy = config === "ok" && database === "ok" && email !== "incomplet";
 
   return Response.json(
     {
       status: healthy ? "ok" : "degraded",
       database,
       config,
+      email,
       ...(invalid.length ? { invalidEnv: invalid } : {}),
       latencyMs: Date.now() - startedAt,
     },

@@ -376,6 +376,37 @@ volontairement désactivé — les messages transiteraient par des serveurs hors
 constitue un transfert de données à notifier. L'échec d'un canal n'interrompt jamais l'action
 métier.
 
+## Courriels
+
+Trois transports derrière un seul appel (`lib/mail/send.ts`), choisis par `EMAIL_PROVIDER` :
+`console` écrit le message dans les logs — c'est le mode de développement et celui des essais,
+qui y lisent le lien pour vérifier la chaîne entière —, `resend` passe par une API HTTP (rien à
+installer, rien à ouvrir en sortie), `smtp` par la boîte du cabinet. **Un envoi raté ne fait
+jamais échouer l'action qui l'a déclenché** : un compte créé reste créé si le courriel de
+bienvenue ne part pas.
+
+Les messages sont écrits en français, styles en ligne, et portent toujours leur **version
+texte** : les messageries d'entreprise qui bloquent le HTML ne lisent que celle-là.
+
+Deux courriels de bienvenue : à l'inscription d'un cabinet, et à l'ouverture d'un compte par
+l'administration. **Le mot de passe initial n'y voyage pas** — l'administration le communique de
+vive voix, et le lien « mot de passe oublié » suffit s'il n'est jamais parvenu.
+
+### Mot de passe oublié
+
+Trois règles tiennent le flux (`services/password-reset.ts`) :
+
+- **la réponse ne dit jamais si l'adresse existe** : le même message s'affiche dans tous les cas,
+  sinon le formulaire devenait un annuaire du cabinet ;
+- **le jeton vit une heure et ne sert qu'une fois** ; seule son empreinte est stockée
+  (`PasswordReset`), le courriel est le seul endroit où il existe en clair ; cinq demandes par
+  heure et par compte, au-delà elles sont ignorées en silence ;
+- **changer le mot de passe ferme toutes les sessions** et annule les demandes en cours : si
+  quelqu'un d'autre était entré, il est dehors au moment du changement. Un courriel confirme le
+  changement — c'est le signal d'alerte quand l'utilisateur n'y est pour rien.
+
+Un mot de passe refusé par la politique ne consomme pas le lien : la saisie se corrige.
+
 ## Abonnements et limites
 
 `Plan` porte les limites (`maxClients`, `maxUsers`, `maxStorageMb`, `maxMonthlyUploads`, `null`

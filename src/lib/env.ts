@@ -14,8 +14,12 @@ const schema = z.object({
   STORAGE_ROOT: z.string().min(1).default("./var/storage"),
   MAX_UPLOAD_MB: z.coerce.number().int().positive().default(25),
   APP_URL: z.string().url().default("http://localhost:3000"),
-  /** Fournisseur d'e-mail : "console" en dev, un vrai fournisseur en production. */
-  EMAIL_PROVIDER: z.enum(["console", "smtp"]).default("console"),
+  /**
+   * Fournisseur d'e-mail : "console" en dev (le message part dans les logs),
+   * "resend" (API HTTP, rien à installer) ou "smtp" (boîte du cabinet).
+   */
+  EMAIL_PROVIDER: z.enum(["console", "resend", "smtp"]).default("console"),
+  RESEND_API_KEY: z.string().optional(),
   SMTP_URL: z.string().optional(),
   EMAIL_FROM: z.string().default("Direct Conseil <no-reply@directconseil.ma>"),
 });

@@ -2,6 +2,9 @@ import { recordAudit } from "@/lib/audit";
 import { assertPasswordPolicy, hashPassword, verifyPassword } from "@/lib/auth/password";
 import { createSession } from "@/lib/auth/session";
 import { platformDb } from "@/lib/db/tenant";
+import { env } from "@/lib/env";
+import { sendMail } from "@/lib/mail/send";
+import { bienvenueCabinet } from "@/lib/mail/templates";
 import { RateLimitError, UnauthenticatedError, ValidationError } from "@/lib/errors";
 import { loginSchema, signupSchema } from "@/lib/validation/schemas";
 
@@ -95,6 +98,17 @@ export async function signupCabinet(
     ip: meta.ip,
     userAgent: meta.userAgent,
   });
+
+  // Le courriel confirme l'inscription et laisse une trace de l'adresse utilisée.
+  // Son échec ne remet pas en cause le compte, qui est créé.
+  await sendMail(
+    bienvenueCabinet({
+      nom: result.user.name,
+      cabinet: result.cabinet.name,
+      email: result.user.email,
+      lienConnexion: `${env().APP_URL}/login`,
+    }),
+  );
 
   return { token, cabinet: result.cabinet, user: result.user };
 }

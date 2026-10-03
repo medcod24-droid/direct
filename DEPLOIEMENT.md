@@ -89,8 +89,15 @@ clé dérivée d'`APP_SECRET`, et l'URL seule ne donne rien d'exploitable. Corol
 DATABASE_URL=<chaîne Neon, avec ?sslmode=require>
 APP_SECRET=<openssl rand -base64 48>
 APP_URL=https://<votre-projet>.vercel.app
-EMAIL_PROVIDER=console
+EMAIL_PROVIDER=resend
+RESEND_API_KEY=<clé du fournisseur>
+EMAIL_FROM=Direct Conseil <no-reply@votre-domaine.ma>
 ```
+
+Sans ces trois dernières, laissez `EMAIL_PROVIDER=console` : rien ne part, et les
+messages s'écrivent dans les logs. **Pour envoyer réellement, l'adresse de
+`EMAIL_FROM` doit appartenir à un domaine vérifié chez le fournisseur** — sinon
+les courriels partent en indésirables, quand ils partent.
 
 `STORAGE_ROOT` est inutile ici : le pilote Blob ne s'en sert pas.
 
@@ -234,17 +241,22 @@ DATABASE_URL="postgresql://utilisateur:motdepasse@hote:5432/directconseil"
 APP_SECRET="<openssl rand -base64 48>"
 STORAGE_ROOT="/var/lib/direct-conseil/storage"
 APP_URL="https://votre-domaine.ma"
-EMAIL_PROVIDER="console"
+EMAIL_PROVIDER="resend"      # ou "smtp", ou "console" pour n'envoyer rien
+RESEND_API_KEY="<clé du fournisseur>"
+# SMTP_URL="smtps://utilisateur:motdepasse@smtp.votre-domaine.ma:465"
+EMAIL_FROM="Direct Conseil <no-reply@votre-domaine.ma>"
 NODE_ENV="production"
 ```
 
-`APP_SECRET` sert au hachage des jetons de session et d'invitation : le changer
-déconnecte tout le monde et invalide les invitations en cours. Il ne doit jamais
-être versionné.
+`APP_SECRET` sert au hachage des jetons de session et de réinitialisation : le
+changer déconnecte tout le monde et invalide les liens « mot de passe oublié »
+en cours. Il ne doit jamais être versionné.
 
-`EMAIL_PROVIDER=console` n'envoie aucun courriel : les liens d'invitation
-s'affichent alors dans l'application pour être transmis à la main. C'est
-suffisant pour un test.
+`EMAIL_PROVIDER=console` n'envoie aucun courriel : les messages s'écrivent dans
+les logs. C'est suffisant pour un test, mais **le mot de passe oublié devient
+inutilisable** — le lien ne parvient à personne. En production, choisissez
+`resend` (API HTTP) ou `smtp` (boîte du cabinet), et vérifiez le domaine de
+`EMAIL_FROM` chez le fournisseur.
 
 ## 3. Installer et démarrer
 
