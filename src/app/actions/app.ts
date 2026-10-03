@@ -271,7 +271,10 @@ export async function createClientAction(_prev: ActionState, form: FormData): Pr
     return { ...fail(error), values: formValues(form) };
   }
   revalidatePath("/clients");
-  redirect(`/clients/${id}`);
+  // `cree=1` : la page du dossier ouvre sur une confirmation. Sans elle, la
+  // création se terminait par une navigation muette, et rien ne disait au
+  // comptable que son dossier était bien enregistré.
+  redirect(`/clients/${id}?cree=1`);
 }
 
 export async function updateClientAction(

@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useActionState } from "react";
 import { updateClientAction, type ActionState } from "@/app/actions/app";
-import { Alert, Button } from "@/components/ui";
+import { Alert } from "@/components/ui";
 import type { PickerOption } from "@/components/ui";
 import { ClientFields } from "../../ClientFields";
+import { FormBar } from "../../FormBar";
 import type { ScanInfo } from "../../FieldScan";
 
 const initial: ActionState = {};
@@ -54,14 +55,13 @@ export function EditClientForm({
         referrers={referrers}
       />
 
-      <div className="flex justify-end gap-2">
-        <Button href={`/clients/${clientId}`} variant="ghost">
-          Annuler
-        </Button>
-        <Button type="submit" variant="primary" disabled={pending}>
-          {pending ? "Enregistrement…" : "Enregistrer les modifications"}
-        </Button>
-      </div>
+      <FormBar
+        state={state}
+        pending={pending}
+        submitLabel="Enregistrer les modifications"
+        pendingLabel="Enregistrement…"
+        cancelHref={`/clients/${clientId}`}
+      />
     </form>
   );
 }

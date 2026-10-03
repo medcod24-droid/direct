@@ -2,9 +2,10 @@
 
 import { useActionState } from "react";
 import { createClientAction, type ActionState } from "@/app/actions/app";
-import { Alert, Button } from "@/components/ui";
+import { Alert } from "@/components/ui";
 import type { PickerOption } from "@/components/ui";
 import { ClientFields } from "../ClientFields";
+import { FormBar } from "../FormBar";
 
 const initial: ActionState = {};
 
@@ -35,11 +36,12 @@ export function NewClientForm({
         referrers={referrers}
       />
 
-      <div className="flex justify-end gap-2">
-        <Button type="submit" variant="primary" disabled={pending}>
-          {pending ? "Création…" : "Créer le dossier"}
-        </Button>
-      </div>
+      <FormBar
+        state={state}
+        pending={pending}
+        submitLabel="Créer le dossier"
+        pendingLabel="Création…"
+      />
     </form>
   );
 }

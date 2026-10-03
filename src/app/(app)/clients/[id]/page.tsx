@@ -34,9 +34,17 @@ import { UploadForm } from "./UploadForm";
 
 export const dynamic = "force-dynamic";
 
-export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ClientDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const ctx = await requireStaff("client.view");
   const { id } = await params;
+  // Posé par la création : le dossier vient d'être enregistré (voir createClientAction).
+  const created = (await searchParams).cree === "1";
   const data = await getClientOverview(ctx, id);
   const { client } = data;
 
@@ -111,6 +119,13 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
 
   return (
     <div className="grid gap-5">
+      {created ? (
+        <Alert tone="success" title="Dossier créé">
+          Le dossier est enregistré. Complétez-le quand vous le souhaitez depuis « Modifier le
+          dossier ».
+        </Alert>
+      ) : null}
+
       <PageHeader
         media={
           scans.get(PHOTO_FIELD) ? (
