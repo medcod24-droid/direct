@@ -10,7 +10,6 @@ import { formatDate } from "@/lib/format";
 import { PHOTO_FIELD } from "@/lib/clients/photo";
 import { getClientOverview } from "@/server/services/clients";
 import { fieldScans } from "@/server/services/documents";
-import { listInterventions } from "@/server/services/interventions";
 import { Button, Logo } from "@/components/ui";
 import { PrintButton } from "./PrintButton";
 
@@ -55,9 +54,8 @@ export default async function ClientFichePage({
 }) {
   const ctx = await requireStaff("client.view");
   const { id } = await params;
-  const [{ client, contacts, referrer }, interventions, scans] = await Promise.all([
+  const [{ client, contacts, referrer }, scans] = await Promise.all([
     getClientOverview(ctx, id),
-    ctx.can("intervention.view") ? listInterventions(ctx, id) : Promise.resolve([]),
     fieldScans(ctx, id),
   ]);
   const photo = scans.get(PHOTO_FIELD);
@@ -106,7 +104,7 @@ export default async function ClientFichePage({
         ? null
         : client.authorizationNo,
     ],
-    ["Nom commercial", client.tradeName],
+    ["Raison sociale", client.tradeName],
     ["N° d'enseigne", client.signNo],
     ["Enseigne — date de référence", date(client.signRefDate)],
     ["Enseigne — expiration", date(client.signExpiresAt)],
@@ -206,13 +204,22 @@ export default async function ClientFichePage({
         </header>
 
         <Section title="Identité" rows={identity} />
+
+        {/* Deux blocs courts : côte à côte, ils tiennent sur la même hauteur de
+            papier au lieu de s'empiler sur deux écrans. */}
+        <div className="grid gap-x-8 sm:grid-cols-2">
+          <Section title="Régime et échéances" rows={regime} dense />
+          <Section title="CNSS" rows={cnss} dense />
+        </div>
+
+        <Section title="Adresses et contact" rows={addresses} />
+
         {activities.length > 0 ? (
           <Section
             title={individual ? "Activités" : "Objet social"}
             rows={[[individual ? "Déclarées" : "Déclaré", activities.join(" · ")]]}
           />
         ) : null}
-        <Section title="Adresses et contact" rows={addresses} />
 
         {registrations.length > 0 ? (
           <section className="print-bloc mt-5">
@@ -271,13 +278,6 @@ export default async function ClientFichePage({
           </section>
         ) : null}
 
-        {/* Deux blocs courts : côte à côte, ils tiennent sur la même hauteur de
-            papier au lieu de s'empiler sur deux écrans. */}
-        <div className="grid gap-x-8 sm:grid-cols-2">
-          <Section title="Régime et échéances" rows={regime} dense />
-          <Section title="CNSS" rows={cnss} dense />
-        </div>
-
         {partners.length > 0 ? (
           <Listing
             title="Direction et associés"
@@ -316,36 +316,6 @@ export default async function ClientFichePage({
               contact.email ?? "",
             ])}
           />
-        ) : null}
-
-        {interventions.length > 0 ? (
-          <section className="print-bloc mt-5">
-            <h2 className="text-sm font-semibold uppercase tracking-wide">Liste d&apos;activité</h2>
-            <table className="mt-2 w-full text-sm">
-              <thead>
-                <tr className="border-b border-line">
-                  <th className="py-1 text-start font-medium text-muted print:text-black">Service</th>
-                  <th className="py-1 text-start font-medium text-muted print:text-black">Date</th>
-                  <th className="py-1 text-start font-medium text-muted print:text-black">Motif</th>
-                  <th className="py-1 text-start font-medium text-muted print:text-black">
-                    Compte rendu
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {interventions.map((row) => (
-                  <tr key={row.id} className="border-b border-line/60">
-                    <td className="py-1 pe-3 align-top">{row.service}</td>
-                    <td className="py-1 pe-3 align-top tabular whitespace-nowrap">
-                      {formatDate(row.performedAt)}
-                    </td>
-                    <td className="py-1 pe-3 align-top">{row.reason ?? ""}</td>
-                    <td className="py-1 align-top whitespace-pre-line">{row.report ?? ""}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </section>
         ) : null}
 
         {/* Le cadre s'imprime vide : une fiche se complète souvent au stylo, au
