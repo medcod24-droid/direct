@@ -6,7 +6,7 @@ import {
   TAX_REGIME_LABELS,
   VAT_REGIME_LABELS,
 } from "@/lib/domain/labels";
-import { formatDate, formatMad } from "@/lib/format";
+import { formatDate } from "@/lib/format";
 import { PHOTO_FIELD } from "@/lib/clients/photo";
 import { getClientOverview } from "@/server/services/clients";
 import { fieldScans } from "@/server/services/documents";
@@ -67,7 +67,6 @@ export default async function ClientFichePage({
   const partners = parse<{ role?: string; name?: string; cin?: string; phone?: string; address?: string }>(
     client.partners,
   );
-  const employees = parse<{ name?: string; cin?: string; cnssNo?: string }>(client.employees);
   const articles = parse<{
     number?: string;
     designation?: string;
@@ -111,9 +110,6 @@ export default async function ClientFichePage({
     ["N° d'enseigne", client.signNo],
     ["Enseigne — date de référence", date(client.signRefDate)],
     ["Enseigne — expiration", date(client.signExpiresAt)],
-    ["Certificat négatif", client.negCertNo],
-    ["Certificat négatif — date", date(client.negCertDate)],
-    ["Certificat négatif — expiration", date(client.negCertExpiresAt)],
   ]);
 
   const addresses = filled([
@@ -146,10 +142,6 @@ export default async function ClientFichePage({
     ["Début d'activité", date(client.startedAt)],
     ["Prise en charge par le cabinet", date(client.takeoverDate)],
     ["Employeur", client.isEmployer ? "Oui" : ""],
-    [
-      "Honoraires",
-      typeof client.feeAmount === "number" ? `${formatMad(client.feeAmount)} HT` : "",
-    ],
     ["Apporté par", referrer?.legalName],
   ]);
 
@@ -274,8 +266,12 @@ export default async function ClientFichePage({
           </section>
         ) : null}
 
-        <Section title="Régime et échéances" rows={regime} />
-        <Section title="CNSS" rows={cnss} />
+        {/* Deux blocs courts : côte à côte, ils tiennent sur la même hauteur de
+            papier au lieu de s'empiler sur deux écrans. */}
+        <div className="grid gap-x-8 sm:grid-cols-2">
+          <Section title="Régime et échéances" rows={regime} dense />
+          <Section title="CNSS" rows={cnss} dense />
+        </div>
 
         {partners.length > 0 ? (
           <Listing
@@ -300,18 +296,6 @@ export default async function ClientFichePage({
               article.designation ?? "",
               article.address ?? "",
               article.usage ? PROPERTY_USAGE_LABELS[article.usage] ?? article.usage : "",
-            ])}
-          />
-        ) : null}
-
-        {employees.length > 0 ? (
-          <Listing
-            title="Salariés déclarés"
-            head={["Nom", "CIN", "N° CNSS"]}
-            rows={employees.map((employee) => [
-              employee.name ?? "",
-              employee.cin ?? "",
-              employee.cnssNo ?? "",
             ])}
           />
         ) : null}
@@ -359,12 +343,27 @@ export default async function ClientFichePage({
           </section>
         ) : null}
 
-        {client.notes ? (
-          <section className="print-bloc mt-5">
-            <h2 className="text-sm font-semibold uppercase tracking-wide">Notes</h2>
+        {/* Le cadre s'imprime vide : une fiche se complète souvent au stylo, au
+            comptoir ou en visite, avant d'être ressaisie. */}
+        <section className="print-bloc mt-5">
+          <h2 className="border-b border-line pb-1 text-sm font-semibold uppercase tracking-wide print:border-black/40">
+            Remarques
+          </h2>
+          {client.notes ? (
             <p className="mt-2 whitespace-pre-line text-sm">{client.notes}</p>
-          </section>
-        ) : null}
+          ) : null}
+          <div
+            aria-hidden="true"
+            className="mt-2 rounded-chip border border-line print:border-black/50"
+          >
+            {[0, 1, 2, 3].map((ligne) => (
+              <div
+                key={ligne}
+                className="h-[9mm] border-b border-dashed border-line last:border-b-0 print:border-black/20"
+              />
+            ))}
+          </div>
+        </section>
 
         <footer className="mt-8 border-t border-line pt-2 text-[11px] text-muted print:text-black">
           {ctx.cabinet.name} · document interne au cabinet, contenant des données personnelles
@@ -383,12 +382,27 @@ export default async function ClientFichePage({
   );
 }
 
-function Section({ title, rows }: { title: string; rows: [string, string][] }) {
+function Section({
+  title,
+  rows,
+  dense = false,
+}: {
+  title: string;
+  rows: [string, string][];
+  /** Bloc placé en colonne : l'étiquette se resserre pour laisser la valeur lisible. */
+  dense?: boolean;
+}) {
   if (rows.length === 0) return null;
   return (
     <section className="print-bloc mt-5">
-      <h2 className="text-sm font-semibold uppercase tracking-wide">{title}</h2>
-      <dl className="mt-2 grid grid-cols-[minmax(0,14rem)_1fr] gap-x-4 gap-y-1 text-sm">
+      <h2 className="border-b border-line pb-1 text-sm font-semibold uppercase tracking-wide print:border-black/40">
+        {title}
+      </h2>
+      <dl
+        className={`mt-2 grid gap-x-4 gap-y-1 text-sm ${
+          dense ? "grid-cols-[minmax(0,10rem)_1fr]" : "grid-cols-[minmax(0,13rem)_1fr]"
+        }`}
+      >
         {rows.map(([label, value]) => (
           <div key={label} className="contents">
             <dt className="text-muted print:text-black">{label}</dt>
