@@ -68,6 +68,13 @@ const STRICT_CLIENT_MODELS = new Set([
 /** clientId nullable : les lignes sans client sont internes au cabinet, donc visibles. */
 const NULLABLE_CLIENT_MODELS = new Set(["Task", "Activity", "Todo"]);
 
+/**
+ * Modèles dont la colonne `clientId` accepte le vide. `Document` en fait partie
+ * sans être dans l'ensemble précédent : une pièce peut appartenir au cabinet
+ * seul, mais la restriction « dossiers assignés » la masque malgré tout.
+ */
+const NULLABLE_CLIENT_ID = new Set(["Document", "Task", "Activity", "Todo"]);
+
 const READ_OPS = new Set([
   "findUnique",
   "findUniqueOrThrow",
@@ -87,6 +94,13 @@ export type TenantScope = {
    * tableau = accès restreint à ces dossiers (collaborateur assigné, compte client).
    */
   clientIds?: string[] | null;
+  /**
+   * Dossiers confidentiels : réservés à l'administration. Absent ou faux, ils
+   * sont retirés de toutes les lectures **et** de toutes les écritures — le
+   * dossier lui-même comme ce qui s'y rattache. Le refus est la valeur par
+   * défaut : un contexte qui oublie ce drapeau ne les voit pas.
+   */
+  confidentialClients?: boolean;
 };
 
 /**
@@ -107,6 +121,27 @@ function and(where: unknown, extra: Record<string, unknown>) {
   return { ...current, AND: [...existing, extra] };
 }
 
+/**
+ * Écarte les dossiers confidentiels.
+ *
+ * Sur `Client`, c'est la colonne ; ailleurs, c'est la relation — une pièce, une
+ * échéance ou une facture d'un dossier confidentiel disparaît avec lui. Les
+ * lignes sans dossier (documents du cabinet, tâches internes) restent visibles :
+ * elles n'appartiennent à personne.
+ */
+function withoutConfidential(model: string): Record<string, unknown> | null {
+  if (model === "Client") return { confidential: false };
+
+  const rattachéÀUnDossierVisible = { client: { is: { confidential: false } } };
+  // `clientId: null` n'est accepté que là où la colonne l'autorise : ailleurs,
+  // Prisma refuse la requête entière plutôt que d'ignorer la condition.
+  if (NULLABLE_CLIENT_ID.has(model)) {
+    return { OR: [{ clientId: null }, rattachéÀUnDossierVisible] };
+  }
+  if (STRICT_CLIENT_MODELS.has(model)) return rattachéÀUnDossierVisible;
+  return null;
+}
+
 function readFilter(model: string, scope: TenantScope): Record<string, unknown> {
   // Le cabinet lui-même est identifié par son id, pas par un champ cabinetId.
   if (model === "Cabinet") return { id: scope.cabinetId };
@@ -115,28 +150,37 @@ function readFilter(model: string, scope: TenantScope): Record<string, unknown> 
     ? { OR: [{ cabinetId: scope.cabinetId }, { cabinetId: null }] }
     : { cabinetId: scope.cabinetId };
 
+  const parts: Record<string, unknown>[] = [filter];
+  const confidentiel = scope.confidentialClients ? null : withoutConfidential(model);
+  if (confidentiel) parts.push(confidentiel);
+
   const ids = scope.clientIds;
   if (ids) {
-    if (model === "Client") return { AND: [filter, { id: { in: ids } }] };
-    if (STRICT_CLIENT_MODELS.has(model)) return { AND: [filter, { clientId: { in: ids } }] };
-    if (NULLABLE_CLIENT_MODELS.has(model))
-      return { AND: [filter, { OR: [{ clientId: { in: ids } }, { clientId: null }] }] };
+    if (model === "Client") parts.push({ id: { in: ids } });
+    else if (STRICT_CLIENT_MODELS.has(model)) parts.push({ clientId: { in: ids } });
+    else if (NULLABLE_CLIENT_MODELS.has(model))
+      parts.push({ OR: [{ clientId: { in: ids } }, { clientId: null }] });
   }
-  return filter;
+  return parts.length === 1 ? filter : { AND: parts };
 }
 
 function writeFilter(model: string, scope: TenantScope): Record<string, unknown> {
   if (model === "Cabinet") return { id: scope.cabinetId };
   // À l'écriture, on force l'appartenance exacte : jamais les lignes système.
   const filter: Record<string, unknown> = { cabinetId: scope.cabinetId };
+
+  const parts: Record<string, unknown>[] = [filter];
+  const confidentiel = scope.confidentialClients ? null : withoutConfidential(model);
+  if (confidentiel) parts.push(confidentiel);
+
   const ids = scope.clientIds;
   if (ids) {
-    if (model === "Client") return { AND: [filter, { id: { in: ids } }] };
-    if (STRICT_CLIENT_MODELS.has(model)) return { AND: [filter, { clientId: { in: ids } }] };
-    if (NULLABLE_CLIENT_MODELS.has(model))
-      return { AND: [filter, { OR: [{ clientId: { in: ids } }, { clientId: null }] }] };
+    if (model === "Client") parts.push({ id: { in: ids } });
+    else if (STRICT_CLIENT_MODELS.has(model)) parts.push({ clientId: { in: ids } });
+    else if (NULLABLE_CLIENT_MODELS.has(model))
+      parts.push({ OR: [{ clientId: { in: ids } }, { clientId: null }] });
   }
-  return filter;
+  return parts.length === 1 ? filter : { AND: parts };
 }
 
 function stampData<T>(data: T, cabinetId: string): T {

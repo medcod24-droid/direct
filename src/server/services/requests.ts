@@ -95,12 +95,16 @@ export async function submitRequest(ctx: AuthContext, requestId: string, file: U
       resourceId: requestId,
       ip: ctx.ip,
     }),
-    notifyCabinetOwners(ctx, {
-      type: "request.submitted",
-      title: "Document reçu",
-      body: request.title,
-      link: `/requests/${requestId}`,
-    }),
+    notifyCabinetOwners(
+      ctx,
+      {
+        type: "request.submitted",
+        title: "Document reçu",
+        body: request.title,
+        link: `/requests/${requestId}`,
+      },
+      await dossierConfidentiel(ctx, request.clientId),
+    ),
   ]);
 
   return updated;
@@ -205,22 +209,36 @@ async function notifyClientContacts(
   );
 }
 
+/** Le dossier visé est-il réservé à l'administration ? */
+async function dossierConfidentiel(ctx: AuthContext, clientId: string | null): Promise<boolean> {
+  if (!clientId) return false;
+  const client = await ctx.db.client.findFirst({
+    where: { id: clientId },
+    select: { confidential: true },
+  });
+  return client?.confidential ?? false;
+}
+
 async function notifyCabinetOwners(
   ctx: AuthContext,
   payload: { type: string; title: string; body: string; link: string },
+  /** Dossier confidentiel : l'avis ne sort pas de l'administration. */
+  confidentialClient = false,
 ) {
   const staff = await ctx.db.membership.findMany({
     where: { role: { not: "client" }, status: "active" },
     select: { userId: true, role: true, permissions: true },
   });
   // L'avis va à qui peut traiter la pièce, quel que soit le nom de son rôle :
-  // un rôle « Autre » à qui l'on a confié les demandes doit le recevoir.
+  // un rôle « Autre » à qui l'on a confié les demandes doit le recevoir. Sur un
+  // dossier confidentiel, il faut en plus pouvoir le voir : sans ce filtre, la
+  // notification aurait annoncé un dossier invisible à celui qui la reçoit.
   const reviewers = staff
-    .filter((member) =>
-      effectivePermissions(member.role as Role, readGranted(member.permissions)).has(
-        "request.review",
-      ),
-    )
+    .filter((member) => {
+      const granted = effectivePermissions(member.role as Role, readGranted(member.permissions));
+      if (!granted.has("request.review")) return false;
+      return confidentialClient ? granted.has("client.confidential") : true;
+    })
     .slice(0, 20);
   await Promise.all(
     reviewers.map((member) => notify(ctx.cabinet.id, member.userId, payload).catch(() => undefined)),

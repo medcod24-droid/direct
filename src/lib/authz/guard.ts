@@ -99,11 +99,20 @@ export async function getAuthContext(): Promise<AuthContext | null> {
     userId: session.userId,
   });
 
-  const scope: TenantScope = { cabinetId: membership.cabinetId, clientIds };
   const meta = await requestMeta();
   // Les droits cochés par l'administration priment sur le modèle du rôle ;
   // le rôle ne décide seul que pour le propriétaire et le compte client.
   const granted = effectivePermissions(role, readGranted(membership.permissions));
+
+  // Un dossier confidentiel est réservé à l'administration. Le compte client, lui,
+  // voit toujours le sien : il s'agit de le cacher à l'équipe, pas à son titulaire.
+  const confidentialClients = role === "client" || granted.has("client.confidential");
+
+  const scope: TenantScope = {
+    cabinetId: membership.cabinetId,
+    clientIds,
+    confidentialClients,
+  };
 
   return {
     sessionId: session.id,

@@ -245,6 +245,10 @@ model Client {
 
   address  String?
   city     String?
+  /// Dossier réservé à l'administration : invisible pour le reste de l'équipe,
+  /// y compris ses documents, échéances et honoraires (filtré dans tenant.ts).
+  confidential Boolean @default(false)
+
   /// Numéro principal : projection de la première ligne de `phones`.
   phone    String?
   /// Numéros du dossier, en JSON : [{ value, label }]. Un client en a souvent

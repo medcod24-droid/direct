@@ -213,6 +213,11 @@ function clientInput(form: FormData) {
     activities: textList(form, "activities"),
     // Une ligne sans son champ identifiant est une ligne ajoutée puis laissée
     // vide : elle est écartée plutôt que refusée, la corriger n'apporterait rien.
+    // La case n'est présente que pour qui peut marquer un dossier confidentiel ;
+    // sinon le champ reste absent et le service laisse le drapeau tel quel.
+    confidential: form.has("confidentialVisible")
+      ? form.get("confidential") === "on"
+      : undefined,
     // Les lignes vidées à l'écran sont ignorées : un numéro effacé disparaît.
     phones: rows(form, "phones", ["value", "label"]).filter((row) => row.value),
     registrations: registrationList(form),

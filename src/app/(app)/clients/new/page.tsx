@@ -14,7 +14,11 @@ export default async function NewClientPage() {
         title="Nouveau dossier client"
         subtitle="Les champs marqués sont indispensables au calcul des échéances."
       />
-      <NewClientForm cndpMode={ctx.cabinet.cndpMode} referrers={referrers} />
+      <NewClientForm
+        cndpMode={ctx.cabinet.cndpMode}
+        referrers={referrers}
+        canConfidential={ctx.can("client.confidential")}
+      />
     </div>
   );
 }

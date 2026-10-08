@@ -265,6 +265,12 @@ export const clientSchema = z.object({
    * (API, mise à jour partielle) doit laisser le numéro en place ; une liste
    * vide, elle, est un retrait demandé et vide la colonne.
    */
+  /**
+   * Dossier réservé à l'administration. Optionnel sans valeur par défaut : une
+   * mise à jour qui n'en parle pas ne doit pas démarquer un dossier, et le
+   * service ne retient le champ que si l'utilisateur a le droit correspondant.
+   */
+  confidential: z.coerce.boolean().optional(),
   phones: z.array(phoneSchema).max(10).optional(),
   registrations: list(registrationSchema),
   partners: list(partnerSchema),

@@ -356,6 +356,30 @@ Elle s'affiche par `/api/clients/<id>/photo`, qui ne demande que le droit de voi
 journalise pas chaque affichage — la route de téléchargement l'aurait fait à chaque ouverture de
 fiche.
 
+### Dossiers confidentiels
+
+Un dossier marqué confidentiel est **réservé à l'administration** : il disparaît pour tout le
+reste de l'équipe, y compris pour un collaborateur qui a accès à tous les dossiers.
+
+Le filtre est posé dans `tenantDb`, **jamais dans les écrans** : une page oubliée, une requête
+ajoutée plus tard ou un compteur de tableau de bord ne peuvent pas le contourner. `TenantScope`
+porte `confidentialClients`, et le refus est sa valeur par défaut — un contexte qui oublie le
+drapeau ne voit rien. Le filtre s'applique en lecture **et** en écriture, sur le dossier comme
+sur ce qui s'y rattache : la relation `client` est testée pour les documents, échéances,
+factures, rendez-vous, services rendus… Les lignes sans dossier (pièces du cabinet, tâches
+internes) restent visibles : elles n'appartiennent à personne.
+
+Trois conséquences qui ne se voient pas dans l'interface :
+
+- **le compte client du portail voit toujours son dossier**, confidentiel ou non : il s'agit de
+  le cacher à l'équipe, pas à son titulaire ;
+- **marquer ou démarquer demande le droit `client.confidential`** (propriétaire et administrateur
+  par défaut). Pour les autres, le champ est *ignoré* plutôt que refusé : le reste de la fiche
+  s'enregistre normalement. Et une fois le dossier marqué, ils ne le voient plus — donc ne
+  peuvent plus le démarquer ;
+- **les notifications suivent la même règle** : l'avis de dépôt d'une pièce ne part qu'à ceux qui
+  peuvent voir le dossier, sinon il aurait annoncé un dossier invisible à celui qui le reçoit.
+
 ## Moteur d'échéances
 
 `src/lib/deadlines/engine.ts` est un module pur, sans base de données, couvert par 75 tests.

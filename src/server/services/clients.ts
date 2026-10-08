@@ -63,6 +63,7 @@ export async function listClients(ctx: AuthContext, input: unknown) {
         city: true,
         status: true,
         ice: true,
+        confidential: true,
       },
     }),
   ]);
@@ -506,10 +507,16 @@ export async function createClient(ctx: AuthContext, input: unknown) {
   await assertReferrer(ctx, data.referredById);
   const managerCin = ctx.cabinet.cndpMode === "authorization" ? data.managerCin : undefined;
 
-  const { activities, phones, registrations, partners, employees, articles, ...scalars } = data;
+  const { activities, phones, registrations, partners, employees, articles, ...rest } = data;
+  // Marquer un dossier confidentiel est un acte d'administration : le champ est
+  // ignoré pour qui n'a pas le droit, plutôt que refusé — le reste de la fiche
+  // s'enregistre normalement.
+  const { confidential, ...scalars } = rest;
+  const confidentialite = ctx.can("client.confidential") ? { confidential } : {};
   const columns = {
     ...scalars,
     ...listColumns({ activities, phones, registrations, partners, employees, articles }, ctx.cabinet.cndpMode),
+    ...confidentialite,
     managerCin,
   };
   const created = await ctx.db.client.create({
@@ -553,10 +560,16 @@ export async function updateClient(ctx: AuthContext, clientId: string, input: un
   assertCinAllowed(data, ctx.cabinet.cndpMode);
   await assertReferrer(ctx, data.referredById, clientId);
 
-  const { activities, phones, registrations, partners, employees, articles, ...scalars } = data;
+  const { activities, phones, registrations, partners, employees, articles, ...rest } = data;
+  // Marquer un dossier confidentiel est un acte d'administration : le champ est
+  // ignoré pour qui n'a pas le droit, plutôt que refusé — le reste de la fiche
+  // s'enregistre normalement.
+  const { confidential, ...scalars } = rest;
+  const confidentialite = ctx.can("client.confidential") ? { confidential } : {};
   const columns = {
     ...scalars,
     ...listColumns({ activities, phones, registrations, partners, employees, articles }, ctx.cabinet.cndpMode),
+    ...confidentialite,
   };
 
   // La clé est reconstruite sur la ligne telle qu'elle sera, valeurs conservées

@@ -12,9 +12,11 @@ const initial: ActionState = {};
 export function NewClientForm({
   cndpMode,
   referrers,
+  canConfidential,
 }: {
   cndpMode: string;
   referrers: PickerOption[];
+  canConfidential: boolean;
 }) {
   const [state, action, pending] = useActionState(createClientAction, initial);
 
@@ -34,6 +36,7 @@ export function NewClientForm({
         fieldError={fieldError}
         cndpMode={cndpMode}
         referrers={referrers}
+        canConfidential={canConfidential}
       />
 
       <FormBar

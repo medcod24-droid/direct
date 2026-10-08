@@ -42,6 +42,7 @@ function toFormValues(client: Record<string, unknown>): Record<string, string> {
     takeoverDate: date(client.takeoverDate),
     referredById: text(client.referredById),
     isEmployer: client.isEmployer ? "on" : "",
+    confidential: client.confidential ? "on" : "",
 
     authorizationNo: text(client.authorizationNo),
     employeeCount: text(client.employeeCount),
@@ -238,6 +239,7 @@ export default async function EditClientPage({
         subtitle={client.legalName}
       />
       <EditClientForm
+        canConfidential={ctx.can("client.confidential")}
         clientId={id}
         cndpMode={ctx.cabinet.cndpMode}
         referrers={referrers}

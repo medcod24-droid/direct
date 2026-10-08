@@ -14,6 +14,7 @@ export const PERMISSIONS = [
   "cabinet.view", "cabinet.manage", "cabinet.delete",
   "member.view", "member.invite", "member.manage",
   "client.view", "client.create", "client.update", "client.delete", "client.assign",
+  "client.confidential",
   "contact.manage",
   "document.view", "document.upload", "document.download", "document.delete", "document.approve",
   "request.view", "request.create", "request.review", "request.submit", "request.cancel",
@@ -184,6 +185,12 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
         description: "Liste des dossiers, fiche complète et fiche imprimable.",
       },
       { permission: "client.create", label: "Créer un dossier" },
+      {
+        permission: "client.confidential",
+        label: "Voir les dossiers confidentiels",
+        description:
+          "Un dossier marqué confidentiel disparaît pour tous les autres — liste, recherche, documents, échéances, honoraires —, même pour qui a accès à tous les dossiers.",
+      },
       {
         permission: "client.update",
         label: "Modifier la fiche d'un dossier",
@@ -360,6 +367,7 @@ export const REQUIRES: Partial<Record<Permission, Permission[]>> = {
   "member.invite": ["member.view"],
   "member.manage": ["member.view"],
   "client.create": ["client.view"],
+  "client.confidential": ["client.view"],
   "client.update": ["client.view"],
   "client.assign": ["client.view"],
   "client.delete": ["client.view"],

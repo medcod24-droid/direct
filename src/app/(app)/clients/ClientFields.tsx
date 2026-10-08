@@ -31,6 +31,12 @@ export type ClientFieldsProps = {
   scans?: Record<string, ScanInfo>;
   /** Autres dossiers du cabinet, pour désigner celui qui a apporté celui-ci. */
   referrers?: PickerOption[];
+  /**
+   * Droit de réserver un dossier à l'administration. La case n'apparaît que
+   * pour qui le détient : les autres ne doivent pas même savoir que le réglage
+   * existe sur les dossiers qu'ils voient.
+   */
+  canConfidential?: boolean;
 };
 
 /**
@@ -55,6 +61,7 @@ export function ClientFields({
   clientId = null,
   scans = {},
   referrers = [],
+  canConfidential = false,
 }: ClientFieldsProps) {
   const [kind, setKind] = useState<ClientKind>(
     value("kind", "company") === "individual" ? "individual" : "company",
@@ -88,6 +95,28 @@ export function ClientFields({
         <div className="mb-4 border-b border-line pb-4">
           <ClientPhoto clientId={clientId} current={scans.photo} error={fieldError("photo")} />
         </div>
+
+        {canConfidential ? (
+          <label className="mb-4 flex items-start gap-2.5 rounded-card border border-line bg-surface2 p-3">
+            {/* Témoin : il dit à l'action que la case était affichée. Sans lui, une
+                case absente ne se distingue pas d'une case décochée. */}
+            <input type="hidden" name="confidentialVisible" value="1" />
+            <input
+              type="checkbox"
+              name="confidential"
+              defaultChecked={checked("confidential")}
+              className="mt-0.5"
+            />
+            <span>
+              <span className="text-sm font-650 text-ink">Dossier confidentiel</span>
+              <span className="mt-0.5 block text-xs text-muted">
+                Réservé à l&apos;administration. Le dossier disparaît pour le reste de
+                l&apos;équipe — liste, recherche, documents, échéances, honoraires — même pour
+                qui a accès à tous les dossiers.
+              </span>
+            </span>
+          </label>
+        ) : null}
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Type" htmlFor="kind" error={fieldError("kind")}>
             <Select

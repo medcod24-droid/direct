@@ -148,6 +148,11 @@ export default async function ClientDetailPage({
         subtitle={[client.tradeName, client.city, client.activity].filter(Boolean).join(" · ")}
         actions={
           <div className="flex items-center gap-3">
+            {client.confidential ? (
+              <Badge iconName="shield" title="Réservé à l'administration : invisible pour le reste de l'équipe.">
+                Confidentiel
+              </Badge>
+            ) : null}
             {rating ? <StarRating stars={rating.stars} reasons={rating.reasons} /> : null}
             <StatusPill status={data.health.status} />
             <Button href={`/clients/${id}/fiche`} variant="ghost" size="sm" iconName="print">

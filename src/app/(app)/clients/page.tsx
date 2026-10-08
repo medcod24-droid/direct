@@ -4,6 +4,7 @@ import { clientFormLabel } from "@/lib/domain/labels";
 import { listClients, ratingsForClients } from "@/server/services/clients";
 import {
   Badge,
+  Icon,
   Button,
   CountBadge,
   EmptyState,
@@ -133,6 +134,14 @@ export default async function ClientsPage({
                       >
                         {client.legalName}
                       </Link>
+                      {client.confidential ? (
+                        <span
+                          className="ms-1.5 inline-flex align-[-2px] text-muted"
+                          title="Dossier confidentiel : réservé à l'administration."
+                        >
+                          <Icon name="shield" size={14} />
+                        </span>
+                      ) : null}
                     </TD>
                     <TD>
                       <Badge>{clientFormLabel(client)}</Badge>

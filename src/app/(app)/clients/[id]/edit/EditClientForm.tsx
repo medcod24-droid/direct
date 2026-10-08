@@ -24,12 +24,14 @@ export function EditClientForm({
   current,
   scans,
   referrers,
+  canConfidential,
 }: {
   clientId: string;
   cndpMode: string;
   current: Record<string, string>;
   scans: Record<string, ScanInfo>;
   referrers: PickerOption[];
+  canConfidential: boolean;
 }) {
   const action = updateClientAction.bind(null, clientId);
   const [state, formAction, pending] = useActionState(action, initial);
@@ -53,6 +55,7 @@ export function EditClientForm({
         clientId={clientId}
         scans={scans}
         referrers={referrers}
+        canConfidential={canConfidential}
       />
 
       <FormBar
