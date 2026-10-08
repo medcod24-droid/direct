@@ -312,6 +312,15 @@ donc bornée comme celle des rendez-vous, en heures murales.
 vérifiée côté service, à travers le client Prisma du contexte : un dossier d'un autre cabinet est
 introuvable, et un dossier ne peut pas être son propre apporteur.
 
+### Autres documents
+
+Une rubrique fourre-tout sur le dossier, pour ce qui n'entre dans aucune case de la fiche :
+contrats, courriers, échanges. Les fichiers s'y déposent **plusieurs à la fois**, mais partent
+**un par un** — la limite de taille d'une requête est vite atteinte avec quelques PDF, et un lot
+entier échouerait à cause d'un seul fichier. Chaque échec est nommé, les autres passent, et un
+compteur dit où en est l'envoi : vingt pièces sans retour visible, c'est indistinguable d'un
+écran figé. La catégorie `autres` est fournie par la graine, comme les autres.
+
 ### Justificatifs rattachés aux champs
 
 `Document.fieldKey` désigne le champ de la fiche qu'une pièce justifie :

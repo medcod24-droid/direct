@@ -88,6 +88,9 @@ const CATEGORIES = [
   { code: "fiscal", name: "Déclarations et accusés", kind: "fiscal", sortOrder: 7 },
   { code: "juridique", name: "Juridique et statutaire", kind: "legal", sortOrder: 8 },
   { code: "honoraires", name: "Honoraires du cabinet", kind: "fees", sortOrder: 9 },
+  // Fourre-tout assumé : ce qu'on dépose en vrac et qu'on classera peut-être
+  // plus tard. Sans lui, une pièce sans catégorie évidente ne se dépose nulle part.
+  { code: "autres", name: "Autres documents", kind: "other", sortOrder: 10 },
 ];
 
 /** Règles système. Voir docs/recherche/01-verification-regles.md pour les sources. */

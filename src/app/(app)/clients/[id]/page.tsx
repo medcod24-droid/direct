@@ -31,6 +31,7 @@ import { wallDateLong, wallTime } from "@/lib/calendar/month";
 import { Assignees } from "./Assignees";
 import { RequestForm } from "./RequestForm";
 import { UploadForm } from "./UploadForm";
+import { MultiUpload } from "./MultiUpload";
 
 export const dynamic = "force-dynamic";
 
@@ -109,15 +110,24 @@ export default async function ClientDetailPage({
   // elles se gèrent donc depuis le dossier lui-même.
   const canAssign = ctx.can("client.assign");
   const now = new Date();
-  const [assignees, staff, interventions, appointments, scans] = await Promise.all([
-    listClientAssignees(ctx, id),
-    canAssign ? listMembers(ctx) : Promise.resolve([]),
-    ctx.can("intervention.view") ? listInterventions(ctx, id) : Promise.resolve([]),
-    ctx.can("appointment.view")
-      ? listAppointments(ctx, { clientId: id, from: now, status: "scheduled" })
-      : Promise.resolve([]),
-    fieldScans(ctx, id),
-  ]);
+  const [assignees, staff, interventions, appointments, scans, autresCategorie, autresDocuments] =
+    await Promise.all([
+      listClientAssignees(ctx, id),
+      canAssign ? listMembers(ctx) : Promise.resolve([]),
+      ctx.can("intervention.view") ? listInterventions(ctx, id) : Promise.resolve([]),
+      ctx.can("appointment.view")
+        ? listAppointments(ctx, { clientId: id, from: now, status: "scheduled" })
+        : Promise.resolve([]),
+      fieldScans(ctx, id),
+      // Catégorie fourre-tout, fournie par la plateforme (graine).
+      ctx.db.documentCategory.findFirst({ where: { code: "autres" }, select: { id: true } }),
+      ctx.db.document.findMany({
+        where: { clientId: id, category: { is: { code: "autres" } } },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+        select: { id: true, filename: true, size: true, createdAt: true },
+      }),
+    ]);
 
   // Complétude du dossier : ce qui manque, nommé, plutôt qu'un pourcentage seul.
   const expected = expectedScans(client as unknown as Record<string, unknown>, scans);
@@ -528,6 +538,43 @@ export default async function ClientDetailPage({
           )}
         </Card>
       </div>
+
+      {/* Pièces déposées en vrac : ce qui n'entre dans aucune case de la fiche. */}
+      <Card
+        icon="folder"
+        title="Autres documents"
+        description="Les pièces qui n'ont pas de place ailleurs dans la fiche : déposez-en plusieurs d'un coup."
+        action={
+          ctx.can("document.upload") ? (
+            <MultiUpload clientId={client.id} categoryId={autresCategorie?.id} />
+          ) : null
+        }
+      >
+        {autresDocuments.length === 0 ? (
+          <EmptyState
+            iconName="folder"
+            compact
+            title="Aucun autre document"
+            description="Contrats, courriers, échanges : tout ce qui mérite d'être gardé avec le dossier."
+          />
+        ) : (
+          <ul className="divide-y divide-line">
+            {autresDocuments.map((document) => (
+              <li key={document.id} className="flex items-center justify-between gap-3 py-2">
+                <a
+                  href={`/api/documents/${document.id}/download`}
+                  className="min-w-0 truncate text-sm hover:underline underline-offset-2"
+                >
+                  {document.filename}
+                </a>
+                <span className="shrink-0 text-xs text-muted tabular">
+                  {formatDate(document.createdAt)} · {Math.max(1, Math.round(document.size / 1024))} Ko
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card title="Honoraires">
