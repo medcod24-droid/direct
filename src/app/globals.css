@@ -351,6 +351,17 @@
     color: inherit;
   }
 
+  /* Le papier est blanc : c'est la variante sombre sur fond clair du logo qui
+     s'y lit. Sans cette règle, une fiche imprimée depuis le thème sombre sortait
+     avec le logo blanc — donc invisible. */
+  .logo-clair {
+    display: block !important;
+  }
+
+  .logo-sombre {
+    display: none !important;
+  }
+
   /* Une section ne doit pas être coupée en deux pages si elle tient sur une. */
   .print-bloc {
     break-inside: avoid;

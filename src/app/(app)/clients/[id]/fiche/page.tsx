@@ -11,7 +11,7 @@ import { PHOTO_FIELD } from "@/lib/clients/photo";
 import { getClientOverview } from "@/server/services/clients";
 import { fieldScans } from "@/server/services/documents";
 import { listInterventions } from "@/server/services/interventions";
-import { Button } from "@/components/ui";
+import { Button, Logo } from "@/components/ui";
 import { PrintButton } from "./PrintButton";
 
 export const metadata = { title: "Fiche client — Direct Conseil" };
@@ -167,8 +167,13 @@ export default async function ClientFichePage({
             est ce qu'on cherche des yeux en ouvrant le classeur : il domine. */}
         <header className="print-keep print-bloc flex items-start justify-between gap-6 border-b-2 border-ink pb-5 print:border-black">
           <div className="min-w-0">
-            <p className="text-xs uppercase tracking-[0.14em] text-muted print:text-black">
-              {ctx.cabinet.name} · fiche client
+            {/* Le logo porte déjà le nom du cabinet : le sur-titre ne le répète pas.
+                Le pied de page, lui, le redit en toutes lettres. */}
+            {/* `priority` : la page est faite pour être imprimée tout de suite ; un logo
+                chargé paresseusement laisse un blanc sur le papier. */}
+            <Logo className="w-[44mm] print:w-[40mm]" priority />
+            <p className="mt-3 text-xs uppercase tracking-[0.14em] text-muted print:text-black">
+              Fiche client
             </p>
             <h1 className="mt-2 text-[30px] font-bold leading-tight text-ink print:text-[24pt] print:text-black">
               {client.legalName}
